@@ -117,9 +117,12 @@ def new_state(session_id: str, cwd: str, source: str) -> Dict[str, Any]:
 
 TABLE_ROW_RE = re.compile(r"^\|(.+)\|$")
 
+# Atom entry: (name, relative_path, trigger_keywords[])
+AtomEntry = Tuple[str, str, List[str]]
 
-def parse_memory_index(memory_dir: Path) -> List[str]:
-    """Parse MEMORY.md atom index, return list of atom names."""
+
+def parse_memory_index(memory_dir: Path) -> List[AtomEntry]:
+    """Parse MEMORY.md atom index, return list of (name, path, triggers)."""
     index_path = memory_dir / MEMORY_INDEX
     if not index_path.exists():
         return []
@@ -128,7 +131,7 @@ def parse_memory_index(memory_dir: Path) -> List[str]:
     except (OSError, UnicodeDecodeError):
         return []
 
-    atoms = []
+    atoms: List[AtomEntry] = []
     in_table = False
     for line in text.splitlines():
         stripped = line.strip()
@@ -142,9 +145,94 @@ def parse_memory_index(memory_dir: Path) -> List[str]:
             if not stripped.startswith("|"):
                 break
             cells = [c.strip() for c in stripped.split("|") if c.strip()]
-            if cells:
-                atoms.append(cells[0])
+            if len(cells) >= 3:
+                name = cells[0]
+                rel_path = cells[1]
+                triggers = [t.strip().lower() for t in cells[2].split(",") if t.strip()]
+                atoms.append((name, rel_path, triggers))
+            elif cells:
+                atoms.append((cells[0], "", []))
     return atoms
+
+
+def cwd_to_project_slug(cwd: str) -> str:
+    """Convert CWD to Claude Code project slug.
+    C:\\Projects\\sgi-server → c--Projects-sgi-server
+    """
+    slug = cwd.replace(":", "-").replace("\\", "-").replace("/", "-").replace(".", "-")
+    if slug:
+        slug = slug[0].lower() + slug[1:]
+    return slug
+
+
+def get_project_memory_dir(cwd: str) -> Optional[Path]:
+    """Get project-level memory dir from CWD. Returns None if not found."""
+    if not cwd:
+        return None
+    slug = cwd_to_project_slug(cwd)
+    project_mem = CLAUDE_DIR / "projects" / slug / "memory"
+    if project_mem.exists():
+        return project_mem
+    return None
+
+
+def match_triggers(prompt: str, atoms: List[AtomEntry]) -> List[AtomEntry]:
+    """Match user prompt against atom Trigger keywords. Case-insensitive."""
+    prompt_lower = prompt.lower()
+    matched = []
+    for name, rel_path, triggers in atoms:
+        if any(kw in prompt_lower for kw in triggers):
+            matched.append((name, rel_path, triggers))
+    return matched
+
+
+def compute_token_budget(prompt: str) -> int:
+    """Auto-adjust injection budget (in bytes) based on prompt complexity."""
+    plen = len(prompt)
+    if plen < 50:
+        return 4500       # ~1500 tokens — Mode 1: light
+    elif plen < 200:
+        return 9000       # ~3000 tokens — transitional
+    else:
+        return 15000      # ~5000 tokens — Mode 2: deep
+
+
+def load_atoms_within_budget(
+    matched: List[AtomEntry],
+    memory_dir: Path,
+    budget_bytes: int,
+    already_injected: List[str],
+) -> Tuple[List[str], List[str], int]:
+    """Load atom file contents up to budget. Returns (content_lines, injected_names, used_bytes)."""
+    lines: List[str] = []
+    injected: List[str] = []
+    used = 0
+
+    for name, rel_path, triggers in matched:
+        if name in already_injected:
+            continue
+        # Resolve atom file path
+        atom_path = (memory_dir / rel_path) if rel_path else (memory_dir / f"{name}.md")
+        if not atom_path.exists():
+            continue
+        try:
+            content = atom_path.read_text(encoding="utf-8-sig")
+        except (OSError, UnicodeDecodeError):
+            continue
+
+        content_bytes = len(content.encode("utf-8"))
+        if used + content_bytes <= budget_bytes:
+            lines.append(f"[Atom:{name}]\n{content}")
+            injected.append(name)
+            used += content_bytes
+        else:
+            # Over budget: inject summary only
+            first_line = content.split("\n", 1)[0].strip("# ").strip()
+            lines.append(f"[Atom:{name}] {first_line} (full: Read {rel_path or name + '.md'})")
+            injected.append(name)  # still mark as "seen" to avoid re-summary
+            break  # stop loading more
+
+    return lines, injected, used
 
 
 # ─── Output Helpers ──────────────────────────────────────────────────────────
@@ -200,40 +288,27 @@ def handle_session_start(input_data: Dict[str, Any], config: Dict[str, Any]) -> 
     else:
         state = new_state(session_id, cwd, source)
 
-        # Parse memory indices
+        # Parse memory indices (store as serializable lists)
         global_atoms = parse_memory_index(MEMORY_DIR)
+        project_mem_dir = get_project_memory_dir(cwd)
+        project_atoms = parse_memory_index(project_mem_dir) if project_mem_dir else []
 
-        # Try to find project memory
-        project_atoms = []
-        projects_dir = CLAUDE_DIR / "projects"
-        if projects_dir.exists():
-            # Find matching project dir by cwd
-            cwd_normalized = cwd.replace("\\", "/").replace(":", "").replace("/", "-")
-            for proj_dir in projects_dir.iterdir():
-                if proj_dir.is_dir():
-                    mem_dir = proj_dir / "memory"
-                    if mem_dir.is_dir():
-                        # Check if project slug matches cwd
-                        if any(
-                            part in proj_dir.name
-                            for part in cwd_normalized.split("-")
-                            if len(part) > 2
-                        ):
-                            project_atoms = parse_memory_index(mem_dir)
-                            break
-
-        state["memory_loaded"] = {
-            "global_atoms": global_atoms,
-            "project_atoms": project_atoms,
+        state["atom_index"] = {
+            "global": [(n, p, t) for n, p, t in global_atoms],
+            "project": [(n, p, t) for n, p, t in project_atoms],
+            "project_memory_dir": str(project_mem_dir) if project_mem_dir else "",
         }
+        state["injected_atoms"] = []
         state["phase"] = "working"
 
+        g_names = [n for n, _, _ in global_atoms]
+        p_names = [n for n, _, _ in project_atoms]
         lines = [
             "[Workflow Guardian] Active.",
-            f"Global atoms: {', '.join(global_atoms) if global_atoms else 'none'}.",
+            f"Global atoms: {', '.join(g_names) if g_names else 'none'}.",
         ]
-        if project_atoms:
-            lines.append(f"Project atoms: {', '.join(project_atoms)}.")
+        if p_names:
+            lines.append(f"Project atoms: {', '.join(p_names)}.")
         lines.append("I will track file modifications and remind you to sync before ending.")
 
     write_state(session_id, state)
@@ -255,24 +330,74 @@ def handle_user_prompt_submit(
         output_nothing()
         return
 
-    # Fast path: nothing pending
+    prompt = input_data.get("prompt", "")
+    lines: List[str] = []
+
+    # ─── Phase 1: Atom auto-injection (Trigger matching) ─────────────
+    atom_index = state.get("atom_index", {})
+    already_injected = state.get("injected_atoms", [])
+    budget = compute_token_budget(prompt)
+
+    # Collect all atoms from both layers
+    # rel_path is relative to the PARENT of memory dir (e.g. ~/.claude/ or ~/.claude/projects/slug/)
+    all_atoms: List[Tuple[AtomEntry, Path]] = []
+    for entry in atom_index.get("global", []):
+        name, rel_path, triggers = entry
+        all_atoms.append(((name, rel_path, triggers), MEMORY_DIR.parent))
+    proj_dir_str = atom_index.get("project_memory_dir", "")
+    if proj_dir_str:
+        proj_parent = Path(proj_dir_str).parent  # projects/slug/memory → projects/slug/
+        for entry in atom_index.get("project", []):
+            name, rel_path, triggers = entry
+            all_atoms.append(((name, rel_path, triggers), proj_parent))
+
+    # Match prompt against triggers
+    matched_with_dir: List[Tuple[AtomEntry, Path]] = []
+    prompt_lower = prompt.lower()
+    for (name, rel_path, triggers), base_dir in all_atoms:
+        if name not in already_injected and any(kw in prompt_lower for kw in triggers):
+            matched_with_dir.append(((name, rel_path, triggers), base_dir))
+
+    # Load atoms within budget
+    if matched_with_dir:
+        atom_lines: List[str] = []
+        newly_injected: List[str] = []
+        used_bytes = 0
+
+        for (name, rel_path, triggers), base_dir in matched_with_dir:
+            atom_path = (base_dir / rel_path) if rel_path else (base_dir / "memory" / f"{name}.md")
+            if not atom_path.exists():
+                continue
+            try:
+                content = atom_path.read_text(encoding="utf-8-sig")
+            except (OSError, UnicodeDecodeError):
+                continue
+
+            content_bytes = len(content.encode("utf-8"))
+            if used_bytes + content_bytes <= budget:
+                atom_lines.append(f"[Atom:{name}]\n{content}")
+                newly_injected.append(name)
+                used_bytes += content_bytes
+            else:
+                # Over budget: summary only
+                first_line = content.split("\n", 1)[0].strip("# ").strip()
+                display_path = rel_path or f"{name}.md"
+                atom_lines.append(f"[Atom:{name}] {first_line} (full: Read {display_path})")
+                newly_injected.append(name)
+                break
+
+        if atom_lines:
+            lines.append("[Guardian:Memory] Trigger-matched atoms loaded:")
+            lines.extend(atom_lines)
+            state["injected_atoms"] = already_injected + newly_injected
+
+    # ─── Phase 2: Sync reminders (existing logic) ────────────────────
     mod_count = len(state.get("modified_files", []))
     kq_count = len(state.get("knowledge_queue", []))
-    if mod_count == 0 and kq_count == 0:
-        output_nothing()
-        return
-
-    prompt = input_data.get("prompt", "")
-    remind_after = config.get("remind_after_turns", 3)
     sync_kw = config.get("sync_keywords", [])
-    remind_count = state.get("remind_count", 0)
-
-    # Check if user is asking for sync
     prompt_has_sync = any(kw in prompt for kw in sync_kw)
 
-    lines = []
-    if prompt_has_sync:
-        # Full status dump
+    if prompt_has_sync and (mod_count > 0 or kq_count > 0):
         lines.append(f"[Guardian] Sync context: {mod_count} files modified, {kq_count} knowledge items pending.")
         if mod_count > 0:
             files = list({m["path"] for m in state["modified_files"]})
@@ -280,28 +405,21 @@ def handle_user_prompt_submit(
         if kq_count > 0:
             for q in state["knowledge_queue"]:
                 lines.append(f"  - {q.get('classification', '[臨]')} {q['content'][:60]}")
-    elif remind_count < remind_after:
-        # Increment remind count but don't inject yet
-        state["remind_count"] = remind_count + 1
-        write_state(session_id, state)
-        output_nothing()
-        return
-    else:
-        # Check max_reminders cap to avoid infinite nagging
-        max_reminders = config.get("max_reminders", 3)
-        total_reminds = state.get("total_reminds", 0)
-        if total_reminds >= max_reminders:
-            # Already reminded enough times this session; go silent
-            write_state(session_id, state)
-            output_nothing()
-            return
-        # Time to remind
-        lines.append(
-            f"[Guardian] Reminder: {mod_count} files modified, {kq_count} knowledge items pending. "
-            "Consider syncing when current task completes."
-        )
-        state["remind_count"] = 0  # reset cycle counter
-        state["total_reminds"] = total_reminds + 1  # increment lifetime counter
+    elif mod_count > 0 or kq_count > 0:
+        remind_after = config.get("remind_after_turns", 3)
+        remind_count = state.get("remind_count", 0)
+        if remind_count < remind_after:
+            state["remind_count"] = remind_count + 1
+        else:
+            max_reminders = config.get("max_reminders", 3)
+            total_reminds = state.get("total_reminds", 0)
+            if total_reminds < max_reminders:
+                lines.append(
+                    f"[Guardian] Reminder: {mod_count} files modified, {kq_count} knowledge items pending. "
+                    "Consider syncing when current task completes."
+                )
+                state["remind_count"] = 0
+                state["total_reminds"] = total_reminds + 1
 
     write_state(session_id, state)
 
