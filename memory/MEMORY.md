@@ -18,6 +18,6 @@
 - [固] 輕量極簡，反對過度工程
 - [固] 高可讀性：一個檔案看完相關邏輯
 - [固] 框架層應薄，開發者要能理解底層
-- [固] MCP 可用: playwright, openclaw-notify, workflow-guardian, computer-use（browser-use 需付費 API key，暫不啟用）
+- [固] MCP 可用: playwright, openclaw-notify, workflow-guardian, computer-use（Node 22 LTS）
 - [固] MCP 自寫 server 必須用 JSONL 格式 + protocolVersion 2025-11-25
 - [固] Workflow Guardian: hooks 驅動工作流監督 + Dashboard @ localhost:3848

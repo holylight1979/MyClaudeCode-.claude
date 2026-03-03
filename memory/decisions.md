@@ -10,8 +10,9 @@
 
 - [固] 版控同步支援 Git 和 SVN，自動偵測 .git/ 或 .svn/
 - [固] MCP servers 實際可用: playwright, openclaw-notify, workflow-guardian, computer-use
-- [固] computer-use 正確套件名: `computer-use-mcp`（社群維護），非 `@anthropic-ai/computer-use`（不存在）
-- [固] browser-use 需付費 API key（browser-use.com），暫不啟用；Playwright 已覆蓋瀏覽器自動化
+- [固] computer-use 正確套件名: `computer-use-mcp`（社群維護），需 Node 22 LTS 執行（jimp ESM 在 Node 24 上壞掉）
+- [固] Node 22 LTS 可攜版安裝在 `~/.claude/tools/node22/node-v22.14.0-win-x64/`，專給 computer-use-mcp 使用
+- [固] browser-use 已從 .claude.json 移除（需付費 API key），Playwright 已覆蓋瀏覽器自動化
 - [固] OpenClaw 的 atoms/ 目錄僅歸屬 OpenClaw，不作為 Claude Code 全域 atom 來源
 - [固] Workflow Guardian：hooks 事件驅動的工作流監督系統，自動追蹤修改、Stop 閘門阻止未同步結束、Atom Last-used 自動刷新
 - [固] session ID 支援 prefix match（截短 8 碼即可操作 workflow_signal 等工具）

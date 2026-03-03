@@ -26,6 +26,9 @@ stats-cache.json
 workflow/state-*.json
 workflow/guardian-crash.log
 
+# ─── Node.js runtimes (portable, not tracked) ────────────
+tools/node22/
+
 # ─── Python cache ────────────────────────────────────────
 __pycache__/
 *.pyc
