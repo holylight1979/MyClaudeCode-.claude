@@ -98,6 +98,20 @@ Session 啟動
 - 4 個 MCP tools：`workflow_status`, `workflow_signal`, `memory_queue_add`, `memory_queue_flush`
 - HTTP Dashboard @ `http://127.0.0.1:3848`
 - 生命週期綁定 Claude Code（不獨立常駐）
+- **多實例 Dashboard**：port probe + 15 秒 heartbeat recovery，確保存活的 MCP instance 自動接管 port
+
+#### ⚠ MCP 傳輸格式（重要踩坑）
+
+Claude Code v2.x 的 MCP stdio 傳輸格式是 **換行分隔 JSON（JSONL）**：
+
+```
+接收: {"method":"initialize",...}\n
+回應: {"jsonrpc":"2.0","id":0,"result":{...}}\n
+```
+
+**不是** LSP 風格的 Content-Length header 格式（`Content-Length: NNN\r\n\r\n{...}`）。自行開發 MCP server 時必須使用 JSONL，否則 Claude Code 會等 30 秒超時後標記 failed 並強制終止 process。
+
+對應的 protocolVersion 為 `2025-11-25`。
 
 #### 3. 可調參數 (`workflow/config.json`)
 

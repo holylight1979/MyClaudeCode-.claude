@@ -24,6 +24,11 @@ stats-cache.json
 # ─── Workflow Guardian runtime state ─────────────────────
 # config.json IS tracked; state files are not
 workflow/state-*.json
+workflow/guardian-crash.log
+
+# ─── Python cache ────────────────────────────────────────
+__pycache__/
+*.pyc
 
 # ─── OS / Editor ─────────────────────────────────────────
 .DS_Store

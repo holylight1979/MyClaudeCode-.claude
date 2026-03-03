@@ -11,10 +11,31 @@ const fs = require("fs");
 const path = require("path");
 const http = require("http");
 
-// ─── Config ─────────────────────────────────────────────────────────────────
+// ─── Crash protection & logging ─────────────────────────────────────────────
 
 const CLAUDE_DIR = path.join(require("os").homedir(), ".claude");
 const WORKFLOW_DIR = path.join(CLAUDE_DIR, "workflow");
+const CRASH_LOG = path.join(WORKFLOW_DIR, "guardian-crash.log");
+
+function crashLog(label, err) {
+  const ts = new Date().toISOString();
+  const msg = `[${ts}] ${label}: ${err?.stack || err}\n`;
+  try { fs.appendFileSync(CRASH_LOG, msg); } catch {}
+  process.stderr.write(`[workflow-guardian] ${label}: ${err?.message || err}\n`);
+}
+
+process.on("uncaughtException", (err) => {
+  crashLog("UncaughtException", err);
+});
+process.on("unhandledRejection", (reason) => {
+  crashLog("UnhandledRejection", reason);
+});
+process.on("SIGTERM", () => {
+  crashLog("SIGTERM", "Process received SIGTERM");
+});
+process.on("SIGINT", () => {
+  crashLog("SIGINT", "Process received SIGINT");
+});
 const CONFIG_PATH = path.join(WORKFLOW_DIR, "config.json");
 const DASHBOARD_PORT = loadConfig().dashboard_port || 3848;
 
@@ -126,44 +147,39 @@ process.stdin.on("data", (chunk) => {
 });
 
 function processBuffer() {
-  while (true) {
-    const headerEnd = buffer.indexOf("\r\n\r\n");
-    if (headerEnd === -1) break;
-
-    const header = buffer.slice(0, headerEnd);
-    const contentLengthMatch = header.match(/Content-Length:\s*(\d+)/i);
-    if (!contentLengthMatch) {
-      buffer = buffer.slice(headerEnd + 4);
-      continue;
-    }
-
-    const contentLength = parseInt(contentLengthMatch[1], 10);
-    const bodyStart = headerEnd + 4;
-    const bodyEnd = bodyStart + contentLength;
-
-    if (buffer.length < bodyEnd) break;
-
-    const body = buffer.slice(bodyStart, bodyEnd);
-    buffer = buffer.slice(bodyEnd);
-
+  // Newline-delimited JSON (Claude Code 2.x transport format)
+  let line;
+  while ((line = extractLine()) !== null) {
+    if (!line.trim()) continue;
     try {
-      handleMessage(JSON.parse(body));
-    } catch {
+      const parsed = JSON.parse(line);
+      handleMessage(parsed);
+    } catch (err) {
+      crashLog("PARSE_ERROR", err);
       sendError(null, -32700, "Parse error");
     }
   }
 }
 
+function extractLine() {
+  // Try newline-delimited first (what Claude Code actually sends)
+  const nlIdx = buffer.indexOf("\n");
+  if (nlIdx !== -1) {
+    const line = buffer.slice(0, nlIdx);
+    buffer = buffer.slice(nlIdx + 1);
+    return line;
+  }
+  return null;
+}
+
 function sendResponse(id, result) {
   const msg = JSON.stringify({ jsonrpc: "2.0", id, result });
-  const header = `Content-Length: ${Buffer.byteLength(msg)}\r\n\r\n`;
-  process.stdout.write(header + msg);
+  process.stdout.write(msg + "\n");
 }
 
 function sendError(id, code, message) {
   const msg = JSON.stringify({ jsonrpc: "2.0", id, error: { code, message } });
-  const header = `Content-Length: ${Buffer.byteLength(msg)}\r\n\r\n`;
-  process.stdout.write(header + msg);
+  process.stdout.write(msg + "\n");
 }
 
 // ─── MCP Message Handler ────────────────────────────────────────────────────
@@ -174,7 +190,7 @@ function handleMessage(msg) {
   switch (method) {
     case "initialize":
       sendResponse(id, {
-        protocolVersion: "2024-11-05",
+        protocolVersion: "2025-11-25",
         capabilities: { tools: { listChanged: false } },
         serverInfo: { name: "workflow-guardian", version: "1.0.0" },
       });
@@ -678,25 +694,58 @@ const httpServer = http.createServer((req, res) => {
   res.end("Not found");
 });
 
-// Start HTTP dashboard — probe first, only bind if no existing instance
-const probe = http.request(
-  { hostname: "127.0.0.1", port: DASHBOARD_PORT, path: "/", method: "HEAD", timeout: 500 },
-  () => {
-    // Got response → another instance already serves the dashboard
-    process.stderr.write(`[workflow-guardian] Dashboard already running on :${DASHBOARD_PORT}, skipping.\n`);
-    probe.destroy();
-  }
-);
-probe.on("error", () => {
-  // Connection refused → port is free, bind it
-  httpServer.listen(DASHBOARD_PORT, "127.0.0.1", () => {
-    process.stderr.write(`[workflow-guardian] Dashboard: http://127.0.0.1:${DASHBOARD_PORT}\n`);
+// ─── Dashboard port binding with recovery heartbeat ─────────────────────────
+// When multiple Claude Code instances exist, only one binds port 3848.
+// If that instance dies, a surviving instance must reclaim the port.
+const HEARTBEAT_INTERVAL_MS = 15000;
+let dashboardHeartbeat = null;
+
+function tryBindDashboard() {
+  if (httpServer.listening) return;
+
+  const probe = http.request(
+    { hostname: "127.0.0.1", port: DASHBOARD_PORT, path: "/", method: "HEAD", timeout: 500 },
+    () => {
+      // Port occupied by another instance — keep heartbeat running
+      probe.destroy();
+    }
+  );
+
+  probe.on("error", () => {
+    // Connection refused → port is free, attempt to bind
+    if (httpServer.listening) return;
+    httpServer.listen(DASHBOARD_PORT, "127.0.0.1", () => {
+      process.stderr.write(`[workflow-guardian] Dashboard: http://127.0.0.1:${DASHBOARD_PORT}\n`);
+      if (dashboardHeartbeat) {
+        clearInterval(dashboardHeartbeat);
+        dashboardHeartbeat = null;
+      }
+    });
   });
-  httpServer.on("error", (err) => {
+
+  probe.on("timeout", () => probe.destroy());
+  probe.end();
+}
+
+httpServer.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    process.stderr.write(`[workflow-guardian] Dashboard port ${DASHBOARD_PORT} taken (race), will retry.\n`);
+    if (!dashboardHeartbeat) {
+      dashboardHeartbeat = setInterval(tryBindDashboard, HEARTBEAT_INTERVAL_MS);
+      dashboardHeartbeat.unref();
+    }
+  } else {
     process.stderr.write(`[workflow-guardian] Dashboard failed: ${err.message}\n`);
-  });
+  }
 });
-probe.end();
+
+tryBindDashboard();
+setImmediate(() => {
+  if (!httpServer.listening && !dashboardHeartbeat) {
+    dashboardHeartbeat = setInterval(tryBindDashboard, HEARTBEAT_INTERVAL_MS);
+    dashboardHeartbeat.unref();
+  }
+});
 
 // Keep MCP alive
 process.stdin.resume();

@@ -37,7 +37,20 @@
       "Bash(~/.bashrc)",
       "Bash(source ~/.bashrc)",
       "Bash(npx -y @anthropic-ai/mcp-playwright --help)",
-      "Bash(npx -y @playwright/mcp@latest --help)"
+      "Bash(npx -y @playwright/mcp@latest --help)",
+      "Bash(cmd.exe //C \"taskkill /PID 277528 /F\")",
+      "Bash(while read slug)",
+      "Bash(do echo \"$slug\")",
+      "Bash(done)",
+      "Bash(for pid in 194428 260148 248176 274548)",
+      "Bash(do echo \"=== PID $pid ===\")",
+      "Bash(cmd.exe //C \"wmic process where ProcessId=$pid get CommandLine\")",
+      "Bash(cmd.exe //C \"wmic process where \"\"CommandLine like ''%workflow-guardian%''\"\" get ProcessId,CommandLine\")",
+      "Bash(timeout 3 node \"$HOME/.claude/tools/workflow-guardian-mcp/server.js\")",
+      "Bash(timeout 3 node \"C:/Users/holylight/.claude/tools/workflow-guardian-mcp/server.js\")",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(node -e \":*)",
+      "Bash(node --check \"C:/Users/holylight/.claude/tools/workflow-guardian-mcp/server.js\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\holylight\\.claude",
@@ -45,7 +58,8 @@
       "C:\\OpenClawWorkspace\\atoms",
       "C:\\Users\\holylight\\.claude\\projects\\c--Projects\\memory",
       "C:\\Users\\holylight",
-      "\\tmp"
+      "\\tmp",
+      "C:\\Users\\holylight\\.claude\\workflow"
     ]
   },
   "hooks": {
