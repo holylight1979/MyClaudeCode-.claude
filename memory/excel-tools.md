@@ -3,8 +3,8 @@
 - Scope: global
 - Confidence: [固]
 - Trigger: Excel, xls, xlsx, 讀取, 試算表, spreadsheet, openpyxl, xlrd
-- Last-used: 2026-03-03
-- Confirmations: 1
+- Last-used: 2026-03-04
+- Confirmations: 2
 
 ## 知識
 

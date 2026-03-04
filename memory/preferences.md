@@ -3,7 +3,8 @@
 - Scope: global
 - Confidence: [固]
 - Trigger: 偏好, 風格, 習慣, style, preference, 語言, 回應
-- Last-used: 2026-03-02
+- Last-used: 2026-03-04
+- Confirmations: 1
 
 ## 知識
 
@@ -13,6 +14,7 @@
 - 框架觀: 薄框架，開發者要能理解底層運作
 - 文件: 不主動產生 README/文件，除非明確要求
 - C# 慣例: Handler 禁止 lambda/委派，傳統展開寫法
+- Prompt 輸出: 給使用者複製貼上的 prompt 一律包在 code block 裡
 
 ## 行動
 

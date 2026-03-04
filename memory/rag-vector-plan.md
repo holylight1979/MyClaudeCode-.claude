@@ -4,7 +4,7 @@
 - Confidence: [固]
 - Trigger: RAG, vector, 向量, embedding, 語意, semantic, LanceDB, Ollama, 本地LLM, local LLM, sentence-transformers, qwen3-embedding, bge-m3
 - Last-used: 2026-03-04
-- Confirmations: 6
+- Confirmations: 7
 
 ## 知識
 
