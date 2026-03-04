@@ -4,7 +4,7 @@
 - Confidence: [固]
 - Trigger: RAG, vector, 向量, embedding, 語意, semantic, LanceDB, Ollama, 本地LLM, local LLM, sentence-transformers, qwen3-embedding, bge-m3
 - Last-used: 2026-03-04
-- Confirmations: 4
+- Confirmations: 5
 
 ## 知識
 
@@ -99,9 +99,24 @@ UserPromptSubmit (3s timeout)
 - [固] SPEC v2.1 完整更新：新增 §八 衝突偵測 + §九 Audit Trail
 - 完整計畫：`_AIDocs/AtomicMemory-v2.1-Plan.md`
 
+### v2.1 品質驗證（已完成）
+
+- [固] 50-query 測試集：`~/.claude/tools/eval-ranked-search.py`（10 queries × 5 intents）
+- [固] 覆蓋類型：direct_keyword(27), semantic_only(10), cross_language(8), negative(5)
+- [固] 測試範圍：15 atoms across 3 layers (global + OpenClaw + SGI)
+- [固] **Hybrid 評測結果（keyword 優先 + ranked 補充）**：
+  - R@5 = 0.96（relevant 召回率）
+  - Hit@5 = 0.90（至少一筆相關結果命中率）
+  - MRR = 0.80（首筆相關結果排名倒數）
+- [固] **語意搜尋增量**：semantic-only 類別 R@5 從 0.05 → 0.85（+0.80 delta）
+- [固] P@5 結構上限：avg GT 1.4 atoms / top_k=5 → max ≈ 0.28（改用 R@5/Hit@5/MRR 為主要指標）
+- [固] Intent 分類器準確率：72%（36/50 與人工標註一致）
+- 評測結果 JSON：`~/.claude/memory/_vectordb/eval-results-*.json`
+
 ## 行動
 
 - 系統已實作完畢，日常使用時自動運作
+- 品質評測：`python ~/.claude/tools/eval-ranked-search.py [--top-k 5] [--min-score 0.50]`
 - 修改 atom 後會自動觸發增量索引（PostToolUse hook）
 - 手動全量重建：`python ~/.claude/tools/rag-engine.py index`
 - 手動搜尋：`python ~/.claude/tools/rag-engine.py search "查詢"`
@@ -115,6 +130,7 @@ UserPromptSubmit (3s timeout)
 
 | 日期 | 變更 | 來源 |
 |------|------|------|
+| 2026-03-04 | v2.1 品質驗證完成：50-query 測試集，Hybrid R@5=0.96, Hit@5=0.90, MRR=0.80，語意增量 +0.80 | session 實作 |
 | 2026-03-04 | v2.1 Sprint 3 完成：Type Decay + Supersedes + Log Compaction + Token Budget + Session-end Index + Audit Trail | session 實作 |
 | 2026-03-04 | v2.1 Sprint 2 完成：Intent 分類器 + Ranked Search + Related 載入 + Conflict Detector + Delete Propagation | session 實作 |
 | 2026-03-04 | v2.1 Sprint 1 完成：Schema + Write Gate + Decay --enforce + Confirmations++ | session 實作 |

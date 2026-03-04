@@ -1,0 +1,5676 @@
+{
+  "metadata": {
+    "timestamp": "2026-03-04T14:15:09.688104",
+    "service_url": "http://127.0.0.1:3849",
+    "service_healthy": true,
+    "top_k": 5,
+    "min_score": 0.5,
+    "total_queries": 50
+  },
+  "per_query": [
+    {
+      "id": "D01",
+      "query": "MapServer crash 重入問題怎麼修",
+      "intent_labeled": "debug",
+      "intent_auto": "debug",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "sgi-pitfalls"
+      ],
+      "keyword": {
+        "retrieved": [
+          "oc-pitfalls",
+          "client_main",
+          "sgi-pitfalls"
+        ],
+        "P@5": 0.3333333333333333,
+        "R@5": 1.0,
+        "F1": 0.5,
+        "Hit@5": 1.0,
+        "MRR": 0.3333333333333333
+      },
+      "ranked": {
+        "retrieved": [
+          "sgi-pitfalls",
+          "architecture",
+          "sgi-decisions"
+        ],
+        "detail": [
+          {
+            "uid": "sgi-pitfalls",
+            "final_score": 0.7644,
+            "score": 0.7061,
+            "breakdown": {
+              "final_score": 0.7644,
+              "semantic": 0.7061,
+              "recency": 0.9778,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.7484,
+            "score": 0.6223,
+            "breakdown": {
+              "final_score": 0.7484,
+              "semantic": 0.6223,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "sgi-decisions",
+            "final_score": 0.7323,
+            "score": 0.5867,
+            "breakdown": {
+              "final_score": 0.7323,
+              "semantic": 0.5867,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.3333333333333333,
+        "R@5": 1.0,
+        "F1": 0.5,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "oc-pitfalls",
+          "client_main",
+          "sgi-pitfalls",
+          "architecture",
+          "sgi-decisions"
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 0.3333333333333333
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "D02",
+      "query": "OpenClaw 啟動失敗 npm error",
+      "intent_labeled": "debug",
+      "intent_auto": "debug",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "oc-pitfalls"
+      ],
+      "keyword": {
+        "retrieved": [
+          "oc-pitfalls"
+        ],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "bridge",
+          "oc-decisions",
+          "architecture",
+          "sgi-pitfalls"
+        ],
+        "detail": [
+          {
+            "uid": "bridge",
+            "final_score": 0.7581,
+            "score": 0.7032,
+            "breakdown": {
+              "final_score": 0.7581,
+              "semantic": 0.7032,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "oc-decisions",
+            "final_score": 0.7517,
+            "score": 0.7779,
+            "breakdown": {
+              "final_score": 0.7517,
+              "semantic": 0.7779,
+              "recency": 0.9444,
+              "intent_boost": 0.8,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.7358,
+            "score": 0.6425,
+            "breakdown": {
+              "final_score": 0.7358,
+              "semantic": 0.6425,
+              "recency": 0.9778,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "sgi-pitfalls",
+            "final_score": 0.7092,
+            "score": 0.5353,
+            "breakdown": {
+              "final_score": 0.7092,
+              "semantic": 0.5353,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.0,
+        "R@5": 0.0,
+        "F1": 0.0,
+        "Hit@5": 0.0,
+        "MRR": 0.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "oc-pitfalls",
+          "bridge",
+          "oc-decisions",
+          "architecture",
+          "sgi-pitfalls"
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "D03",
+      "query": "為什麼玩家登入後收到不正確的背包資料",
+      "intent_labeled": "debug",
+      "intent_auto": "debug",
+      "category": "semantic_only",
+      "ground_truth": [
+        "sgi-pitfalls",
+        "architecture"
+      ],
+      "keyword": {
+        "retrieved": [],
+        "P@5": 0.0,
+        "R@5": 0.0,
+        "F1": 0.0,
+        "Hit@5": 0.0,
+        "MRR": 0.0
+      },
+      "ranked": {
+        "retrieved": [
+          "server_services",
+          "client_main",
+          "sgi-pitfalls",
+          "sgi-decisions",
+          "rag-vector-plan"
+        ],
+        "detail": [
+          {
+            "uid": "server_services",
+            "final_score": 0.7214,
+            "score": 0.5957,
+            "breakdown": {
+              "final_score": 0.7214,
+              "semantic": 0.5957,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "client_main",
+            "final_score": 0.7209,
+            "score": 0.5947,
+            "breakdown": {
+              "final_score": 0.7209,
+              "semantic": 0.5947,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "sgi-pitfalls",
+            "final_score": 0.7181,
+            "score": 0.555,
+            "breakdown": {
+              "final_score": 0.7181,
+              "semantic": 0.555,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "sgi-decisions",
+            "final_score": 0.7145,
+            "score": 0.5471,
+            "breakdown": {
+              "final_score": 0.7145,
+              "semantic": 0.5471,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7142,
+            "score": 0.5426,
+            "breakdown": {
+              "final_score": 0.7142,
+              "semantic": 0.5426,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.2,
+        "R@5": 0.5,
+        "F1": 0.28571428571428575,
+        "Hit@5": 1.0,
+        "MRR": 0.3333333333333333
+      },
+      "hybrid": {
+        "retrieved": [
+          "server_services",
+          "client_main",
+          "sgi-pitfalls",
+          "sgi-decisions",
+          "rag-vector-plan"
+        ],
+        "P@5": 0.2,
+        "R@5": 0.5,
+        "F1": 0.28571428571428575,
+        "Hit@5": 1.0,
+        "MRR": 0.3333333333333333
+      },
+      "winner": "RK"
+    },
+    {
+      "id": "D04",
+      "query": "static cache concurrency bug in game server",
+      "intent_labeled": "debug",
+      "intent_auto": "debug",
+      "category": "cross_language",
+      "ground_truth": [
+        "sgi-pitfalls"
+      ],
+      "keyword": {
+        "retrieved": [
+          "sgi-pitfalls"
+        ],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "sgi-pitfalls",
+          "architecture",
+          "sgi-decisions",
+          "client_main"
+        ],
+        "detail": [
+          {
+            "uid": "sgi-pitfalls",
+            "final_score": 0.7307,
+            "score": 0.5831,
+            "breakdown": {
+              "final_score": 0.7307,
+              "semantic": 0.5831,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.7144,
+            "score": 0.5469,
+            "breakdown": {
+              "final_score": 0.7144,
+              "semantic": 0.5469,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "sgi-decisions",
+            "final_score": 0.7035,
+            "score": 0.5226,
+            "breakdown": {
+              "final_score": 0.7035,
+              "semantic": 0.5226,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "client_main",
+            "final_score": 0.7011,
+            "score": 0.5506,
+            "breakdown": {
+              "final_score": 0.7011,
+              "semantic": 0.5506,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.25,
+        "R@5": 1.0,
+        "F1": 0.4,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "sgi-pitfalls",
+          "architecture",
+          "sgi-decisions",
+          "client_main"
+        ],
+        "P@5": 0.25,
+        "R@5": 1.0,
+        "F1": 0.4,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "D05",
+      "query": "Protobuf Handler 壞掉 exception 追不到",
+      "intent_labeled": "debug",
+      "intent_auto": "debug",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "sgi-pitfalls"
+      ],
+      "keyword": {
+        "retrieved": [
+          "sgi-pitfalls"
+        ],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "architecture",
+          "sgi-pitfalls",
+          "todo",
+          "client_il",
+          "sgi-decisions"
+        ],
+        "detail": [
+          {
+            "uid": "architecture",
+            "final_score": 0.7799,
+            "score": 0.6924,
+            "breakdown": {
+              "final_score": 0.7799,
+              "semantic": 0.6924,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "sgi-pitfalls",
+            "final_score": 0.7561,
+            "score": 0.6394,
+            "breakdown": {
+              "final_score": 0.7561,
+              "semantic": 0.6394,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "todo",
+            "final_score": 0.7452,
+            "score": 0.693,
+            "breakdown": {
+              "final_score": 0.7452,
+              "semantic": 0.693,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 0.7,
+              "confirm_score": 0.15,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "client_il",
+            "final_score": 0.7448,
+            "score": 0.6477,
+            "breakdown": {
+              "final_score": 0.7448,
+              "semantic": 0.6477,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "sgi-decisions",
+            "final_score": 0.7368,
+            "score": 0.5967,
+            "breakdown": {
+              "final_score": 0.7368,
+              "semantic": 0.5967,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 0.5
+      },
+      "hybrid": {
+        "retrieved": [
+          "sgi-pitfalls",
+          "architecture",
+          "todo",
+          "client_il",
+          "sgi-decisions"
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "D06",
+      "query": "語意搜尋回傳空結果，向量服務連不上",
+      "intent_labeled": "debug",
+      "intent_auto": "general",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "rag-vector-plan"
+      ],
+      "keyword": {
+        "retrieved": [
+          "rag-vector-plan",
+          "server_services"
+        ],
+        "P@5": 0.5,
+        "R@5": 1.0,
+        "F1": 0.6666666666666666,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "rag-vector-plan",
+          "tooling",
+          "preferences",
+          "oc-decisions",
+          "bridge"
+        ],
+        "detail": [
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.8508,
+            "score": 0.8462,
+            "breakdown": {
+              "final_score": 0.8508,
+              "semantic": 0.8462,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "tooling",
+            "final_score": 0.75,
+            "score": 0.6593,
+            "breakdown": {
+              "final_score": 0.75,
+              "semantic": 0.6593,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "preferences",
+            "final_score": 0.7325,
+            "score": 0.6352,
+            "breakdown": {
+              "final_score": 0.7325,
+              "semantic": 0.6352,
+              "recency": 0.9778,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "preference"
+            }
+          },
+          {
+            "uid": "oc-decisions",
+            "final_score": 0.7314,
+            "score": 0.6438,
+            "breakdown": {
+              "final_score": 0.7314,
+              "semantic": 0.6438,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "bridge",
+            "final_score": 0.7192,
+            "score": 0.6168,
+            "breakdown": {
+              "final_score": 0.7192,
+              "semantic": 0.6168,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "rag-vector-plan",
+          "server_services",
+          "tooling",
+          "preferences",
+          "oc-decisions",
+          "bridge"
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "D07",
+      "query": "MCP server 錯誤 JSONL 格式不對 timeout",
+      "intent_labeled": "debug",
+      "intent_auto": "general",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "decisions",
+        "bridge"
+      ],
+      "keyword": {
+        "retrieved": [
+          "decisions",
+          "oc-pitfalls",
+          "bridge"
+        ],
+        "P@5": 0.6666666666666666,
+        "R@5": 1.0,
+        "F1": 0.8,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "decisions",
+          "rag-vector-plan",
+          "tooling",
+          "bridge",
+          "oc-pitfalls"
+        ],
+        "detail": [
+          {
+            "uid": "decisions",
+            "final_score": 0.8208,
+            "score": 0.7795,
+            "breakdown": {
+              "final_score": 0.8208,
+              "semantic": 0.7795,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7803,
+            "score": 0.6895,
+            "breakdown": {
+              "final_score": 0.7803,
+              "semantic": 0.6895,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "tooling",
+            "final_score": 0.7443,
+            "score": 0.6465,
+            "breakdown": {
+              "final_score": 0.7443,
+              "semantic": 0.6465,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "bridge",
+            "final_score": 0.7376,
+            "score": 0.6576,
+            "breakdown": {
+              "final_score": 0.7376,
+              "semantic": 0.6576,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "oc-pitfalls",
+            "final_score": 0.7141,
+            "score": 0.6053,
+            "breakdown": {
+              "final_score": 0.7141,
+              "semantic": 0.6053,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.4,
+        "R@5": 1.0,
+        "F1": 0.5714285714285715,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "decisions",
+          "oc-pitfalls",
+          "bridge",
+          "rag-vector-plan",
+          "tooling"
+        ],
+        "P@5": 0.4,
+        "R@5": 1.0,
+        "F1": 0.5714285714285715,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "D08",
+      "query": "React component rendering loop infinite re-render",
+      "intent_labeled": "debug",
+      "intent_auto": "general",
+      "category": "negative",
+      "ground_truth": [],
+      "keyword": {
+        "retrieved": [],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [],
+        "detail": [],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "TIE"
+    },
+    {
+      "id": "D09",
+      "query": "遊戲伺服器記憶體洩漏問題排查",
+      "intent_labeled": "debug",
+      "intent_auto": "debug",
+      "category": "semantic_only",
+      "ground_truth": [
+        "sgi-pitfalls",
+        "architecture"
+      ],
+      "keyword": {
+        "retrieved": [
+          "architecture"
+        ],
+        "P@5": 1.0,
+        "R@5": 0.5,
+        "F1": 0.6666666666666666,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "client_il",
+          "sgi-decisions",
+          "sgi-pitfalls",
+          "architecture",
+          "server_services"
+        ],
+        "detail": [
+          {
+            "uid": "client_il",
+            "final_score": 0.7779,
+            "score": 0.7213,
+            "breakdown": {
+              "final_score": 0.7779,
+              "semantic": 0.7213,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "sgi-decisions",
+            "final_score": 0.7706,
+            "score": 0.6716,
+            "breakdown": {
+              "final_score": 0.7706,
+              "semantic": 0.6716,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "sgi-pitfalls",
+            "final_score": 0.7348,
+            "score": 0.5922,
+            "breakdown": {
+              "final_score": 0.7348,
+              "semantic": 0.5922,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.7326,
+            "score": 0.5873,
+            "breakdown": {
+              "final_score": 0.7326,
+              "semantic": 0.5873,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "server_services",
+            "final_score": 0.7169,
+            "score": 0.5856,
+            "breakdown": {
+              "final_score": 0.7169,
+              "semantic": 0.5856,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.4,
+        "R@5": 1.0,
+        "F1": 0.5714285714285715,
+        "Hit@5": 1.0,
+        "MRR": 0.3333333333333333
+      },
+      "hybrid": {
+        "retrieved": [
+          "architecture",
+          "client_il",
+          "sgi-decisions",
+          "sgi-pitfalls",
+          "server_services"
+        ],
+        "P@5": 0.4,
+        "R@5": 1.0,
+        "F1": 0.5714285714285715,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "D10",
+      "query": "guardian hook 沒有觸發 sync 閘門壞了",
+      "intent_labeled": "debug",
+      "intent_auto": "debug",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "decisions"
+      ],
+      "keyword": {
+        "retrieved": [
+          "decisions"
+        ],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "decisions",
+          "rag-vector-plan",
+          "client_il",
+          "architecture",
+          "sgi-pitfalls"
+        ],
+        "detail": [
+          {
+            "uid": "decisions",
+            "final_score": 0.7646,
+            "score": 0.7436,
+            "breakdown": {
+              "final_score": 0.7646,
+              "semantic": 0.7436,
+              "recency": 1.0,
+              "intent_boost": 0.8,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7625,
+            "score": 0.6499,
+            "breakdown": {
+              "final_score": 0.7625,
+              "semantic": 0.6499,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "client_il",
+            "final_score": 0.7419,
+            "score": 0.6412,
+            "breakdown": {
+              "final_score": 0.7419,
+              "semantic": 0.6412,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.7305,
+            "score": 0.5826,
+            "breakdown": {
+              "final_score": 0.7305,
+              "semantic": 0.5826,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "sgi-pitfalls",
+            "final_score": 0.7266,
+            "score": 0.574,
+            "breakdown": {
+              "final_score": 0.7266,
+              "semantic": 0.574,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "decisions",
+          "rag-vector-plan",
+          "client_il",
+          "architecture",
+          "sgi-pitfalls"
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "B01",
+      "query": "SGI server 建置步驟和 deploy 流程",
+      "intent_labeled": "build",
+      "intent_auto": "build",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "architecture"
+      ],
+      "keyword": {
+        "retrieved": [
+          "architecture"
+        ],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "architecture",
+          "tooling",
+          "decisions",
+          "rag-vector-plan"
+        ],
+        "detail": [
+          {
+            "uid": "architecture",
+            "final_score": 0.776,
+            "score": 0.6837,
+            "breakdown": {
+              "final_score": 0.776,
+              "semantic": 0.6837,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "tooling",
+            "final_score": 0.7485,
+            "score": 0.6559,
+            "breakdown": {
+              "final_score": 0.7485,
+              "semantic": 0.6559,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "decisions",
+            "final_score": 0.7383,
+            "score": 0.5962,
+            "breakdown": {
+              "final_score": 0.7383,
+              "semantic": 0.5962,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7378,
+            "score": 0.5952,
+            "breakdown": {
+              "final_score": 0.7378,
+              "semantic": 0.5952,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.25,
+        "R@5": 1.0,
+        "F1": 0.4,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "architecture",
+          "tooling",
+          "decisions",
+          "rag-vector-plan"
+        ],
+        "P@5": 0.25,
+        "R@5": 1.0,
+        "F1": 0.4,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "B02",
+      "query": "新機器怎麼安裝 Ollama 環境和 config 設定",
+      "intent_labeled": "build",
+      "intent_auto": "build",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "rag-vector-plan",
+        "decisions"
+      ],
+      "keyword": {
+        "retrieved": [
+          "decisions",
+          "rag-vector-plan",
+          "oc-decisions"
+        ],
+        "P@5": 0.6666666666666666,
+        "R@5": 1.0,
+        "F1": 0.8,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "rag-vector-plan",
+          "decisions",
+          "bridge",
+          "oc-decisions",
+          "architecture"
+        ],
+        "detail": [
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.8197,
+            "score": 0.777,
+            "breakdown": {
+              "final_score": 0.8197,
+              "semantic": 0.777,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "decisions",
+            "final_score": 0.7454,
+            "score": 0.6121,
+            "breakdown": {
+              "final_score": 0.7454,
+              "semantic": 0.6121,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "bridge",
+            "final_score": 0.7179,
+            "score": 0.6138,
+            "breakdown": {
+              "final_score": 0.7179,
+              "semantic": 0.6138,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "oc-decisions",
+            "final_score": 0.715,
+            "score": 0.6073,
+            "breakdown": {
+              "final_score": 0.715,
+              "semantic": 0.6073,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.6951,
+            "score": 0.5521,
+            "breakdown": {
+              "final_score": 0.6951,
+              "semantic": 0.5521,
+              "recency": 0.9778,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.4,
+        "R@5": 1.0,
+        "F1": 0.5714285714285715,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "decisions",
+          "rag-vector-plan",
+          "oc-decisions",
+          "bridge",
+          "architecture"
+        ],
+        "P@5": 0.4,
+        "R@5": 1.0,
+        "F1": 0.5714285714285715,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "B03",
+      "query": "怎麼讀 .xlsx 試算表 需要裝什麼套件",
+      "intent_labeled": "build",
+      "intent_auto": "general",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "excel-tools"
+      ],
+      "keyword": {
+        "retrieved": [
+          "excel-tools"
+        ],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "tooling",
+          "excel-tools",
+          "architecture",
+          "sgi-decisions",
+          "preferences"
+        ],
+        "detail": [
+          {
+            "uid": "tooling",
+            "final_score": 0.7776,
+            "score": 0.7206,
+            "breakdown": {
+              "final_score": 0.7776,
+              "semantic": 0.7206,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "excel-tools",
+            "final_score": 0.7732,
+            "score": 0.7108,
+            "breakdown": {
+              "final_score": 0.7732,
+              "semantic": 0.7108,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.7217,
+            "score": 0.5631,
+            "breakdown": {
+              "final_score": 0.7217,
+              "semantic": 0.5631,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "sgi-decisions",
+            "final_score": 0.7138,
+            "score": 0.5454,
+            "breakdown": {
+              "final_score": 0.7138,
+              "semantic": 0.5454,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "preferences",
+            "final_score": 0.7041,
+            "score": 0.572,
+            "breakdown": {
+              "final_score": 0.7041,
+              "semantic": 0.572,
+              "recency": 0.9778,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "preference"
+            }
+          }
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 0.5
+      },
+      "hybrid": {
+        "retrieved": [
+          "excel-tools",
+          "tooling",
+          "architecture",
+          "sgi-decisions",
+          "preferences"
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "B04",
+      "query": "how to compile and run the .NET Core game server project",
+      "intent_labeled": "build",
+      "intent_auto": "general",
+      "category": "cross_language",
+      "ground_truth": [
+        "architecture"
+      ],
+      "keyword": {
+        "retrieved": [
+          "client_il"
+        ],
+        "P@5": 0.0,
+        "R@5": 0.0,
+        "F1": 0.0,
+        "Hit@5": 0.0,
+        "MRR": 0.0
+      },
+      "ranked": {
+        "retrieved": [
+          "architecture",
+          "client_main",
+          "sgi-pitfalls",
+          "tooling"
+        ],
+        "detail": [
+          {
+            "uid": "architecture",
+            "final_score": 0.7731,
+            "score": 0.7254,
+            "breakdown": {
+              "final_score": 0.7731,
+              "semantic": 0.7254,
+              "recency": 0.9778,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "client_main",
+            "final_score": 0.7129,
+            "score": 0.5768,
+            "breakdown": {
+              "final_score": 0.7129,
+              "semantic": 0.5768,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "sgi-pitfalls",
+            "final_score": 0.7046,
+            "score": 0.525,
+            "breakdown": {
+              "final_score": 0.7046,
+              "semantic": 0.525,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "tooling",
+            "final_score": 0.6908,
+            "score": 0.5278,
+            "breakdown": {
+              "final_score": 0.6908,
+              "semantic": 0.5278,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.25,
+        "R@5": 1.0,
+        "F1": 0.4,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "client_il",
+          "architecture",
+          "client_main",
+          "sgi-pitfalls",
+          "tooling"
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 0.5
+      },
+      "winner": "RK"
+    },
+    {
+      "id": "B05",
+      "query": "install OpenClaw 安裝步驟和 npm 設定",
+      "intent_labeled": "build",
+      "intent_auto": "build",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "oc-decisions"
+      ],
+      "keyword": {
+        "retrieved": [
+          "decisions",
+          "oc-decisions"
+        ],
+        "P@5": 0.5,
+        "R@5": 1.0,
+        "F1": 0.6666666666666666,
+        "Hit@5": 1.0,
+        "MRR": 0.5
+      },
+      "ranked": {
+        "retrieved": [
+          "oc-decisions",
+          "bridge",
+          "decisions",
+          "rag-vector-plan",
+          "tooling"
+        ],
+        "detail": [
+          {
+            "uid": "oc-decisions",
+            "final_score": 0.8103,
+            "score": 0.8191,
+            "breakdown": {
+              "final_score": 0.8103,
+              "semantic": 0.8191,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "bridge",
+            "final_score": 0.7533,
+            "score": 0.6925,
+            "breakdown": {
+              "final_score": 0.7533,
+              "semantic": 0.6925,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "decisions",
+            "final_score": 0.7479,
+            "score": 0.6176,
+            "breakdown": {
+              "final_score": 0.7479,
+              "semantic": 0.6176,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7187,
+            "score": 0.5527,
+            "breakdown": {
+              "final_score": 0.7187,
+              "semantic": 0.5527,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "tooling",
+            "final_score": 0.6866,
+            "score": 0.5184,
+            "breakdown": {
+              "final_score": 0.6866,
+              "semantic": 0.5184,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "decisions",
+          "oc-decisions",
+          "bridge",
+          "rag-vector-plan",
+          "tooling"
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 0.5
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "B06",
+      "query": "LanceDB vector embedding 索引怎麼建",
+      "intent_labeled": "build",
+      "intent_auto": "general",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "rag-vector-plan"
+      ],
+      "keyword": {
+        "retrieved": [
+          "rag-vector-plan"
+        ],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "rag-vector-plan",
+          "architecture",
+          "tooling",
+          "bridge"
+        ],
+        "detail": [
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.806,
+            "score": 0.7467,
+            "breakdown": {
+              "final_score": 0.806,
+              "semantic": 0.7467,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.7368,
+            "score": 0.5967,
+            "breakdown": {
+              "final_score": 0.7368,
+              "semantic": 0.5967,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "tooling",
+            "final_score": 0.7202,
+            "score": 0.5931,
+            "breakdown": {
+              "final_score": 0.7202,
+              "semantic": 0.5931,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "bridge",
+            "final_score": 0.7033,
+            "score": 0.5813,
+            "breakdown": {
+              "final_score": 0.7033,
+              "semantic": 0.5813,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.25,
+        "R@5": 1.0,
+        "F1": 0.4,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "rag-vector-plan",
+          "architecture",
+          "tooling",
+          "bridge"
+        ],
+        "P@5": 0.25,
+        "R@5": 1.0,
+        "F1": 0.4,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "B07",
+      "query": "各服務的 port 號碼和啟動順序",
+      "intent_labeled": "build",
+      "intent_auto": "build",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "architecture",
+        "server_services"
+      ],
+      "keyword": {
+        "retrieved": [
+          "architecture",
+          "server_services"
+        ],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "architecture",
+          "bridge",
+          "server_services",
+          "rag-vector-plan",
+          "oc-decisions"
+        ],
+        "detail": [
+          {
+            "uid": "architecture",
+            "final_score": 0.7382,
+            "score": 0.5998,
+            "breakdown": {
+              "final_score": 0.7382,
+              "semantic": 0.5998,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "bridge",
+            "final_score": 0.7323,
+            "score": 0.6458,
+            "breakdown": {
+              "final_score": 0.7323,
+              "semantic": 0.6458,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "server_services",
+            "final_score": 0.7313,
+            "score": 0.6178,
+            "breakdown": {
+              "final_score": 0.7313,
+              "semantic": 0.6178,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7304,
+            "score": 0.5787,
+            "breakdown": {
+              "final_score": 0.7304,
+              "semantic": 0.5787,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "oc-decisions",
+            "final_score": 0.7226,
+            "score": 0.6243,
+            "breakdown": {
+              "final_score": 0.7226,
+              "semantic": 0.6243,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "decision"
+            }
+          }
+        ],
+        "P@5": 0.4,
+        "R@5": 1.0,
+        "F1": 0.5714285714285715,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "architecture",
+          "server_services",
+          "bridge",
+          "rag-vector-plan",
+          "oc-decisions"
+        ],
+        "P@5": 0.4,
+        "R@5": 1.0,
+        "F1": 0.5714285714285715,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "B08",
+      "query": "Kubernetes cluster 要怎麼配置 pod auto-scaling",
+      "intent_labeled": "build",
+      "intent_auto": "build",
+      "category": "negative",
+      "ground_truth": [],
+      "keyword": {
+        "retrieved": [],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "rag-vector-plan",
+          "decisions",
+          "oc-decisions",
+          "architecture",
+          "tooling"
+        ],
+        "detail": [
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7176,
+            "score": 0.5502,
+            "breakdown": {
+              "final_score": 0.7176,
+              "semantic": 0.5502,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "decisions",
+            "final_score": 0.7048,
+            "score": 0.5217,
+            "breakdown": {
+              "final_score": 0.7048,
+              "semantic": 0.5217,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "oc-decisions",
+            "final_score": 0.6983,
+            "score": 0.5704,
+            "breakdown": {
+              "final_score": 0.6983,
+              "semantic": 0.5704,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.6961,
+            "score": 0.5062,
+            "breakdown": {
+              "final_score": 0.6961,
+              "semantic": 0.5062,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "tooling",
+            "final_score": 0.6856,
+            "score": 0.5161,
+            "breakdown": {
+              "final_score": 0.6856,
+              "semantic": 0.5161,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.0,
+        "R@5": 1.0,
+        "F1": 0.0,
+        "Hit@5": 0.0,
+        "MRR": 0.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "rag-vector-plan",
+          "decisions",
+          "oc-decisions",
+          "architecture",
+          "tooling"
+        ],
+        "P@5": 0.0,
+        "R@5": 1.0,
+        "F1": 0.0,
+        "Hit@5": 0.0,
+        "MRR": 0.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "B09",
+      "query": "企劃表轉換產檔流程 ExcelToData",
+      "intent_labeled": "build",
+      "intent_auto": "general",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "tooling"
+      ],
+      "keyword": {
+        "retrieved": [
+          "excel-tools",
+          "tooling"
+        ],
+        "P@5": 0.5,
+        "R@5": 1.0,
+        "F1": 0.6666666666666666,
+        "Hit@5": 1.0,
+        "MRR": 0.5
+      },
+      "ranked": {
+        "retrieved": [
+          "tooling",
+          "excel-tools",
+          "rag-vector-plan",
+          "bridge",
+          "architecture"
+        ],
+        "detail": [
+          {
+            "uid": "tooling",
+            "final_score": 0.8147,
+            "score": 0.8031,
+            "breakdown": {
+              "final_score": 0.8147,
+              "semantic": 0.8031,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "excel-tools",
+            "final_score": 0.7838,
+            "score": 0.7343,
+            "breakdown": {
+              "final_score": 0.7838,
+              "semantic": 0.7343,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7669,
+            "score": 0.6598,
+            "breakdown": {
+              "final_score": 0.7669,
+              "semantic": 0.6598,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "bridge",
+            "final_score": 0.7374,
+            "score": 0.6571,
+            "breakdown": {
+              "final_score": 0.7374,
+              "semantic": 0.6571,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.7089,
+            "score": 0.5828,
+            "breakdown": {
+              "final_score": 0.7089,
+              "semantic": 0.5828,
+              "recency": 0.9778,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "excel-tools",
+          "tooling",
+          "rag-vector-plan",
+          "bridge",
+          "architecture"
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 0.5
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "B10",
+      "query": "setup custom MCP server with JSONL protocol transport",
+      "intent_labeled": "build",
+      "intent_auto": "build",
+      "category": "cross_language",
+      "ground_truth": [
+        "decisions"
+      ],
+      "keyword": {
+        "retrieved": [
+          "decisions",
+          "bridge",
+          "architecture"
+        ],
+        "P@5": 0.3333333333333333,
+        "R@5": 1.0,
+        "F1": 0.5,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "decisions",
+          "bridge",
+          "architecture"
+        ],
+        "detail": [
+          {
+            "uid": "decisions",
+            "final_score": 0.7924,
+            "score": 0.7165,
+            "breakdown": {
+              "final_score": 0.7924,
+              "semantic": 0.7165,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "bridge",
+            "final_score": 0.737,
+            "score": 0.6563,
+            "breakdown": {
+              "final_score": 0.737,
+              "semantic": 0.6563,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.6955,
+            "score": 0.5049,
+            "breakdown": {
+              "final_score": 0.6955,
+              "semantic": 0.5049,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.3333333333333333,
+        "R@5": 1.0,
+        "F1": 0.5,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "decisions",
+          "bridge",
+          "architecture"
+        ],
+        "P@5": 0.3333333333333333,
+        "R@5": 1.0,
+        "F1": 0.5,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "TIE"
+    },
+    {
+      "id": "E01",
+      "query": "SGI 架構設計 微服務之間怎麼溝通",
+      "intent_labeled": "design",
+      "intent_auto": "design",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "architecture",
+        "server_services"
+      ],
+      "keyword": {
+        "retrieved": [
+          "architecture",
+          "server_services"
+        ],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "decisions",
+          "architecture",
+          "tooling",
+          "rag-vector-plan",
+          "client_main"
+        ],
+        "detail": [
+          {
+            "uid": "decisions",
+            "final_score": 0.793,
+            "score": 0.5845,
+            "breakdown": {
+              "final_score": 0.793,
+              "semantic": 0.5845,
+              "recency": 1.0,
+              "intent_boost": 1.3,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.743,
+            "score": 0.6104,
+            "breakdown": {
+              "final_score": 0.743,
+              "semantic": 0.6104,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "tooling",
+            "final_score": 0.7391,
+            "score": 0.635,
+            "breakdown": {
+              "final_score": 0.7391,
+              "semantic": 0.635,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7316,
+            "score": 0.5814,
+            "breakdown": {
+              "final_score": 0.7316,
+              "semantic": 0.5814,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "client_main",
+            "final_score": 0.7124,
+            "score": 0.5756,
+            "breakdown": {
+              "final_score": 0.7124,
+              "semantic": 0.5756,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.2,
+        "R@5": 0.5,
+        "F1": 0.28571428571428575,
+        "Hit@5": 1.0,
+        "MRR": 0.5
+      },
+      "hybrid": {
+        "retrieved": [
+          "architecture",
+          "server_services",
+          "decisions",
+          "tooling",
+          "rag-vector-plan",
+          "client_main"
+        ],
+        "P@5": 0.4,
+        "R@5": 1.0,
+        "F1": 0.5714285714285715,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "E02",
+      "query": "原子記憶系統的 hybrid search 怎麼設計的",
+      "intent_labeled": "design",
+      "intent_auto": "design",
+      "category": "semantic_only",
+      "ground_truth": [
+        "rag-vector-plan"
+      ],
+      "keyword": {
+        "retrieved": [],
+        "P@5": 0.0,
+        "R@5": 0.0,
+        "F1": 0.0,
+        "Hit@5": 0.0,
+        "MRR": 0.0
+      },
+      "ranked": {
+        "retrieved": [
+          "rag-vector-plan",
+          "oc-decisions",
+          "oc-pitfalls",
+          "architecture",
+          "tooling"
+        ],
+        "detail": [
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.8019,
+            "score": 0.7376,
+            "breakdown": {
+              "final_score": 0.8019,
+              "semantic": 0.7376,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "oc-decisions",
+            "final_score": 0.774,
+            "score": 0.6052,
+            "breakdown": {
+              "final_score": 0.774,
+              "semantic": 0.6052,
+              "recency": 0.9444,
+              "intent_boost": 1.3,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "oc-pitfalls",
+            "final_score": 0.7316,
+            "score": 0.6443,
+            "breakdown": {
+              "final_score": 0.7316,
+              "semantic": 0.6443,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.7305,
+            "score": 0.5825,
+            "breakdown": {
+              "final_score": 0.7305,
+              "semantic": 0.5825,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "tooling",
+            "final_score": 0.7141,
+            "score": 0.5795,
+            "breakdown": {
+              "final_score": 0.7141,
+              "semantic": 0.5795,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "rag-vector-plan",
+          "oc-decisions",
+          "oc-pitfalls",
+          "architecture",
+          "tooling"
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "RK"
+    },
+    {
+      "id": "E03",
+      "query": "之前的重構簡化決策 過度工程判斷標準",
+      "intent_labeled": "design",
+      "intent_auto": "recall",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "sgi-decisions",
+        "preferences"
+      ],
+      "keyword": {
+        "retrieved": [
+          "sgi-decisions"
+        ],
+        "P@5": 1.0,
+        "R@5": 0.5,
+        "F1": 0.6666666666666666,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "oc-decisions",
+          "sgi-decisions",
+          "architecture",
+          "preferences",
+          "rag-vector-plan"
+        ],
+        "detail": [
+          {
+            "uid": "oc-decisions",
+            "final_score": 0.8064,
+            "score": 0.5884,
+            "breakdown": {
+              "final_score": 0.8064,
+              "semantic": 0.5884,
+              "recency": 0.9444,
+              "intent_boost": 1.5,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "sgi-decisions",
+            "final_score": 0.79,
+            "score": 0.7149,
+            "breakdown": {
+              "final_score": 0.79,
+              "semantic": 0.7149,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.7514,
+            "score": 0.629,
+            "breakdown": {
+              "final_score": 0.7514,
+              "semantic": 0.629,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "preferences",
+            "final_score": 0.7403,
+            "score": 0.6526,
+            "breakdown": {
+              "final_score": 0.7403,
+              "semantic": 0.6526,
+              "recency": 0.9778,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "preference"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7304,
+            "score": 0.5786,
+            "breakdown": {
+              "final_score": 0.7304,
+              "semantic": 0.5786,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.4,
+        "R@5": 1.0,
+        "F1": 0.5714285714285715,
+        "Hit@5": 1.0,
+        "MRR": 0.5
+      },
+      "hybrid": {
+        "retrieved": [
+          "sgi-decisions",
+          "oc-decisions",
+          "architecture",
+          "preferences",
+          "rag-vector-plan"
+        ],
+        "P@5": 0.4,
+        "R@5": 1.0,
+        "F1": 0.5714285714285715,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "E04",
+      "query": "design pattern for TCP packet handler in game server",
+      "intent_labeled": "design",
+      "intent_auto": "design",
+      "category": "cross_language",
+      "ground_truth": [
+        "architecture",
+        "sgi-decisions"
+      ],
+      "keyword": {
+        "retrieved": [
+          "sgi-pitfalls"
+        ],
+        "P@5": 0.0,
+        "R@5": 0.0,
+        "F1": 0.0,
+        "Hit@5": 0.0,
+        "MRR": 0.0
+      },
+      "ranked": {
+        "retrieved": [
+          "decisions",
+          "architecture",
+          "client_main"
+        ],
+        "detail": [
+          {
+            "uid": "decisions",
+            "final_score": 0.7625,
+            "score": 0.5167,
+            "breakdown": {
+              "final_score": 0.7625,
+              "semantic": 0.5167,
+              "recency": 1.0,
+              "intent_boost": 1.3,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.7202,
+            "score": 0.5597,
+            "breakdown": {
+              "final_score": 0.7202,
+              "semantic": 0.5597,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "client_main",
+            "final_score": 0.688,
+            "score": 0.5215,
+            "breakdown": {
+              "final_score": 0.688,
+              "semantic": 0.5215,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.3333333333333333,
+        "R@5": 0.5,
+        "F1": 0.4,
+        "Hit@5": 1.0,
+        "MRR": 0.5
+      },
+      "hybrid": {
+        "retrieved": [
+          "sgi-pitfalls",
+          "decisions",
+          "architecture",
+          "client_main"
+        ],
+        "P@5": 0.25,
+        "R@5": 0.5,
+        "F1": 0.3333333333333333,
+        "Hit@5": 1.0,
+        "MRR": 0.3333333333333333
+      },
+      "winner": "RK"
+    },
+    {
+      "id": "E05",
+      "query": "session 同步流程的設計邏輯",
+      "intent_labeled": "design",
+      "intent_auto": "design",
+      "category": "semantic_only",
+      "ground_truth": [
+        "decisions"
+      ],
+      "keyword": {
+        "retrieved": [],
+        "P@5": 0.0,
+        "R@5": 0.0,
+        "F1": 0.0,
+        "Hit@5": 0.0,
+        "MRR": 0.0
+      },
+      "ranked": {
+        "retrieved": [
+          "decisions",
+          "oc-decisions",
+          "rag-vector-plan",
+          "client_il",
+          "architecture"
+        ],
+        "detail": [
+          {
+            "uid": "decisions",
+            "final_score": 0.832,
+            "score": 0.6711,
+            "breakdown": {
+              "final_score": 0.832,
+              "semantic": 0.6711,
+              "recency": 1.0,
+              "intent_boost": 1.3,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "oc-decisions",
+            "final_score": 0.7854,
+            "score": 0.6306,
+            "breakdown": {
+              "final_score": 0.7854,
+              "semantic": 0.6306,
+              "recency": 0.9444,
+              "intent_boost": 1.3,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7449,
+            "score": 0.6108,
+            "breakdown": {
+              "final_score": 0.7449,
+              "semantic": 0.6108,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "client_il",
+            "final_score": 0.7344,
+            "score": 0.6245,
+            "breakdown": {
+              "final_score": 0.7344,
+              "semantic": 0.6245,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.728,
+            "score": 0.5771,
+            "breakdown": {
+              "final_score": 0.728,
+              "semantic": 0.5771,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "decisions",
+          "oc-decisions",
+          "rag-vector-plan",
+          "client_il",
+          "architecture"
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "RK"
+    },
+    {
+      "id": "E06",
+      "query": "寫程式的風格規範和框架選擇原則",
+      "intent_labeled": "design",
+      "intent_auto": "general",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "preferences"
+      ],
+      "keyword": {
+        "retrieved": [
+          "preferences"
+        ],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "preferences",
+          "architecture",
+          "sgi-decisions",
+          "rag-vector-plan",
+          "tooling"
+        ],
+        "detail": [
+          {
+            "uid": "preferences",
+            "final_score": 0.7806,
+            "score": 0.742,
+            "breakdown": {
+              "final_score": 0.7806,
+              "semantic": 0.742,
+              "recency": 0.9778,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "preference"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.7637,
+            "score": 0.6563,
+            "breakdown": {
+              "final_score": 0.7637,
+              "semantic": 0.6563,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "sgi-decisions",
+            "final_score": 0.7286,
+            "score": 0.5783,
+            "breakdown": {
+              "final_score": 0.7286,
+              "semantic": 0.5783,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7191,
+            "score": 0.5536,
+            "breakdown": {
+              "final_score": 0.7191,
+              "semantic": 0.5536,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "tooling",
+            "final_score": 0.7165,
+            "score": 0.5849,
+            "breakdown": {
+              "final_score": 0.7165,
+              "semantic": 0.5849,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "preferences",
+          "architecture",
+          "sgi-decisions",
+          "rag-vector-plan",
+          "tooling"
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "E07",
+      "query": "MysqlxCache 資料存取層的快取策略",
+      "intent_labeled": "design",
+      "intent_auto": "general",
+      "category": "semantic_only",
+      "ground_truth": [
+        "architecture"
+      ],
+      "keyword": {
+        "retrieved": [],
+        "P@5": 0.0,
+        "R@5": 0.0,
+        "F1": 0.0,
+        "Hit@5": 0.0,
+        "MRR": 0.0
+      },
+      "ranked": {
+        "retrieved": [
+          "architecture",
+          "sgi-pitfalls",
+          "rag-vector-plan",
+          "tooling"
+        ],
+        "detail": [
+          {
+            "uid": "architecture",
+            "final_score": 0.8083,
+            "score": 0.7555,
+            "breakdown": {
+              "final_score": 0.8083,
+              "semantic": 0.7555,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "sgi-pitfalls",
+            "final_score": 0.738,
+            "score": 0.5992,
+            "breakdown": {
+              "final_score": 0.738,
+              "semantic": 0.5992,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7161,
+            "score": 0.5468,
+            "breakdown": {
+              "final_score": 0.7161,
+              "semantic": 0.5468,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "tooling",
+            "final_score": 0.7106,
+            "score": 0.5718,
+            "breakdown": {
+              "final_score": 0.7106,
+              "semantic": 0.5718,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.25,
+        "R@5": 1.0,
+        "F1": 0.4,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "architecture",
+          "sgi-pitfalls",
+          "rag-vector-plan",
+          "tooling"
+        ],
+        "P@5": 0.25,
+        "R@5": 1.0,
+        "F1": 0.4,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "RK"
+    },
+    {
+      "id": "E08",
+      "query": "設計 REST API 的 GraphQL schema 遷移",
+      "intent_labeled": "design",
+      "intent_auto": "design",
+      "category": "negative",
+      "ground_truth": [],
+      "keyword": {
+        "retrieved": [],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "decisions",
+          "oc-decisions",
+          "rag-vector-plan",
+          "sgi-decisions",
+          "architecture"
+        ],
+        "detail": [
+          {
+            "uid": "decisions",
+            "final_score": 0.7809,
+            "score": 0.5576,
+            "breakdown": {
+              "final_score": 0.7809,
+              "semantic": 0.5576,
+              "recency": 1.0,
+              "intent_boost": 1.3,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "oc-decisions",
+            "final_score": 0.7627,
+            "score": 0.5801,
+            "breakdown": {
+              "final_score": 0.7627,
+              "semantic": 0.5801,
+              "recency": 0.9444,
+              "intent_boost": 1.3,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7282,
+            "score": 0.5738,
+            "breakdown": {
+              "final_score": 0.7282,
+              "semantic": 0.5738,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "sgi-decisions",
+            "final_score": 0.728,
+            "score": 0.5771,
+            "breakdown": {
+              "final_score": 0.728,
+              "semantic": 0.5771,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.7225,
+            "score": 0.5649,
+            "breakdown": {
+              "final_score": 0.7225,
+              "semantic": 0.5649,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.0,
+        "R@5": 1.0,
+        "F1": 0.0,
+        "Hit@5": 0.0,
+        "MRR": 0.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "decisions",
+          "oc-decisions",
+          "rag-vector-plan",
+          "sgi-decisions",
+          "architecture"
+        ],
+        "P@5": 0.0,
+        "R@5": 1.0,
+        "F1": 0.0,
+        "Hit@5": 0.0,
+        "MRR": 0.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "E09",
+      "query": "Unity client 的 ILRuntime 熱修模組怎麼設計",
+      "intent_labeled": "design",
+      "intent_auto": "design",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "client_il"
+      ],
+      "keyword": {
+        "retrieved": [
+          "client_il"
+        ],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "architecture",
+          "client_il",
+          "client_main",
+          "sgi-pitfalls"
+        ],
+        "detail": [
+          {
+            "uid": "architecture",
+            "final_score": 0.8538,
+            "score": 0.8567,
+            "breakdown": {
+              "final_score": 0.8538,
+              "semantic": 0.8567,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "client_il",
+            "final_score": 0.7723,
+            "score": 0.7088,
+            "breakdown": {
+              "final_score": 0.7723,
+              "semantic": 0.7088,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "client_main",
+            "final_score": 0.7381,
+            "score": 0.6328,
+            "breakdown": {
+              "final_score": 0.7381,
+              "semantic": 0.6328,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "sgi-pitfalls",
+            "final_score": 0.7329,
+            "score": 0.588,
+            "breakdown": {
+              "final_score": 0.7329,
+              "semantic": 0.588,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.25,
+        "R@5": 1.0,
+        "F1": 0.4,
+        "Hit@5": 1.0,
+        "MRR": 0.5
+      },
+      "hybrid": {
+        "retrieved": [
+          "client_il",
+          "architecture",
+          "client_main",
+          "sgi-pitfalls"
+        ],
+        "P@5": 0.25,
+        "R@5": 1.0,
+        "F1": 0.4,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "E10",
+      "query": "LINE to Claude Code integration architecture and plugin design",
+      "intent_labeled": "design",
+      "intent_auto": "design",
+      "category": "cross_language",
+      "ground_truth": [
+        "bridge"
+      ],
+      "keyword": {
+        "retrieved": [
+          "bridge"
+        ],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "decisions",
+          "oc-decisions",
+          "bridge",
+          "rag-vector-plan",
+          "tooling"
+        ],
+        "detail": [
+          {
+            "uid": "decisions",
+            "final_score": 0.7979,
+            "score": 0.5954,
+            "breakdown": {
+              "final_score": 0.7979,
+              "semantic": 0.5954,
+              "recency": 1.0,
+              "intent_boost": 1.3,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "oc-decisions",
+            "final_score": 0.7777,
+            "score": 0.6133,
+            "breakdown": {
+              "final_score": 0.7777,
+              "semantic": 0.6133,
+              "recency": 0.9444,
+              "intent_boost": 1.3,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "bridge",
+            "final_score": 0.7711,
+            "score": 0.732,
+            "breakdown": {
+              "final_score": 0.7711,
+              "semantic": 0.732,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7618,
+            "score": 0.6484,
+            "breakdown": {
+              "final_score": 0.7618,
+              "semantic": 0.6484,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "tooling",
+            "final_score": 0.7273,
+            "score": 0.6089,
+            "breakdown": {
+              "final_score": 0.7273,
+              "semantic": 0.6089,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 0.3333333333333333
+      },
+      "hybrid": {
+        "retrieved": [
+          "bridge",
+          "decisions",
+          "oc-decisions",
+          "rag-vector-plan",
+          "tooling"
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "R01",
+      "query": "之前決定 Handler 為什麼不能用 lambda",
+      "intent_labeled": "recall",
+      "intent_auto": "recall",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "sgi-decisions",
+        "preferences"
+      ],
+      "keyword": {
+        "retrieved": [
+          "sgi-pitfalls",
+          "sgi-decisions"
+        ],
+        "P@5": 0.5,
+        "R@5": 0.5,
+        "F1": 0.5,
+        "Hit@5": 1.0,
+        "MRR": 0.5
+      },
+      "ranked": {
+        "retrieved": [
+          "sgi-pitfalls",
+          "todo",
+          "preferences",
+          "sgi-decisions"
+        ],
+        "detail": [
+          {
+            "uid": "sgi-pitfalls",
+            "final_score": 0.8369,
+            "score": 0.819,
+            "breakdown": {
+              "final_score": 0.8369,
+              "semantic": 0.819,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "todo",
+            "final_score": 0.7943,
+            "score": 0.8021,
+            "breakdown": {
+              "final_score": 0.7943,
+              "semantic": 0.8021,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 0.7,
+              "confirm_score": 0.15,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "preferences",
+            "final_score": 0.7902,
+            "score": 0.7633,
+            "breakdown": {
+              "final_score": 0.7902,
+              "semantic": 0.7633,
+              "recency": 0.9778,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "preference"
+            }
+          },
+          {
+            "uid": "sgi-decisions",
+            "final_score": 0.7887,
+            "score": 0.7119,
+            "breakdown": {
+              "final_score": 0.7887,
+              "semantic": 0.7119,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.5,
+        "R@5": 1.0,
+        "F1": 0.6666666666666666,
+        "Hit@5": 1.0,
+        "MRR": 0.3333333333333333
+      },
+      "hybrid": {
+        "retrieved": [
+          "sgi-pitfalls",
+          "sgi-decisions",
+          "todo",
+          "preferences"
+        ],
+        "P@5": 0.5,
+        "R@5": 1.0,
+        "F1": 0.6666666666666666,
+        "Hit@5": 1.0,
+        "MRR": 0.5
+      },
+      "winner": "RK"
+    },
+    {
+      "id": "R02",
+      "query": "上次怎麼設定 workflow guardian 的",
+      "intent_labeled": "recall",
+      "intent_auto": "build",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "decisions"
+      ],
+      "keyword": {
+        "retrieved": [
+          "decisions"
+        ],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "decisions",
+          "rag-vector-plan",
+          "sgi-decisions",
+          "architecture",
+          "tooling"
+        ],
+        "detail": [
+          {
+            "uid": "decisions",
+            "final_score": 0.8292,
+            "score": 0.7983,
+            "breakdown": {
+              "final_score": 0.8292,
+              "semantic": 0.7983,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7562,
+            "score": 0.6359,
+            "breakdown": {
+              "final_score": 0.7562,
+              "semantic": 0.6359,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "sgi-decisions",
+            "final_score": 0.7471,
+            "score": 0.6195,
+            "breakdown": {
+              "final_score": 0.7471,
+              "semantic": 0.6195,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.7431,
+            "score": 0.6105,
+            "breakdown": {
+              "final_score": 0.7431,
+              "semantic": 0.6105,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "tooling",
+            "final_score": 0.7375,
+            "score": 0.6315,
+            "breakdown": {
+              "final_score": 0.7375,
+              "semantic": 0.6315,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "decisions",
+          "rag-vector-plan",
+          "sgi-decisions",
+          "architecture",
+          "tooling"
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "R03",
+      "query": "記得之前分析過什麼安全問題嗎",
+      "intent_labeled": "recall",
+      "intent_auto": "recall",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "sgi-decisions",
+        "oc-decisions"
+      ],
+      "keyword": {
+        "retrieved": [
+          "oc-decisions",
+          "sgi-decisions"
+        ],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "oc-decisions",
+          "sgi-decisions",
+          "rag-vector-plan",
+          "sgi-pitfalls",
+          "architecture"
+        ],
+        "detail": [
+          {
+            "uid": "oc-decisions",
+            "final_score": 0.7907,
+            "score": 0.5535,
+            "breakdown": {
+              "final_score": 0.7907,
+              "semantic": 0.5535,
+              "recency": 0.9444,
+              "intent_boost": 1.5,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "sgi-decisions",
+            "final_score": 0.7403,
+            "score": 0.6044,
+            "breakdown": {
+              "final_score": 0.7403,
+              "semantic": 0.6044,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7285,
+            "score": 0.5744,
+            "breakdown": {
+              "final_score": 0.7285,
+              "semantic": 0.5744,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "sgi-pitfalls",
+            "final_score": 0.7164,
+            "score": 0.5993,
+            "breakdown": {
+              "final_score": 0.7164,
+              "semantic": 0.5993,
+              "recency": 0.9778,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.7147,
+            "score": 0.5475,
+            "breakdown": {
+              "final_score": 0.7147,
+              "semantic": 0.5475,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.4,
+        "R@5": 1.0,
+        "F1": 0.5714285714285715,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "oc-decisions",
+          "sgi-decisions",
+          "rag-vector-plan",
+          "sgi-pitfalls",
+          "architecture"
+        ],
+        "P@5": 0.4,
+        "R@5": 1.0,
+        "F1": 0.5714285714285715,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "R04",
+      "query": "what was the previous decision about ChromaDB vs LanceDB",
+      "intent_labeled": "recall",
+      "intent_auto": "recall",
+      "category": "cross_language",
+      "ground_truth": [
+        "rag-vector-plan"
+      ],
+      "keyword": {
+        "retrieved": [
+          "rag-vector-plan"
+        ],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "rag-vector-plan",
+          "architecture",
+          "tooling",
+          "bridge"
+        ],
+        "detail": [
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.836,
+            "score": 0.8134,
+            "breakdown": {
+              "final_score": 0.836,
+              "semantic": 0.8134,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.725,
+            "score": 0.5703,
+            "breakdown": {
+              "final_score": 0.725,
+              "semantic": 0.5703,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "tooling",
+            "final_score": 0.6945,
+            "score": 0.5359,
+            "breakdown": {
+              "final_score": 0.6945,
+              "semantic": 0.5359,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "bridge",
+            "final_score": 0.6838,
+            "score": 0.538,
+            "breakdown": {
+              "final_score": 0.6838,
+              "semantic": 0.538,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.25,
+        "R@5": 1.0,
+        "F1": 0.4,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "rag-vector-plan",
+          "architecture",
+          "tooling",
+          "bridge"
+        ],
+        "P@5": 0.25,
+        "R@5": 1.0,
+        "F1": 0.4,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "R05",
+      "query": "之前為什麼選 qwen3 不用其他模型",
+      "intent_labeled": "recall",
+      "intent_auto": "recall",
+      "category": "semantic_only",
+      "ground_truth": [
+        "rag-vector-plan"
+      ],
+      "keyword": {
+        "retrieved": [],
+        "P@5": 0.0,
+        "R@5": 0.0,
+        "F1": 0.0,
+        "Hit@5": 0.0,
+        "MRR": 0.0
+      },
+      "ranked": {
+        "retrieved": [
+          "oc-decisions",
+          "rag-vector-plan",
+          "bridge",
+          "tooling",
+          "preferences"
+        ],
+        "detail": [
+          {
+            "uid": "oc-decisions",
+            "final_score": 0.84,
+            "score": 0.663,
+            "breakdown": {
+              "final_score": 0.84,
+              "semantic": 0.663,
+              "recency": 0.9444,
+              "intent_boost": 1.5,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.8085,
+            "score": 0.7523,
+            "breakdown": {
+              "final_score": 0.8085,
+              "semantic": 0.7523,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "bridge",
+            "final_score": 0.7251,
+            "score": 0.6298,
+            "breakdown": {
+              "final_score": 0.7251,
+              "semantic": 0.6298,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "tooling",
+            "final_score": 0.7219,
+            "score": 0.5968,
+            "breakdown": {
+              "final_score": 0.7219,
+              "semantic": 0.5968,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "preferences",
+            "final_score": 0.7174,
+            "score": 0.6017,
+            "breakdown": {
+              "final_score": 0.7174,
+              "semantic": 0.6017,
+              "recency": 0.9778,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "preference"
+            }
+          }
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 0.5
+      },
+      "hybrid": {
+        "retrieved": [
+          "oc-decisions",
+          "rag-vector-plan",
+          "bridge",
+          "tooling",
+          "preferences"
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 0.5
+      },
+      "winner": "RK"
+    },
+    {
+      "id": "R06",
+      "query": "記住的偏好設定有哪些 列出來",
+      "intent_labeled": "recall",
+      "intent_auto": "build",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "preferences",
+        "decisions"
+      ],
+      "keyword": {
+        "retrieved": [
+          "preferences",
+          "decisions",
+          "todo"
+        ],
+        "P@5": 0.6666666666666666,
+        "R@5": 1.0,
+        "F1": 0.8,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "tooling",
+          "rag-vector-plan",
+          "bridge",
+          "oc-decisions",
+          "sgi-decisions"
+        ],
+        "detail": [
+          {
+            "uid": "tooling",
+            "final_score": 0.7586,
+            "score": 0.6784,
+            "breakdown": {
+              "final_score": 0.7586,
+              "semantic": 0.6784,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7557,
+            "score": 0.6349,
+            "breakdown": {
+              "final_score": 0.7557,
+              "semantic": 0.6349,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "bridge",
+            "final_score": 0.7229,
+            "score": 0.625,
+            "breakdown": {
+              "final_score": 0.7229,
+              "semantic": 0.625,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "oc-decisions",
+            "final_score": 0.7187,
+            "score": 0.6157,
+            "breakdown": {
+              "final_score": 0.7187,
+              "semantic": 0.6157,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "sgi-decisions",
+            "final_score": 0.717,
+            "score": 0.5525,
+            "breakdown": {
+              "final_score": 0.717,
+              "semantic": 0.5525,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.0,
+        "R@5": 0.0,
+        "F1": 0.0,
+        "Hit@5": 0.0,
+        "MRR": 0.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "preferences",
+          "decisions",
+          "todo",
+          "tooling",
+          "rag-vector-plan",
+          "bridge",
+          "oc-decisions",
+          "sgi-decisions"
+        ],
+        "P@5": 0.4,
+        "R@5": 1.0,
+        "F1": 0.5714285714285715,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "R07",
+      "query": "之前遇過什麼坑 處理方式是什麼",
+      "intent_labeled": "recall",
+      "intent_auto": "recall",
+      "category": "semantic_only",
+      "ground_truth": [
+        "sgi-pitfalls",
+        "oc-pitfalls"
+      ],
+      "keyword": {
+        "retrieved": [],
+        "P@5": 0.0,
+        "R@5": 0.0,
+        "F1": 0.0,
+        "Hit@5": 0.0,
+        "MRR": 0.0
+      },
+      "ranked": {
+        "retrieved": [
+          "oc-decisions",
+          "sgi-decisions",
+          "rag-vector-plan",
+          "oc-pitfalls",
+          "sgi-pitfalls"
+        ],
+        "detail": [
+          {
+            "uid": "oc-decisions",
+            "final_score": 0.8023,
+            "score": 0.5792,
+            "breakdown": {
+              "final_score": 0.8023,
+              "semantic": 0.5792,
+              "recency": 0.9444,
+              "intent_boost": 1.5,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "sgi-decisions",
+            "final_score": 0.7544,
+            "score": 0.6357,
+            "breakdown": {
+              "final_score": 0.7544,
+              "semantic": 0.6357,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.753,
+            "score": 0.6289,
+            "breakdown": {
+              "final_score": 0.753,
+              "semantic": 0.6289,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "oc-pitfalls",
+            "final_score": 0.7406,
+            "score": 0.6643,
+            "breakdown": {
+              "final_score": 0.7406,
+              "semantic": 0.6643,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "sgi-pitfalls",
+            "final_score": 0.7405,
+            "score": 0.653,
+            "breakdown": {
+              "final_score": 0.7405,
+              "semantic": 0.653,
+              "recency": 0.9778,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.4,
+        "R@5": 1.0,
+        "F1": 0.5714285714285715,
+        "Hit@5": 1.0,
+        "MRR": 0.25
+      },
+      "hybrid": {
+        "retrieved": [
+          "oc-decisions",
+          "sgi-decisions",
+          "rag-vector-plan",
+          "oc-pitfalls",
+          "sgi-pitfalls"
+        ],
+        "P@5": 0.4,
+        "R@5": 1.0,
+        "F1": 0.5714285714285715,
+        "Hit@5": 1.0,
+        "MRR": 0.25
+      },
+      "winner": "RK"
+    },
+    {
+      "id": "R08",
+      "query": "remember the PostgreSQL migration we did last year",
+      "intent_labeled": "recall",
+      "intent_auto": "recall",
+      "category": "negative",
+      "ground_truth": [],
+      "keyword": {
+        "retrieved": [],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "oc-decisions",
+          "architecture",
+          "rag-vector-plan",
+          "oc-pitfalls"
+        ],
+        "detail": [
+          {
+            "uid": "oc-decisions",
+            "final_score": 0.782,
+            "score": 0.5341,
+            "breakdown": {
+              "final_score": 0.782,
+              "semantic": 0.5341,
+              "recency": 0.9444,
+              "intent_boost": 1.5,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.7512,
+            "score": 0.6285,
+            "breakdown": {
+              "final_score": 0.7512,
+              "semantic": 0.6285,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7239,
+            "score": 0.5642,
+            "breakdown": {
+              "final_score": 0.7239,
+              "semantic": 0.5642,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "oc-pitfalls",
+            "final_score": 0.7051,
+            "score": 0.5854,
+            "breakdown": {
+              "final_score": 0.7051,
+              "semantic": 0.5854,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.0,
+        "R@5": 1.0,
+        "F1": 0.0,
+        "Hit@5": 0.0,
+        "MRR": 0.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "oc-decisions",
+          "architecture",
+          "rag-vector-plan",
+          "oc-pitfalls"
+        ],
+        "P@5": 0.0,
+        "R@5": 1.0,
+        "F1": 0.0,
+        "Hit@5": 0.0,
+        "MRR": 0.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "R09",
+      "query": "之前 browser-use 為什麼換成 playwright",
+      "intent_labeled": "recall",
+      "intent_auto": "debug",
+      "category": "semantic_only",
+      "ground_truth": [
+        "decisions"
+      ],
+      "keyword": {
+        "retrieved": [],
+        "P@5": 0.0,
+        "R@5": 0.0,
+        "F1": 0.0,
+        "Hit@5": 0.0,
+        "MRR": 0.0
+      },
+      "ranked": {
+        "retrieved": [
+          "decisions",
+          "bridge",
+          "rag-vector-plan",
+          "architecture"
+        ],
+        "detail": [
+          {
+            "uid": "decisions",
+            "final_score": 0.7912,
+            "score": 0.8026,
+            "breakdown": {
+              "final_score": 0.7912,
+              "semantic": 0.8026,
+              "recency": 1.0,
+              "intent_boost": 0.8,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "bridge",
+            "final_score": 0.7593,
+            "score": 0.7059,
+            "breakdown": {
+              "final_score": 0.7593,
+              "semantic": 0.7059,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7231,
+            "score": 0.5625,
+            "breakdown": {
+              "final_score": 0.7231,
+              "semantic": 0.5625,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.7171,
+            "score": 0.5528,
+            "breakdown": {
+              "final_score": 0.7171,
+              "semantic": 0.5528,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.25,
+        "R@5": 1.0,
+        "F1": 0.4,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "decisions",
+          "bridge",
+          "rag-vector-plan",
+          "architecture"
+        ],
+        "P@5": 0.25,
+        "R@5": 1.0,
+        "F1": 0.4,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "RK"
+    },
+    {
+      "id": "R10",
+      "query": "上次讀取 Excel 用了什麼指令和參數",
+      "intent_labeled": "recall",
+      "intent_auto": "recall",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "excel-tools"
+      ],
+      "keyword": {
+        "retrieved": [
+          "excel-tools",
+          "tooling"
+        ],
+        "P@5": 0.5,
+        "R@5": 1.0,
+        "F1": 0.6666666666666666,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "excel-tools",
+          "tooling",
+          "architecture",
+          "rag-vector-plan",
+          "preferences"
+        ],
+        "detail": [
+          {
+            "uid": "excel-tools",
+            "final_score": 0.8131,
+            "score": 0.7995,
+            "breakdown": {
+              "final_score": 0.8131,
+              "semantic": 0.7995,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "tooling",
+            "final_score": 0.8051,
+            "score": 0.7816,
+            "breakdown": {
+              "final_score": 0.8051,
+              "semantic": 0.7816,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.7339,
+            "score": 0.5902,
+            "breakdown": {
+              "final_score": 0.7339,
+              "semantic": 0.5902,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7297,
+            "score": 0.577,
+            "breakdown": {
+              "final_score": 0.7297,
+              "semantic": 0.577,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "preferences",
+            "final_score": 0.7088,
+            "score": 0.5825,
+            "breakdown": {
+              "final_score": 0.7088,
+              "semantic": 0.5825,
+              "recency": 0.9778,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "preference"
+            }
+          }
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "excel-tools",
+          "tooling",
+          "architecture",
+          "rag-vector-plan",
+          "preferences"
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "G01",
+      "query": "workflow guardian 現在的運作方式",
+      "intent_labeled": "general",
+      "intent_auto": "general",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "decisions"
+      ],
+      "keyword": {
+        "retrieved": [
+          "decisions"
+        ],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "decisions",
+          "rag-vector-plan",
+          "architecture",
+          "sgi-decisions",
+          "tooling"
+        ],
+        "detail": [
+          {
+            "uid": "decisions",
+            "final_score": 0.8277,
+            "score": 0.7948,
+            "breakdown": {
+              "final_score": 0.8277,
+              "semantic": 0.7948,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7758,
+            "score": 0.6796,
+            "breakdown": {
+              "final_score": 0.7758,
+              "semantic": 0.6796,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.7505,
+            "score": 0.627,
+            "breakdown": {
+              "final_score": 0.7505,
+              "semantic": 0.627,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "sgi-decisions",
+            "final_score": 0.7461,
+            "score": 0.6172,
+            "breakdown": {
+              "final_score": 0.7461,
+              "semantic": 0.6172,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "tooling",
+            "final_score": 0.7273,
+            "score": 0.6088,
+            "breakdown": {
+              "final_score": 0.7273,
+              "semantic": 0.6088,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "decisions",
+          "rag-vector-plan",
+          "architecture",
+          "sgi-decisions",
+          "tooling"
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "G02",
+      "query": "openpyxl 可以做什麼 spreadsheet 操作",
+      "intent_labeled": "general",
+      "intent_auto": "general",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "excel-tools"
+      ],
+      "keyword": {
+        "retrieved": [
+          "excel-tools"
+        ],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "tooling",
+          "excel-tools",
+          "oc-decisions",
+          "preferences",
+          "bridge"
+        ],
+        "detail": [
+          {
+            "uid": "tooling",
+            "final_score": 0.8011,
+            "score": 0.7729,
+            "breakdown": {
+              "final_score": 0.8011,
+              "semantic": 0.7729,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "excel-tools",
+            "final_score": 0.7977,
+            "score": 0.7653,
+            "breakdown": {
+              "final_score": 0.7977,
+              "semantic": 0.7653,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "oc-decisions",
+            "final_score": 0.6943,
+            "score": 0.5613,
+            "breakdown": {
+              "final_score": 0.6943,
+              "semantic": 0.5613,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "preferences",
+            "final_score": 0.6912,
+            "score": 0.5435,
+            "breakdown": {
+              "final_score": 0.6912,
+              "semantic": 0.5435,
+              "recency": 0.9778,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "preference"
+            }
+          },
+          {
+            "uid": "bridge",
+            "final_score": 0.6864,
+            "score": 0.5438,
+            "breakdown": {
+              "final_score": 0.6864,
+              "semantic": 0.5438,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 0.5
+      },
+      "hybrid": {
+        "retrieved": [
+          "excel-tools",
+          "tooling",
+          "oc-decisions",
+          "preferences",
+          "bridge"
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "G03",
+      "query": "原子記憶系統整體概覽和功能",
+      "intent_labeled": "general",
+      "intent_auto": "general",
+      "category": "semantic_only",
+      "ground_truth": [
+        "rag-vector-plan"
+      ],
+      "keyword": {
+        "retrieved": [],
+        "P@5": 0.0,
+        "R@5": 0.0,
+        "F1": 0.0,
+        "Hit@5": 0.0,
+        "MRR": 0.0
+      },
+      "ranked": {
+        "retrieved": [
+          "rag-vector-plan",
+          "bridge",
+          "sgi-decisions",
+          "architecture",
+          "oc-pitfalls"
+        ],
+        "detail": [
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.785,
+            "score": 0.6999,
+            "breakdown": {
+              "final_score": 0.785,
+              "semantic": 0.6999,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "bridge",
+            "final_score": 0.7397,
+            "score": 0.6623,
+            "breakdown": {
+              "final_score": 0.7397,
+              "semantic": 0.6623,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "sgi-decisions",
+            "final_score": 0.7354,
+            "score": 0.5934,
+            "breakdown": {
+              "final_score": 0.7354,
+              "semantic": 0.5934,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.7314,
+            "score": 0.5847,
+            "breakdown": {
+              "final_score": 0.7314,
+              "semantic": 0.5847,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "oc-pitfalls",
+            "final_score": 0.7311,
+            "score": 0.6432,
+            "breakdown": {
+              "final_score": 0.7311,
+              "semantic": 0.6432,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "rag-vector-plan",
+          "bridge",
+          "sgi-decisions",
+          "architecture",
+          "oc-pitfalls"
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "RK"
+    },
+    {
+      "id": "G04",
+      "query": "what are the coding style preferences for this project",
+      "intent_labeled": "general",
+      "intent_auto": "general",
+      "category": "cross_language",
+      "ground_truth": [
+        "preferences"
+      ],
+      "keyword": {
+        "retrieved": [
+          "preferences"
+        ],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "architecture",
+          "bridge",
+          "sgi-pitfalls",
+          "preferences"
+        ],
+        "detail": [
+          {
+            "uid": "architecture",
+            "final_score": 0.7082,
+            "score": 0.533,
+            "breakdown": {
+              "final_score": 0.7082,
+              "semantic": 0.533,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "bridge",
+            "final_score": 0.7074,
+            "score": 0.5905,
+            "breakdown": {
+              "final_score": 0.7074,
+              "semantic": 0.5905,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "sgi-pitfalls",
+            "final_score": 0.7068,
+            "score": 0.5299,
+            "breakdown": {
+              "final_score": 0.7068,
+              "semantic": 0.5299,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "preferences",
+            "final_score": 0.6915,
+            "score": 0.544,
+            "breakdown": {
+              "final_score": 0.6915,
+              "semantic": 0.544,
+              "recency": 0.9778,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "preference"
+            }
+          }
+        ],
+        "P@5": 0.25,
+        "R@5": 1.0,
+        "F1": 0.4,
+        "Hit@5": 1.0,
+        "MRR": 0.25
+      },
+      "hybrid": {
+        "retrieved": [
+          "preferences",
+          "architecture",
+          "bridge",
+          "sgi-pitfalls"
+        ],
+        "P@5": 0.25,
+        "R@5": 1.0,
+        "F1": 0.4,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "G05",
+      "query": "MCP 相關的所有知識和設定",
+      "intent_labeled": "general",
+      "intent_auto": "build",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "decisions",
+        "bridge"
+      ],
+      "keyword": {
+        "retrieved": [
+          "decisions",
+          "bridge"
+        ],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "decisions",
+          "rag-vector-plan",
+          "bridge",
+          "sgi-decisions",
+          "architecture"
+        ],
+        "detail": [
+          {
+            "uid": "decisions",
+            "final_score": 0.765,
+            "score": 0.6556,
+            "breakdown": {
+              "final_score": 0.765,
+              "semantic": 0.6556,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7532,
+            "score": 0.6294,
+            "breakdown": {
+              "final_score": 0.7532,
+              "semantic": 0.6294,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "bridge",
+            "final_score": 0.7356,
+            "score": 0.6531,
+            "breakdown": {
+              "final_score": 0.7356,
+              "semantic": 0.6531,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "sgi-decisions",
+            "final_score": 0.734,
+            "score": 0.5904,
+            "breakdown": {
+              "final_score": 0.734,
+              "semantic": 0.5904,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.7328,
+            "score": 0.5877,
+            "breakdown": {
+              "final_score": 0.7328,
+              "semantic": 0.5877,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          }
+        ],
+        "P@5": 0.4,
+        "R@5": 1.0,
+        "F1": 0.5714285714285715,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "decisions",
+          "bridge",
+          "rag-vector-plan",
+          "sgi-decisions",
+          "architecture"
+        ],
+        "P@5": 0.4,
+        "R@5": 1.0,
+        "F1": 0.5714285714285715,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "G06",
+      "query": "GmServer 的 handler 數量和功能",
+      "intent_labeled": "general",
+      "intent_auto": "general",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "server_services"
+      ],
+      "keyword": {
+        "retrieved": [
+          "server_services",
+          "sgi-pitfalls"
+        ],
+        "P@5": 0.5,
+        "R@5": 1.0,
+        "F1": 0.6666666666666666,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "server_services",
+          "architecture",
+          "sgi-pitfalls",
+          "decisions"
+        ],
+        "detail": [
+          {
+            "uid": "server_services",
+            "final_score": 0.7758,
+            "score": 0.7167,
+            "breakdown": {
+              "final_score": 0.7758,
+              "semantic": 0.7167,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.7587,
+            "score": 0.6453,
+            "breakdown": {
+              "final_score": 0.7587,
+              "semantic": 0.6453,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "sgi-pitfalls",
+            "final_score": 0.7473,
+            "score": 0.62,
+            "breakdown": {
+              "final_score": 0.7473,
+              "semantic": 0.62,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "decisions",
+            "final_score": 0.7382,
+            "score": 0.5961,
+            "breakdown": {
+              "final_score": 0.7382,
+              "semantic": 0.5961,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "decision"
+            }
+          }
+        ],
+        "P@5": 0.25,
+        "R@5": 1.0,
+        "F1": 0.4,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "server_services",
+          "sgi-pitfalls",
+          "architecture",
+          "decisions"
+        ],
+        "P@5": 0.25,
+        "R@5": 1.0,
+        "F1": 0.4,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "G07",
+      "query": "這個 AI 助手能幫我做什麼事情",
+      "intent_labeled": "general",
+      "intent_auto": "general",
+      "category": "semantic_only",
+      "ground_truth": [
+        "preferences",
+        "decisions"
+      ],
+      "keyword": {
+        "retrieved": [],
+        "P@5": 0.0,
+        "R@5": 0.0,
+        "F1": 0.0,
+        "Hit@5": 0.0,
+        "MRR": 0.0
+      },
+      "ranked": {
+        "retrieved": [
+          "bridge",
+          "rag-vector-plan",
+          "architecture",
+          "tooling",
+          "oc-decisions"
+        ],
+        "detail": [
+          {
+            "uid": "bridge",
+            "final_score": 0.7708,
+            "score": 0.7314,
+            "breakdown": {
+              "final_score": 0.7708,
+              "semantic": 0.7314,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7705,
+            "score": 0.6678,
+            "breakdown": {
+              "final_score": 0.7705,
+              "semantic": 0.6678,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.7502,
+            "score": 0.6263,
+            "breakdown": {
+              "final_score": 0.7502,
+              "semantic": 0.6263,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "tooling",
+            "final_score": 0.7436,
+            "score": 0.6451,
+            "breakdown": {
+              "final_score": 0.7436,
+              "semantic": 0.6451,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "oc-decisions",
+            "final_score": 0.7088,
+            "score": 0.5937,
+            "breakdown": {
+              "final_score": 0.7088,
+              "semantic": 0.5937,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "decision"
+            }
+          }
+        ],
+        "P@5": 0.0,
+        "R@5": 0.0,
+        "F1": 0.0,
+        "Hit@5": 0.0,
+        "MRR": 0.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "bridge",
+          "rag-vector-plan",
+          "architecture",
+          "tooling",
+          "oc-decisions"
+        ],
+        "P@5": 0.0,
+        "R@5": 0.0,
+        "F1": 0.0,
+        "Hit@5": 0.0,
+        "MRR": 0.0
+      },
+      "winner": "TIE"
+    },
+    {
+      "id": "G08",
+      "query": "tell me about the weather in Taipei today",
+      "intent_labeled": "general",
+      "intent_auto": "general",
+      "category": "negative",
+      "ground_truth": [],
+      "keyword": {
+        "retrieved": [],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "tooling",
+          "rag-vector-plan",
+          "bridge",
+          "preferences"
+        ],
+        "detail": [
+          {
+            "uid": "tooling",
+            "final_score": 0.74,
+            "score": 0.6371,
+            "breakdown": {
+              "final_score": 0.74,
+              "semantic": 0.6371,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7301,
+            "score": 0.5781,
+            "breakdown": {
+              "final_score": 0.7301,
+              "semantic": 0.5781,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "bridge",
+            "final_score": 0.7016,
+            "score": 0.5777,
+            "breakdown": {
+              "final_score": 0.7016,
+              "semantic": 0.5777,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "preferences",
+            "final_score": 0.6802,
+            "score": 0.5189,
+            "breakdown": {
+              "final_score": 0.6802,
+              "semantic": 0.5189,
+              "recency": 0.9778,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "preference"
+            }
+          }
+        ],
+        "P@5": 0.0,
+        "R@5": 1.0,
+        "F1": 0.0,
+        "Hit@5": 0.0,
+        "MRR": 0.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "tooling",
+          "rag-vector-plan",
+          "bridge",
+          "preferences"
+        ],
+        "P@5": 0.0,
+        "R@5": 1.0,
+        "F1": 0.0,
+        "Hit@5": 0.0,
+        "MRR": 0.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "G09",
+      "query": "Redmine API 怎麼查 issue 和規格書在哪",
+      "intent_labeled": "general",
+      "intent_auto": "general",
+      "category": "direct_keyword",
+      "ground_truth": [
+        "tooling"
+      ],
+      "keyword": {
+        "retrieved": [
+          "tooling"
+        ],
+        "P@5": 1.0,
+        "R@5": 1.0,
+        "F1": 1.0,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "tooling",
+          "rag-vector-plan",
+          "sgi-pitfalls",
+          "architecture",
+          "decisions"
+        ],
+        "detail": [
+          {
+            "uid": "tooling",
+            "final_score": 0.8316,
+            "score": 0.8407,
+            "breakdown": {
+              "final_score": 0.8316,
+              "semantic": 0.8407,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.05,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7392,
+            "score": 0.5983,
+            "breakdown": {
+              "final_score": 0.7392,
+              "semantic": 0.5983,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "sgi-pitfalls",
+            "final_score": 0.7341,
+            "score": 0.5906,
+            "breakdown": {
+              "final_score": 0.7341,
+              "semantic": 0.5906,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "architecture",
+            "final_score": 0.7287,
+            "score": 0.5786,
+            "breakdown": {
+              "final_score": 0.7287,
+              "semantic": 0.5786,
+              "recency": 0.9889,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "decisions",
+            "final_score": 0.7271,
+            "score": 0.5714,
+            "breakdown": {
+              "final_score": 0.7271,
+              "semantic": 0.5714,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "decision"
+            }
+          }
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "tooling",
+          "rag-vector-plan",
+          "sgi-pitfalls",
+          "architecture",
+          "decisions"
+        ],
+        "P@5": 0.2,
+        "R@5": 1.0,
+        "F1": 0.33333333333333337,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    },
+    {
+      "id": "G10",
+      "query": "describe the computer-use MCP and desktop automation capabilities",
+      "intent_labeled": "general",
+      "intent_auto": "general",
+      "category": "cross_language",
+      "ground_truth": [
+        "bridge",
+        "decisions"
+      ],
+      "keyword": {
+        "retrieved": [
+          "decisions",
+          "bridge",
+          "client_il"
+        ],
+        "P@5": 0.6666666666666666,
+        "R@5": 1.0,
+        "F1": 0.8,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "ranked": {
+        "retrieved": [
+          "bridge",
+          "decisions",
+          "rag-vector-plan",
+          "oc-decisions"
+        ],
+        "detail": [
+          {
+            "uid": "bridge",
+            "final_score": 0.746,
+            "score": 0.6763,
+            "breakdown": {
+              "final_score": 0.746,
+              "semantic": 0.6763,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "decisions",
+            "final_score": 0.7334,
+            "score": 0.5854,
+            "breakdown": {
+              "final_score": 0.7334,
+              "semantic": 0.5854,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "decision"
+            }
+          },
+          {
+            "uid": "rag-vector-plan",
+            "final_score": 0.7126,
+            "score": 0.539,
+            "breakdown": {
+              "final_score": 0.7126,
+              "semantic": 0.539,
+              "recency": 1.0,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.2,
+              "category": "general"
+            }
+          },
+          {
+            "uid": "oc-decisions",
+            "final_score": 0.6928,
+            "score": 0.5581,
+            "breakdown": {
+              "final_score": 0.6928,
+              "semantic": 0.5581,
+              "recency": 0.9444,
+              "intent_boost": 1.0,
+              "confidence_score": 1.0,
+              "confirm_score": 0.0,
+              "category": "decision"
+            }
+          }
+        ],
+        "P@5": 0.5,
+        "R@5": 1.0,
+        "F1": 0.6666666666666666,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "hybrid": {
+        "retrieved": [
+          "decisions",
+          "bridge",
+          "client_il",
+          "rag-vector-plan",
+          "oc-decisions"
+        ],
+        "P@5": 0.4,
+        "R@5": 1.0,
+        "F1": 0.5714285714285715,
+        "Hit@5": 1.0,
+        "MRR": 1.0
+      },
+      "winner": "KW"
+    }
+  ],
+  "aggregate": {
+    "keyword": {
+      "avg_precision": 0.6666666666666667,
+      "avg_recall": 0.75,
+      "avg_f1": 0.6873333333333334,
+      "avg_hit5": 0.78,
+      "avg_mrr": 0.7366666666666667
+    },
+    "ranked": {
+      "avg_precision": 0.25,
+      "avg_recall": 0.91,
+      "avg_f1": 0.3708571428571429,
+      "avg_hit5": 0.86,
+      "avg_mrr": 0.6966666666666668
+    },
+    "hybrid": {
+      "avg_precision": 0.25866666666666666,
+      "avg_recall": 0.96,
+      "avg_f1": 0.38676190476190475,
+      "avg_hit5": 0.9,
+      "avg_mrr": 0.795
+    }
+  }
+}
