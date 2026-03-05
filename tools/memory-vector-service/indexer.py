@@ -41,6 +41,7 @@ META_RE = re.compile(r"^-\s+(\w[\w-]*):\s*(.+)$")
 def discover_layers(
     layer_filter: Optional[str] = None,
     include_distant: bool = False,
+    additional_dirs: Optional[List[Dict[str, Any]]] = None,
 ) -> List[Tuple[str, Path]]:
     """Discover all memory layers. Returns [(layer_name, memory_dir), ...]."""
     layers: List[Tuple[str, Path]] = []
@@ -63,27 +64,57 @@ def discover_layers(
             if mem_dir.is_dir():
                 layers.append((f"project:{proj_dir.name}", mem_dir))
 
+    # Additional atom directories (from config)
+    if additional_dirs:
+        for entry in additional_dirs:
+            name = entry.get("name", "extra")
+            dir_path = Path(entry.get("path", ""))
+            if dir_path.is_dir():
+                if not layer_filter or layer_filter in ("all", name):
+                    layers.append((f"extra:{name}", dir_path))
+
     return layers
 
 
 def discover_atoms(
     layers: List[Tuple[str, Path]],
     include_distant: bool = False,
+    additional_dirs: Optional[List[Dict[str, Any]]] = None,
 ) -> List[Tuple[str, Path, str]]:
     """Find all atom .md files. Returns [(layer_name, file_path, rel_path), ...]."""
     atoms: List[Tuple[str, Path, str]] = []
 
-    for layer_name, mem_dir in layers:
-        for md_file in sorted(mem_dir.glob("*.md")):
-            if md_file.name in SKIP_FILENAMES:
-                continue
-            if any(md_file.name.startswith(p) for p in SKIP_PREFIXES):
-                continue
-            rel = str(md_file.relative_to(mem_dir))
-            atoms.append((layer_name, md_file, rel))
+    # Build per-layer skip_files from additional_dirs config
+    extra_skip: Dict[str, set] = {}
+    if additional_dirs:
+        for entry in additional_dirs:
+            name = f"extra:{entry.get('name', 'extra')}"
+            extra_skip[name] = set(entry.get("skip_files", []))
 
-        # _distant/ 遙遠記憶
-        if include_distant:
+    for layer_name, mem_dir in layers:
+        layer_skip_files = extra_skip.get(layer_name, set())
+        is_extra = layer_name.startswith("extra:")
+
+        # Extra layers support recursive scanning; standard layers scan root + episodic/
+        glob_patterns = ["**/*.md"] if is_extra else ["*.md", "episodic/*.md"]
+        seen_paths: set = set()
+        for glob_pattern in glob_patterns:
+            for md_file in sorted(mem_dir.glob(glob_pattern)):
+                if md_file in seen_paths:
+                    continue
+                seen_paths.add(md_file)
+                if md_file.name in SKIP_FILENAMES:
+                    continue
+                if any(md_file.name.startswith(p) for p in SKIP_PREFIXES):
+                    continue
+                # Per-source skip_files (match stem)
+                if md_file.stem in layer_skip_files:
+                    continue
+                rel = str(md_file.relative_to(mem_dir))
+                atoms.append((layer_name, md_file, rel))
+
+        # _distant/ 遙遠記憶 (standard layers only)
+        if include_distant and not is_extra:
             distant_dir = mem_dir / "_distant"
             if distant_dir.is_dir():
                 for sub in sorted(distant_dir.iterdir()):
@@ -402,11 +433,17 @@ def build_index(
     import pyarrow as pa
     t0 = time.time()
 
+    additional_dirs = config.get("additional_atom_dirs", [])
     layers = discover_layers(
         layer_filter=layer_filter,
         include_distant=config.get("index_distant", False),
+        additional_dirs=additional_dirs,
     )
-    atoms = discover_atoms(layers, include_distant=config.get("index_distant", False))
+    atoms = discover_atoms(
+        layers,
+        include_distant=config.get("index_distant", False),
+        additional_dirs=additional_dirs,
+    )
 
     if verbose:
         print(f"[indexer] Found {len(layers)} layers, {len(atoms)} atom files")

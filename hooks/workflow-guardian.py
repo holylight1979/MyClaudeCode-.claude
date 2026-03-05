@@ -15,6 +15,7 @@ import json
 import os
 import sys
 import re
+import threading
 import urllib.request
 import urllib.error
 from datetime import datetime, timezone
@@ -26,6 +27,7 @@ from typing import Any, Dict, List, Optional, Tuple
 CLAUDE_DIR = Path.home() / ".claude"
 WORKFLOW_DIR = CLAUDE_DIR / "workflow"
 MEMORY_DIR = CLAUDE_DIR / "memory"
+EPISODIC_DIR = MEMORY_DIR / "episodic"
 CONFIG_PATH = WORKFLOW_DIR / "config.json"
 MEMORY_INDEX = "MEMORY.md"
 
@@ -701,6 +703,15 @@ def handle_user_prompt_submit(
     prompt = input_data.get("prompt", "")
     lines: List[str] = []
 
+    # ─── V2.4: Collect pending extraction from last turn ──────────────
+    pending = state.pop("pending_extraction", [])
+    if pending:
+        state.setdefault("knowledge_queue", []).extend(pending)
+        lines.append(
+            f"[V2.4] {len(pending)} knowledge items captured from last response: "
+            + "; ".join(f"[{p.get('knowledge_type','?')}] {p['content'][:50]}" for p in pending)
+        )
+
     # ─── Phase 0: Session Context Injection (first prompt only) ────────
     budget = compute_token_budget(prompt)
     if not state.get("session_context_injected", False):
@@ -965,6 +976,19 @@ def handle_user_prompt_submit(
     else:
         output_nothing()
 
+    # ─── V2.4: Launch background extraction of last assistant response ──
+    rc = config.get("response_capture", {})
+    if rc.get("enabled", True) and rc.get("per_turn_enabled", True):
+        cwd = state.get("session", {}).get("cwd", "")
+        if cwd and state.get("session_context_injected", False):
+            # Only after first prompt (there's no previous response on first prompt)
+            t = threading.Thread(
+                target=_async_extract_last_response,
+                args=(session_id, cwd, config),
+                daemon=True,
+            )
+            t.start()
+
 
 def handle_post_tool_use(input_data: Dict[str, Any], config: Dict[str, Any]) -> None:
     session_id = input_data.get("session_id", "")
@@ -1129,6 +1153,360 @@ def _extract_area(path_str: str) -> str:
     return "-".join(slug_parts).lower() if slug_parts else "misc"
 
 
+# ─── V2.4: Response Knowledge Capture ─────────────────────────────────────
+
+def _find_session_transcript(session_id: str, cwd: str) -> Optional[Path]:
+    """Locate the JSONL transcript for this session.
+
+    Path format: ~/.claude/projects/{slug}/{session_id}.jsonl
+    """
+    if not session_id or not cwd:
+        return None
+    slug = cwd_to_project_slug(cwd)
+    candidate = CLAUDE_DIR / "projects" / slug / f"{session_id}.jsonl"
+    if candidate.exists():
+        return candidate
+    return None
+
+
+def _extract_last_assistant_text(transcript_path: Path, max_chars: int = 3000) -> str:
+    """Extract the last assistant text response from a JSONL transcript.
+
+    Reads from end, skips thinking/tool_use blocks, returns text only.
+    """
+    try:
+        with open(transcript_path, "r", encoding="utf-8") as f:
+            lines_raw = f.readlines()
+    except (OSError, UnicodeDecodeError):
+        return ""
+
+    # Scan from end to find last assistant message with text content
+    for raw_line in reversed(lines_raw):
+        try:
+            obj = json.loads(raw_line)
+        except json.JSONDecodeError:
+            continue
+        if obj.get("type") != "assistant":
+            continue
+        content = obj.get("message", {}).get("content", [])
+        if not isinstance(content, list):
+            continue
+        texts = []
+        total = 0
+        for block in content:
+            if isinstance(block, dict) and block.get("type") == "text":
+                t = block.get("text", "")
+                if t:
+                    texts.append(t)
+                    total += len(t)
+                    if total >= max_chars:
+                        break
+        if texts:
+            combined = "\n".join(texts)
+            return combined[:max_chars]
+    return ""
+
+
+def _extract_all_assistant_texts(transcript_path: Path, max_chars: int = 20000) -> List[str]:
+    """Extract all assistant text responses from a JSONL transcript (for SessionEnd)."""
+    texts = []
+    total = 0
+    try:
+        with open(transcript_path, "r", encoding="utf-8") as f:
+            for raw_line in f:
+                try:
+                    obj = json.loads(raw_line)
+                except json.JSONDecodeError:
+                    continue
+                if obj.get("type") != "assistant":
+                    continue
+                content = obj.get("message", {}).get("content", [])
+                if not isinstance(content, list):
+                    continue
+                for block in content:
+                    if isinstance(block, dict) and block.get("type") == "text":
+                        t = block.get("text", "")
+                        if t and len(t) > 30:  # skip trivial responses
+                            texts.append(t)
+                            total += len(t)
+                if total >= max_chars:
+                    break
+    except (OSError, UnicodeDecodeError):
+        pass
+    return texts
+
+
+def _call_ollama_generate(prompt: str, model: str = "qwen3:1.7b",
+                          timeout: int = 3) -> str:
+    """Call Ollama generate API. Returns raw response text."""
+    payload = json.dumps({
+        "model": model,
+        "prompt": prompt,
+        "stream": False,
+        "options": {"temperature": 0.1, "num_predict": 500}
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        "http://127.0.0.1:11434/api/generate",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            data = json.loads(resp.read())
+            return data.get("response", "")
+    except Exception:
+        return ""
+
+
+_EXTRACT_PROMPT_TEMPLATE = (
+    "Extract reusable technical knowledge from this AI assistant response. "
+    "Output a JSON array of objects, each with 'content' (max 80 chars, concise fact) "
+    "and 'type' (one of: factual, procedural, architectural, pitfall). "
+    "Only extract: root causes, API behaviors, architecture constraints, "
+    "debugging patterns, configuration values, environment-specific behaviors. "
+    "Skip: code changes, general programming knowledge, session-specific details, greetings. "
+    "If nothing worth extracting, output empty array [].\n\n"
+    "Response text:\n{text}\n\nJSON:"
+)
+
+
+def _llm_extract_knowledge(text: str, existing_queue: List[dict],
+                           source: str = "per-turn") -> List[dict]:
+    """Use local LLM (qwen3:1.7b) to extract knowledge from assistant text.
+
+    Args:
+        text: Assistant response text
+        existing_queue: Already queued knowledge items (for dedup)
+        source: "per-turn" or "session-end" (affects limits and timeout)
+
+    Returns:
+        List of knowledge items: [{content, classification, knowledge_type, source, at}]
+    """
+    if not text or len(text) < 50:
+        return []
+
+    # Source-dependent limits
+    if source == "per-turn":
+        max_chars = 3000
+        max_items = 2
+        timeout = 3
+    else:  # session-end
+        max_chars = 4000
+        max_items = 5
+        timeout = 10
+
+    truncated = text[:max_chars]
+    prompt = _EXTRACT_PROMPT_TEMPLATE.format(text=truncated)
+
+    raw = _call_ollama_generate(prompt, timeout=timeout)
+    if not raw:
+        return []
+
+    # Parse JSON (with fallback)
+    items = []
+    try:
+        # Try to find JSON array in response
+        match = re.search(r"\[.*\]", raw, re.DOTALL)
+        if match:
+            items = json.loads(match.group(0))
+    except (json.JSONDecodeError, ValueError):
+        # Regex fallback: try to extract content/type pairs
+        for m in re.finditer(r'"content"\s*:\s*"([^"]{10,80})"', raw):
+            items.append({"content": m.group(1), "type": "factual"})
+
+    if not items:
+        return []
+
+    # Dedup against existing queue
+    existing_fingerprints = {
+        q.get("content", "")[:40].lower() for q in existing_queue
+    }
+
+    results = []
+    now = _now_iso()
+    for item in items[:max_items]:
+        content = item.get("content", "").strip()
+        if not content or len(content) < 10:
+            continue
+        # Skip if too similar to existing
+        if content[:40].lower() in existing_fingerprints:
+            continue
+        knowledge_type = item.get("type", "factual")
+        if knowledge_type not in ("factual", "procedural", "architectural", "pitfall"):
+            knowledge_type = "factual"
+        results.append({
+            "content": content[:80],
+            "classification": "[臨]",
+            "knowledge_type": knowledge_type,
+            "source": source,
+            "at": now,
+        })
+        existing_fingerprints.add(content[:40].lower())
+
+    return results
+
+
+def _async_extract_last_response(session_id: str, cwd: str, config: dict) -> None:
+    """Background thread: extract knowledge from last assistant response → write to state."""
+    try:
+        transcript = _find_session_transcript(session_id, cwd)
+        if not transcript:
+            return
+
+        rc = config.get("response_capture", {})
+        max_chars = rc.get("per_turn_max_chars", 3000)
+        min_chars = rc.get("per_turn_min_response_chars", 100)
+
+        text = _extract_last_assistant_text(transcript, max_chars=max_chars)
+        if not text or len(text) < min_chars:
+            return
+
+        state = read_state(session_id)
+        if not state:
+            return
+        existing = state.get("knowledge_queue", [])
+        items = _llm_extract_knowledge(text, existing, source="per-turn")
+        if items:
+            # Re-read state for freshness (avoid race condition)
+            state = read_state(session_id)
+            if not state:
+                return
+            state["pending_extraction"] = items
+            write_state(session_id, state)
+            print(f"[v2.4] Per-turn extraction: {len(items)} items", file=sys.stderr)
+    except Exception as e:
+        print(f"[v2.4] Per-turn extraction error: {e}", file=sys.stderr)
+
+
+# ─── V2.4 Phase 3: Cross-Session Pattern Consolidation ────────────────────
+
+
+def _check_cross_session_patterns(
+    knowledge_items: List[dict], session_id: str, config: Dict[str, Any]
+) -> List[dict]:
+    """Check if knowledge items appeared in past sessions via vector search.
+
+    For each item, query vector service top-3 (min_score: 0.75).
+    Count distinct sessions that mention similar knowledge.
+    - 2+ sessions → auto-promote [臨] → [觀]
+    - 4+ sessions → mark suggestion to promote [觀] → [固] (not auto)
+
+    Returns list of cross-session observation dicts for episodic atom.
+    Also mutates knowledge_items in-place (classification upgrade).
+    """
+    vs_config = config.get("vector_search", {})
+    if not vs_config.get("enabled", True):
+        return []
+
+    port = vs_config.get("service_port", 3849)
+    cross_session_config = config.get("cross_session", {})
+    min_score = cross_session_config.get("min_score", 0.75)
+    promote_threshold = cross_session_config.get("promote_threshold", 2)
+    suggest_threshold = cross_session_config.get("suggest_threshold", 4)
+    timeout_s = cross_session_config.get("timeout_seconds", 5)
+
+    observations: List[dict] = []
+    current_session_prefix = session_id[:8] if session_id else ""
+
+    for item in knowledge_items:
+        content = item.get("content", "")
+        if not content or len(content) < 20:
+            continue
+
+        # Query vector search for similar knowledge
+        try:
+            import urllib.parse
+            params = urllib.parse.urlencode({
+                "q": content[:200],
+                "top_k": 5,
+                "min_score": min_score,
+            })
+            url = f"http://127.0.0.1:{port}/search/ranked?{params}"
+            req = urllib.request.Request(url, headers={"Accept": "application/json"})
+            try:
+                with urllib.request.urlopen(req, timeout=timeout_s) as resp:
+                    results = json.loads(resp.read())
+            except urllib.error.HTTPError as e:
+                if e.code == 404:
+                    # Fallback to basic /search
+                    params = urllib.parse.urlencode({
+                        "q": content[:200], "top_k": 5, "min_score": min_score,
+                    })
+                    url = f"http://127.0.0.1:{port}/search?{params}"
+                    req = urllib.request.Request(url, headers={"Accept": "application/json"})
+                    with urllib.request.urlopen(req, timeout=timeout_s) as resp:
+                        results = json.loads(resp.read())
+                else:
+                    continue
+
+            # Count distinct sessions from results (episodic atoms encode session info)
+            session_hits = set()
+            for r in results:
+                atom_name = r.get("atom_name", "")
+                file_path = r.get("file_path", "")
+                # Episodic atoms: "episodic-YYYYMMDD-slug" → each is a different session
+                if "episodic" in atom_name.lower():
+                    # Exclude current session's atom (prefix match)
+                    if current_session_prefix and current_session_prefix in atom_name:
+                        continue
+                    session_hits.add(atom_name)
+                else:
+                    # Non-episodic atoms: check if they contain session references
+                    # Count as 1 additional session reference if content matches
+                    atom_text = r.get("text", r.get("content", ""))
+                    if atom_text:
+                        session_hits.add(f"atom:{atom_name}")
+
+            hit_count = len(session_hits)
+            if hit_count < promote_threshold:
+                continue
+
+            current_class = item.get("classification", "[臨]")
+            new_class = current_class
+            action = ""
+
+            if hit_count >= suggest_threshold and current_class in ("[觀]", "[臨]"):
+                # 4+ sessions: suggest [觀] → [固] (don't auto-execute)
+                if current_class == "[臨]":
+                    item["classification"] = "[觀]"
+                    new_class = "[觀]"
+                action = f"建議晉升 → [固]（{hit_count} sessions 命中，需使用者確認）"
+            elif hit_count >= promote_threshold and current_class == "[臨]":
+                # 2+ sessions: auto-promote [臨] → [觀]
+                item["classification"] = "[觀]"
+                new_class = "[觀]"
+                action = f"自動晉升 [臨] → [觀]（{hit_count} sessions 命中）"
+
+            if action:
+                observations.append({
+                    "content": content[:80],
+                    "classification": new_class,
+                    "sessions_hit": hit_count,
+                    "action": action,
+                    "matched_atoms": list(session_hits)[:5],
+                })
+                # Annotate the item's trigger_context
+                prev_ctx = item.get("trigger_context", "")
+                item["trigger_context"] = (
+                    f"{prev_ctx} | cross-session: {hit_count} hits, {action}"
+                ).strip(" | ")
+
+                print(
+                    f"[v2.4] Cross-session: \"{content[:40]}...\" → {action}",
+                    file=sys.stderr,
+                )
+
+        except Exception as e:
+            print(f"[v2.4] Cross-session check error: {e}", file=sys.stderr)
+            continue
+
+    return observations
+
+
+# ─── End V2.4 ─────────────────────────────────────────────────────────────
+
+
 def _build_episodic_summary(state: Dict[str, Any]) -> Dict[str, Any]:
     """Build structured session summary from state."""
     from collections import Counter
@@ -1250,12 +1628,44 @@ def _update_memory_index(memory_dir: Path, atom_name: str, triggers: list) -> No
     index_path.write_text("\n".join(lines), encoding="utf-8")
 
 
+def _build_cross_session_section(state: Dict[str, Any]) -> str:
+    """Build '## 跨 Session 觀察' section from cross-session observations."""
+    obs = state.get("cross_session_observations", [])
+    if not obs:
+        return ""
+    lines = ["## 跨 Session 觀察\n"]
+    for o in obs:
+        cls = o.get("classification", "[觀]")
+        content = o.get("content", "")
+        action = o.get("action", "")
+        hits = o.get("sessions_hit", 0)
+        lines.append(f"- [{cls.strip('[]')}] \"{content}\" — {hits} sessions 出現，{action}")
+    lines.append("")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def _resolve_episodic_dir(state: Dict[str, Any]) -> Tuple[Path, str]:
+    """Resolve episodic directory: project-scoped if CWD maps to a project, else global.
+
+    Returns (episodic_dir, scope_label).
+    """
+    cwd = state.get("session", {}).get("cwd", "")
+    if cwd:
+        project_mem = get_project_memory_dir(cwd)
+        if project_mem:
+            slug = cwd_to_project_slug(cwd)
+            return project_mem / "episodic", f"project:{slug}"
+    return EPISODIC_DIR, "global"
+
+
 def _generate_episodic_atom(
     session_id: str, state: Dict[str, Any], config: Dict[str, Any]
 ) -> Optional[str]:
     """Auto-generate an episodic atom summarizing this session.
 
     Returns the filename of the generated atom, or None if skipped.
+    Project-scoped: if CWD maps to a known project, episodic goes to project layer.
     """
     if not _should_generate_episodic(state, config):
         return None
@@ -1269,7 +1679,9 @@ def _generate_episodic_atom(
     expires = (datetime.now() + timedelta(days=24)).strftime("%Y-%m-%d")
     triggers = _generate_triggers(state, summary["work_areas"])
 
-    atom_path = _resolve_episodic_filename(MEMORY_DIR, date_compact, slug)
+    episodic_dir, scope_label = _resolve_episodic_dir(state)
+    episodic_dir.mkdir(parents=True, exist_ok=True)
+    atom_path = _resolve_episodic_filename(episodic_dir, date_compact, slug)
     atom_name = atom_path.stem
 
     # Build knowledge lines
@@ -1313,7 +1725,7 @@ def _generate_episodic_atom(
     content = (
         f"# Session: {today} {summary['primary_area']}\n"
         f"\n"
-        f"- Scope: global\n"
+        f"- Scope: {scope_label}\n"
         f"- Confidence: [臨]\n"
         f"- Type: episodic\n"
         f"- Trigger: {', '.join(triggers)}\n"
@@ -1333,6 +1745,7 @@ def _generate_episodic_atom(
         + f"\n"
         f"\n"
         + (f"## 關聯\n\n" + "\n".join(relation_lines) + "\n\n" if relation_lines else "")
+        + _build_cross_session_section(state)
         + f"## 行動\n"
         f"\n"
         f"- session 自動摘要，TTL 24d 後自動淘汰\n"
@@ -1348,7 +1761,7 @@ def _generate_episodic_atom(
     atom_path.write_text(content, encoding="utf-8")
     # v2.2: Episodic atoms NOT listed in MEMORY.md index (TTL 24d, vector search discovers them)
 
-    print(f"[episodic] Generated: {atom_path.name}", file=sys.stderr)
+    print(f"[episodic] Generated: {atom_path.name} (scope: {scope_label})", file=sys.stderr)
     return atom_name
 
 
@@ -1361,6 +1774,50 @@ def handle_session_end(input_data: Dict[str, Any], config: Dict[str, Any]) -> No
 
     state["ended_at"] = _now_iso()
     state["phase"] = "done"
+
+    # ─── V2.4: Collect any pending per-turn extraction ──────────────
+    pending = state.pop("pending_extraction", [])
+    if pending:
+        state.setdefault("knowledge_queue", []).extend(pending)
+
+    # ─── V2.4: SessionEnd transcript extraction (补漏) ────────────────
+    rc = config.get("response_capture", {})
+    if rc.get("enabled", True):
+        try:
+            cwd = state.get("session", {}).get("cwd", "")
+            transcript = _find_session_transcript(session_id, cwd)
+            if transcript:
+                se_max = rc.get("session_end_max_chars", 20000)
+                texts = _extract_all_assistant_texts(transcript, max_chars=se_max)
+                if texts:
+                    combined = "\n---\n".join(texts)
+                    existing = state.get("knowledge_queue", [])
+                    new_items = _llm_extract_knowledge(
+                        combined, existing, source="session-end"
+                    )
+                    if new_items:
+                        state.setdefault("knowledge_queue", []).extend(new_items)
+                        print(
+                            f"[v2.4] SessionEnd extraction: {len(new_items)} items",
+                            file=sys.stderr,
+                        )
+        except Exception as e:
+            print(f"[v2.4] SessionEnd extraction error: {e}", file=sys.stderr)
+
+    # ─── V2.4 Phase 3: Cross-session pattern consolidation ──────────
+    cross_obs = []
+    kq = state.get("knowledge_queue", [])
+    if kq and config.get("vector_search", {}).get("enabled", True):
+        try:
+            cross_obs = _check_cross_session_patterns(kq, session_id, config)
+            if cross_obs:
+                state["cross_session_observations"] = cross_obs
+                print(
+                    f"[v2.4] Cross-session: {len(cross_obs)} patterns detected",
+                    file=sys.stderr,
+                )
+        except Exception as e:
+            print(f"[v2.4] Cross-session check error: {e}", file=sys.stderr)
 
     mod_count = len(state.get("modified_files", []))
     kq_count = len(state.get("knowledge_queue", []))
@@ -1406,6 +1863,11 @@ HANDLERS = {
 
 
 def main():
+    # Force UTF-8 output on Windows
+    if sys.platform == "win32":
+        sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', closefd=False)
+        sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', closefd=False)
+
     WORKFLOW_DIR.mkdir(parents=True, exist_ok=True)
 
     # Read JSON from stdin

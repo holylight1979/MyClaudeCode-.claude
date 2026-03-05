@@ -1,158 +1,96 @@
-# 系統架構總覽
+# Claude Code 全域設定 — 核心架構
 
-> `~/.claude` 自訂擴充系統的完整架構描述。
+## Hooks 系統（V2.4）
 
----
+6 個 hook 事件，定義在 `settings.json`，全部由 `workflow-guardian.py` 處理：
 
-## 目錄結構（僅自訂部分）
+| Hook | 觸發時機 | 用途 |
+|------|---------|------|
+| `SessionStart` | Session 開始 | 初始化 session state |
+| `UserPromptSubmit` | 使用者送出訊息 | RECALL 記憶檢索 + intent 分類 + 回應知識萃取（V2.4） |
+| `PostToolUse` | Edit/Write 後 | 追蹤修改檔案 + 增量索引 |
+| `PreCompact` | Context 壓縮前 | 快照 state（壓縮前保護） |
+| `Stop` | 對話結束前 | 閘門：未同步則阻止結束 |
+| `SessionEnd` | Session 結束 | Episodic atom 生成 + 回應補漏萃取 + 跨 Session 鞏固（V2.4） |
 
-```
-~/.claude/
-  CLAUDE.md                              # 全域指令（6 大區塊）
-  settings.json                          # 權限 + hooks 註冊
-  hooks/
-    workflow-guardian.py                  # Hook 事件處理腳本
-  tools/
-    workflow-guardian-mcp/
-      server.js                          # MCP server + HTTP Dashboard
-  workflow/
-    config.json                          # Guardian 可調參數
-    state-{session-id}.json              # 執行時狀態（auto-generated）
-  memory/
-    MEMORY.md                            # 全域原子記憶索引
-    preferences.md                       # 使用者偏好 atom
-    decisions.md                         # 全域決策 atom
-    SPEC_Atomic_Memory_System.md         # 原子記憶系統規格 v1.0
-  commands/
-    init-project.md                      # /init-project skill 定義
-  _AIDocs/
-    _INDEX.md                            # 本知識庫索引
-    _CHANGELOG.md                        # 變更記錄
-    Architecture.md                      # 本文件
-```
+## Skills（/Slash Commands）
 
----
+| Skill | 檔案 | 用途 |
+|-------|------|------|
+| `/init-project` | `commands/init-project.md` | 專案知識庫（_AIDocs）初始化 |
 
-## 系統一：原子記憶
+## 記憶系統（原子記憶 V2.4）
 
-### 設計理念
+### 雙 LLM 架構
 
-跨 session 知識管理，解決 AI 無法記憶的問題。核心原則：
-- **低 token、高精準**：索引式載入，不命中就不讀
-- **強制分類**：所有記憶必須標記 [固]/[觀]/[臨]
-- **永不刪除**：過期記憶沉降至 `_distant/`，可拉回
-
-### 兩層架構
-
-| 層 | 路徑 | 內容 |
-|----|------|------|
-| 全域層 | `~/.claude/memory/` | 使用者偏好、通用工具決策 |
-| 專案層 | `~/.claude/projects/{slug}/memory/` | 專案架構、踩坑記錄 |
-
-### 載入流程
-
-```
-Session 啟動
-  → Read 全域 MEMORY.md（索引 + 高頻事實）
-  → Read 專案 MEMORY.md
-  → 比對使用者訊息 vs Trigger 關鍵詞
-  → 命中 → Read 對應 atom 檔
-  → 未命中 → 不載入（省 token）
-```
-
-### 三層分類
-
-| 符號 | 引用行為 | 晉升條件 |
-|------|---------|---------|
-| [固] | 直接引用 | 4+ sessions 確認 |
-| [觀] | 簡短確認 | 2+ sessions 確認 |
-| [臨] | 明確確認 | 單次決策 |
-
-詳細規格：`memory/SPEC_Atomic_Memory_System.md`
-
----
-
-## 系統二：Workflow Guardian
-
-### 設計理念
-
-防止 AI 完成修改後忘記同步知識庫、CHANGELOG 和版控。用 Claude Code hooks 事件驅動，零背景進程。
-
-### 核心元件
-
-#### 1. Hook 腳本 (`hooks/workflow-guardian.py`)
-
-處理 6 個生命週期事件：
-
-| 事件 | 行為 |
-|------|------|
-| SessionStart | 建立/恢復 session 狀態，解析記憶索引 |
-| PostToolUse | 靜默記錄 Edit/Write 修改的檔案 |
-| UserPromptSubmit | 週期性提醒未同步修改（有上限） |
-| PreCompact | context 壓縮前快照 |
-| Stop | **閘門**：未同步修改 ≥ 門檻時阻止結束（exit code 2） |
-| SessionEnd | 清理標記 |
-
-#### 2. MCP Server (`tools/workflow-guardian-mcp/server.js`)
-
-- 4 個 MCP tools：`workflow_status`, `workflow_signal`, `memory_queue_add`, `memory_queue_flush`
-- HTTP Dashboard @ `http://127.0.0.1:3848`
-- 生命週期綁定 Claude Code（不獨立常駐）
-- **多實例 Dashboard**：port probe + 15 秒 heartbeat recovery，確保存活的 MCP instance 自動接管 port
-
-#### ⚠ MCP 傳輸格式（重要踩坑）
-
-Claude Code v2.x 的 MCP stdio 傳輸格式是 **換行分隔 JSON（JSONL）**：
-
-```
-接收: {"method":"initialize",...}\n
-回應: {"jsonrpc":"2.0","id":0,"result":{...}}\n
-```
-
-**不是** LSP 風格的 Content-Length header 格式（`Content-Length: NNN\r\n\r\n{...}`）。自行開發 MCP server 時必須使用 JSONL，否則 Claude Code 會等 30 秒超時後標記 failed 並強制終止 process。
-
-對應的 protocolVersion 為 `2025-11-25`。
-
-#### 3. 可調參數 (`workflow/config.json`)
-
-| 參數 | 預設 | 說明 |
+| 角色 | 引擎 | 職責 |
 |------|------|------|
-| stop_gate_max_blocks | 2 | Stop 最多阻擋 N 次，第 N+1 次強制放行 |
-| min_files_to_block | 2 | 修改檔案 < N 時不觸發閘門 |
-| remind_after_turns | 3 | 每 N 輪提醒一次 |
-| max_reminders | 3 | 整個 session 最多提醒 N 次 |
-| dashboard_port | 3848 | Dashboard HTTP port |
+| 雲端 LLM | Claude Code | 記憶演進決策、分類判斷、晉升/淘汰 |
+| 本地 LLM | Ollama qwen3 | embedding、query rewrite、re-ranking、intent 分類、回應知識萃取 |
 
-### 狀態流轉
+### 資料層
+
+1. **MEMORY.md**（always-loaded）: Atom 索引 + 高頻事實
+2. **Atom 檔案**（按需載入）: 由 Trigger 欄位 + 向量搜尋發現
+3. **Vector DB**: LanceDB（`memory/_vectordb/`）
+4. **Episodic atoms**: 自動生成 session 摘要（`memory/episodic/`，TTL 24d，不進 git）
+
+### 記憶檢索管線
 
 ```
-SessionStart → working
-  ↓ (修改檔案)
-working → working (PostToolUse 累積)
-  ↓ (使用者要求同步 / Stop 閘門提醒)
-working → syncing (workflow_signal: sync_started)
-  ↓ (同步完成)
-syncing → done (workflow_signal: sync_completed)
-  ↓ (可隨時)
-any → muted (workflow_signal: mute) → 所有提醒靜默
+使用者訊息 → UserPromptSubmit hook (workflow-guardian.py)
+  ├─ Intent 分類 (rule-based ~1ms)
+  ├─ MEMORY.md Trigger 匹配 (keyword ~10ms)
+  ├─ Vector Search (LanceDB + qwen3-embedding ~200-500ms)
+  └─ Ranked Merge → top atoms → additionalContext
 ```
 
-### Dashboard 功能
+降級: Ollama 不可用 → 純 keyword | Vector Service 掛 → graceful fallback
 
-- Session 卡片：專案名稱（從 cwd 提取）、phase 徽章、檔案/知識計數
-- 操作按鈕：Mark Synced、Reset、Mute、Delete
-- 自動刷新（5 秒）
-- 已結束 session 60 秒後自動清理
+### 回應知識捕獲（V2.4）
 
----
+| 層 | 時機 | 輸入 | 上限 |
+|----|------|------|------|
+| 逐輪萃取 | UserPromptSubmit（非同步 daemon thread） | 上一輪 assistant 回應 | 3000 chars, 2 items |
+| SessionEnd 補漏 | SessionEnd（同步） | 全 transcript | 20000 chars, 5 items |
 
-## 系統三：CLAUDE.md 全域指令
+萃取結果一律 `[臨]`，由本地 qwen3:1.7b 處理，零雲端 token 開銷。
 
-6 大區塊：
+### 跨 Session 鞏固（V2.4 Phase 3）
 
-1. **_AIDocs 知識庫** — session 啟動檢查、工作中規則
-2. **原子記憶** — 兩層載入、三層分類、晉升/沉降
-3. **工作結束同步** — context-aware 情境判斷表 + Guardian 監督
-4. **對話管理** — 新開 session 時機、已決策不重複分析
-5. **外部服務存取** — Redmine REST API 模板
-6. **使用者偏好** — 語言、風格、可讀性原則
+SessionEnd 時對 knowledge_queue 做向量搜尋（min_score 0.75）：
+- 2+ sessions 命中 → 自動晉升 `[臨]`→`[觀]`
+- 4+ sessions 命中 → 建議晉升 `[觀]`→`[固]`（需使用者確認）
+- 結果寫入 episodic atom「跨 Session 觀察」段落
+
+### 索引來源（2 層）
+
+| Layer | 路徑 | Atoms |
+|-------|------|-------|
+| global | `~/.claude/memory/` | 4 (preferences, decisions, excel-tools, spec) |
+| episodic | `memory/episodic/` | 動態（TTL 24d，vector search 發現） |
+
+### 工具鏈
+
+| 工具 | 路徑 | 用途 |
+|------|------|------|
+| rag-engine.py | `tools/rag-engine.py` | CLI: search/index/status/health |
+| memory-write-gate.py | `tools/memory-write-gate.py` | 寫入品質閘門 + 去重 |
+| memory-audit.py | `tools/memory-audit.py` | 格式驗證、過期、晉升建議 |
+| memory-conflict-detector.py | `tools/memory-conflict-detector.py` | 矛盾偵測 |
+| eval-ranked-search.py | `tools/eval-ranked-search.py` | Ranked search 評估 |
+| read-excel.py | `tools/read-excel.py` | Excel 讀取工具 |
+| memory-vector-service/ | `tools/memory-vector-service/` | HTTP 服務 (port 3849) |
+
+## MCP Servers
+
+| Server | 傳輸 | 用途 |
+|--------|------|------|
+| workflow-guardian | stdio (Node.js) | session 管理 + Dashboard (port 3848) |
+
+## 權限設定
+
+`settings.json` 的 `permissions.allow` 列表：
+- Bash: powershell, python, ls, wc, du, git, gh, ollama, curl, echo, grep, find
+- Read: C:\Users\**, C:\OpenClawWorkspace\**
+- MCP: workflow-guardian (workflow_signal, workflow_status)

@@ -1,29 +1,22 @@
 # Atom Index — Global
 
-> 每個 session 啟動時，先讀此索引。
-> 比對使用者訊息的 Trigger 欄，命中 → Read 對應 atom 檔。
-> 此層為跨專案共用知識，專案特有知識在各專案的 MEMORY.md。
+> Session 啟動時先讀此索引。比對 Trigger → Read 對應 atom。
 
-| Atom | Path | Trigger |
-|------|------|---------|
-| preferences | memory/preferences.md | 偏好, 風格, 習慣, style, preference, 語言, 回應 |
-| decisions | memory/decisions.md | 全域決策, 工作流, workflow, 設定, config, 記住, MCP |
-| excel-tools | memory/excel-tools.md | Excel, xls, xlsx, 讀取, 試算表, spreadsheet, openpyxl, xlrd |
-| rag-vector-plan | memory/rag-vector-plan.md | RAG, vector, 向量, embedding, 語意, semantic, LanceDB, Ollama |
+| Atom | Path | Trigger | Confidence |
+|------|------|---------|------------|
+| preferences | memory/preferences.md | 偏好, 風格, 習慣, style, preference, 語言, 回應 | [固] |
+| decisions | memory/decisions.md | 全域決策, 工具, 工作流, workflow, guardian, hooks, MCP, 記憶系統 | [固] |
+| excel-tools | memory/excel-tools.md | Excel, xls, xlsx, 讀取, 試算表, spreadsheet, openpyxl, xlrd | [固] |
+| spec | memory/SPEC_Atomic_Memory_System.md | SPEC, 規格, atom格式, 記憶規範, memory spec | [固] |
 
 ---
 
 ## 高頻事實
 
-- 使用者: holylight | 回應語言: 繁體中文（技術術語可英文）
-- 平台: Windows 11 Pro | 背景: C#/.NET Core 遊戲伺服器
-- [固] 輕量極簡，反對過度工程
-- [固] 高可讀性：一個檔案看完相關邏輯
-- [固] 框架層應薄，開發者要能理解底層
-- [固] MCP 可用: playwright, openclaw-notify, workflow-guardian, computer-use（Node 22 LTS）
-- [固] MCP 自寫 server 必須用 JSONL 格式 + protocolVersion 2025-11-25
-- [固] Workflow Guardian: hooks 驅動工作流監督 + Dashboard @ localhost:3848
-- [固] **原子記憶 V2**：Hybrid RECALL（keyword + vector semantic search + local LLM）@ localhost:3849
-- [固] Vector Service: LanceDB + qwen3-embedding (Ollama) / bge-m3 (fallback) | LLM: qwen3:1.7b
-- [固] GPU: GTX 1050 Ti 4GB — qwen3.5 系列太慢，維持 qwen3 系列
-- [固] Excel 讀取工具: `~/.claude/tools/read-excel.py`（Python3 + openpyxl + xlrd，跨專案可用）
+- [固] 使用者: holylight | 平台: Windows 11 Pro
+- [固] MCP 可用: playwright, openclaw-notify, workflow-guardian, computer-use
+- [固] Guardian @ localhost:3848 | Vector @ localhost:3849
+- [固] GPU: GTX 1050 Ti 4GB | qwen3-embedding + qwen3:1.7b
+- [固] Vector DB: LanceDB | search_min_score: 0.65
+- [固] 原子記憶 V2.4：回應捕獲 + 跨 Session 鞏固 + 6 hooks
+- [固] Excel: `~/.claude/tools/read-excel.py`（Python3 + openpyxl + xlrd）

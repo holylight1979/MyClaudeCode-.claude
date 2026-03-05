@@ -507,7 +507,8 @@ def test_episodic_generation(ctx: TestContext) -> TestResult:
             "has_work_areas": "工作區域" in text,
             "has_modified_count": "修改 3 個檔案" in text,
             "has_atoms_ref": "decisions" in text and "rag-vector-plan" in text,
-            "index_updated": result in idx_text,
+            # v2.2: episodic atoms NOT listed in MEMORY.md (vector search discovers)
+            "index_not_needed": True,
         }
 
         failed = [k for k, v in checks.items() if not v]

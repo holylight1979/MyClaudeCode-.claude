@@ -2,34 +2,60 @@
 
 - Scope: global
 - Confidence: [固]
-- Trigger: 全域決策, 工作流, workflow, 設定, config, 記住, MCP
-- Last-used: 2026-03-04
-- Confirmations: 11
+- Trigger: 全域決策, 工具, 工作流, workflow, guardian, hooks, MCP, 記憶系統
+- Last-used: 2026-03-05
+- Confirmations: 12
+- Type: decision
 
 ## 知識
 
-- [固] 版控同步支援 Git 和 SVN，自動偵測 .git/ 或 .svn/
-- [固] MCP servers 實際可用: playwright, openclaw-notify, workflow-guardian, computer-use
-- [固] computer-use 正確套件名: `computer-use-mcp`（社群維護），需 Node 22 LTS 執行（jimp ESM 在 Node 24 上壞掉）
-- [固] Node 22 LTS 可攜版安裝在 `~/.claude/tools/node22/node-v22.14.0-win-x64/`，專給 computer-use-mcp 使用
-- [固] browser-use 已從 .claude.json 移除（需付費 API key），Playwright 已覆蓋瀏覽器自動化
-- [固] OpenClaw 的 atoms/ 目錄僅歸屬 OpenClaw，不作為 Claude Code 全域 atom 來源
-- [固] Workflow Guardian：hooks 事件驅動的工作流監督系統，自動追蹤修改、Stop 閘門阻止未同步結束、Atom Last-used 自動刷新
-- [固] session ID 支援 prefix match（截短 8 碼即可操作 workflow_signal 等工具）
-- [固] sync_completed 信號自動清空 knowledge_queue + modified_files，並寫入 `ended_at` 供 auto-cleanup 使用
-- [固] **Session state auto-cleanup 三層策略**：Tier 1（有 ended_at，1min TTL）、Tier 2（orphan done 無 ended_at，30min）、Tier 3（stale working，24h）。TTL 可在 `config.json` 的 `cleanup` 區塊調整
-- [固] SessionEnd hook `async: true` 導致 `ended_at` 從未被 Python hook 寫入；靠 sync_completed 信號補寫 + 三層 fallback 解決
-- [固] 工作結束同步須根據情境判斷適用步驟（有 _AIDocs 才更新 _CHANGELOG，有 .git/.svn 才版控）
-- [固] **MCP stdio 傳輸格式**: Claude Code v2.x 使用 JSONL（`{...}\n`），不是 Content-Length header。自寫 MCP server 必須用 JSONL + protocolVersion `2025-11-25`，否則 30 秒超時 failed
-- [固] **Dashboard v2.1**: Tabbed UI（Sessions/Episodic/Health/Tests/Vector），API: /api/episodic, /api/health, /api/test-run, /api/vector-status, /api/knowledge-queue
-- [固] Node.js `exec` > `execFile` on Windows：`execFile` 找不到 Python（WindowsApps stub），`exec` 透過 shell 可正常解析 PATH；路徑需用正斜線避免反斜線被 shell 當逸出字元
-- [固] **Promotion (v2.2)**：[臨]→[觀] Confirmations≥2 自動晉升（寫檔+通知✅）；[觀]→[固] ≥4 維持⚡hint 需人工確認
-- [固] **Episodic atoms 不列 MEMORY.md 索引**：TTL 短（24d）且 `/search/episodic` 可召回。`_generate_episodic_atom()` 已跳過索引插入
-- [固] **Session Start Context Injection (v2.2)**：首 prompt Phase 0 呼叫 `/search/episodic`，注入 `[Session:Context]` block，~400ms
-- [固] **主動推進分類**：跨 session 模式偵測（💡建議建立 atom）+ episodic 遷移提示（❓3+ session 引用）
+### 核心架構
+- [固] 原子記憶 V2.4：Hybrid RECALL + Ranked Search + 回應捕獲 + 跨 Session 鞏固 + Workflow Guardian
+- [固] 雙 LLM：Claude Code（雲端決策）+ Ollama qwen3（本地語意處理）
+- [固] 6 hook 事件全由 workflow-guardian.py 統一處理（SessionStart/UserPromptSubmit/PostToolUse/PreCompact/Stop/SessionEnd）
+
+### 記憶檢索管線（V2.3 起）
+- [固] UserPromptSubmit: Intent 分類（qwen3:1.7b）→ Trigger 匹配 → Vector Search → Ranked Merge → additionalContext
+- [固] 降級順序：Ollama 不可用 → 純 keyword | Vector Service 掛 → graceful fallback
+- [固] 索引 2 層：global → project（向量發現）
+
+### 回應捕獲（V2.4）
+- [固] 逐輪萃取：UserPromptSubmit 非同步讀取上一輪 assistant 回應，qwen3:1.7b 萃取知識（≤3000 chars, 2 items）
+- [固] SessionEnd 補漏：同步掃描全 transcript（≤20000 chars, 5 items）
+- [固] 萃取結果一律 [臨]，經跨 Session 鞏固後自動晉升
+
+### 跨 Session 鞏固（V2.4 Phase 3）
+- [固] SessionEnd 時對 knowledge_queue 做向量搜尋（min_score 0.75）
+- [固] 2+ sessions 命中 → 自動晉升 [臨]→[觀]；4+ sessions → 建議晉升 [觀]→[固]
+- [固] 結果寫入 episodic atom「跨 Session 觀察」段落
+
+### Episodic atom
+- [固] SessionEnd 自動生成，TTL 24d，存放於 memory/episodic/（不進 git）
+- [固] 門檻：modified_files ≥ 1 且 session 時長 ≥ 2 分鐘
+- [固] 不列入 MEMORY.md index，靠 vector search 發現
+
+### 基礎設施
+- [固] Vector Service @ localhost:3849 | Dashboard @ localhost:3848
+- [固] Ollama models: qwen3-embedding（embedding）+ qwen3:1.7b（萃取/分類）
+- [固] Vector DB: LanceDB（此電腦支援 AVX2，LanceDB 效能穩定）
+- [固] search_min_score: 0.65（完整版 embedding 精確度足夠）
+- [固] MCP 傳輸格式：JSONL，protocolVersion 2025-11-25
+
+### 歷史決策
+- [固] 記憶檢索統一用 Python，已移除 Node.js memory-v2（2026-03-05 退役）
+- [固] Stop hook 只保留 Guardian 閘門，移除 Discord 通知
 
 ## 行動
 
-- 工作結束同步時，先判斷情境（_AIDocs? .git? .svn?），只提及適用的步驟
-- 同步完成後透過 MCP `workflow_signal("sync_completed")` 通知 Guardian 解除閘門
-- 自行開發 MCP server 時，用 JSONL 格式收發，不要用 Content-Length header
+- 記憶寫入走 write-gate 品質閘門
+- 向量搜尋 fallback 順序：Ollama → sentence-transformers → keyword
+- Guardian 閘門最多阻止 2 次，第 3 次強制放行
+
+## 演化日誌
+
+- 2026-03-05: 合併自家中 V2.4 — 帶入回應捕獲、跨 Session 鞏固、episodic 改進
+- 2026-03-05: Vector DB 保留 LanceDB（此電腦支援 AVX2），embedding 保留 qwen3-embedding 完整版
+- 2026-03-05: search_min_score 保持 0.65（完整版 embedding 不需降低）
+- 2026-03-05: 6 hook 事件（不含 PreToolUse），indexer.py 加入 additional_atom_dirs + episodic/ 子目錄掃描
+- 2026-03-05: fix: workflow-guardian stdout/stderr 強制 UTF-8（Windows cp950 導致中文亂碼）
+- 2026-03-05: feat: 專案級 episodic（CWD 對應 project 層時，episodic 存到該 project memory）

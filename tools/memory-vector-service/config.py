@@ -28,6 +28,7 @@ DEFAULTS: Dict[str, Any] = {
     "auto_start_service": True,
     "auto_index_on_change": True,
     "index_distant": False,                 # 是否索引 _distant/ 遙遠記憶
+    "additional_atom_dirs": [],              # 額外 atom 來源目錄
 }
 
 
@@ -39,7 +40,7 @@ def load_config() -> Dict[str, Any]:
             with open(CONFIG_PATH, "r", encoding="utf-8") as f:
                 full = json.load(f)
             vs = full.get("vector_search", {})
-            config.update({k: v for k, v in vs.items() if k in DEFAULTS})
+            config.update({k: v for k, v in vs.items() if k in DEFAULTS or k == "additional_atom_dirs"})
         except (json.JSONDecodeError, OSError):
             pass
     return config
