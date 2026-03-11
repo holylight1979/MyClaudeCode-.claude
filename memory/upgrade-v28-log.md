@@ -1,9 +1,11 @@
 # 升級實況紀錄（V2.5→V2.8）
 
 - Scope: global
-- Confidence: [臨]
+- Confidence: [觀]
 - Type: procedural
 - Trigger: 升級, merge, V2.8, 合併
+- Last-used: 2026-03-11
+- Confirmations: 2
 - Created: 2026-03-11
 
 ## 進度
@@ -12,7 +14,7 @@
 |---------|------|---------|-----------|------------|
 | S1 | ✅ 完成 | 備份 + 8 檔案新增 + 3 項驗證通過 | 無 | f916780 |
 | S2 | ✅ 完成 | guardian 合併 + CLAUDE.md + MEMORY + SPEC | 無 | 21879e6 |
-| S3 | ⏳ 待執行 | 文件更新 + SOP + 全面驗證 | — | — |
+| S3 | ✅ 完成 | SPEC §十一~十三 + _CHANGELOG 滾動 + 文件版本對齊 + 全面驗證 | 無 | (pending) |
 
 ## S1 完成明細
 
@@ -72,3 +74,13 @@
 | S2 | MEMORY.md | 新增 failures/toolchain 索引 + V2.8 版本 + Wisdom Engine 高頻事實 |
 | S2 | SPEC | 移除重複 Confirmations 欄位 + 版本號 v2.4→v2.8 |
 | S2 | 驗證 | py_compile PASS, SessionStart hook PASS, CLAUDE.md 145行 PASS, 索引完整性 PASS |
+| S3 | SPEC | §十一 自我迭代 V2.6 + §十二 品質回饋 V2.7 + §十三 Wisdom Engine V2.8 + 版本表 3 行 |
+| S3 | 文件更新 | _CHANGELOG 滾動（+1 條 V2.8, -2 條 → Archive）、_INDEX V2.8、Architecture V2.8（skills/atoms/wisdom）、File_Tree 全面更新、Install-forAI V2.8 |
+| S3 | 驗證 | memory-audit 0 critical errors（1 預期中 upgrade-log 缺 Last-used → 已修）、wisdom 7 functions import PASS、4 hook events 無 exception |
+
+## 演化日誌
+
+| 日期 | 變更 | 來源 |
+|------|------|------|
+| 2026-03-11 | 建立為 [臨] | S1 |
+| 2026-03-11 | [臨]→[觀] 跨 2 sessions 確認 | S3 |

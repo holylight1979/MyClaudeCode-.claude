@@ -1,25 +1,29 @@
 # Claude Code 全域設定 — 核心架構
 
-## Hooks 系統（V2.4）
+## Hooks 系統（V2.8）
 
-6 個 hook 事件，定義在 `settings.json`，全部由 `workflow-guardian.py` 處理：
+6 個 hook 事件，定義在 `settings.json`，全部由 `workflow-guardian.py`（~2285 行）處理：
 
 | Hook | 觸發時機 | 用途 |
 |------|---------|------|
-| `SessionStart` | Session 開始 | 初始化 session state |
-| `UserPromptSubmit` | 使用者送出訊息 | RECALL 記憶檢索 + intent 分類 + 回應知識萃取（V2.4） |
-| `PostToolUse` | Edit/Write 後 | 追蹤修改檔案 + 增量索引 |
+| `UserPromptSubmit` | 使用者送出訊息 | RECALL 記憶檢索 + intent 分類 + 回應知識萃取 + Wisdom 因果警告/情境分類（V2.8） |
+| `PostToolUse` | Edit/Write 後 | 追蹤修改檔案 + 增量索引 + Wisdom retry 追蹤（V2.8） |
 | `PreCompact` | Context 壓縮前 | 快照 state（壓縮前保護） |
 | `Stop` | 對話結束前 | 閘門：未同步則阻止結束 |
-| `SessionEnd` | Session 結束 | Episodic atom 生成 + 回應補漏萃取 + 跨 Session 鞏固（V2.4） |
+| `SessionStart` | Session 開始 | 初始化 session state + Wisdom 盲點提醒 + 定期檢閱提醒（V2.8） |
+| `SessionEnd` | Session 結束 | Episodic atom 生成 + 回應補漏萃取 + 跨 Session 鞏固 + Wisdom 反思更新（V2.8） |
 
 ## Skills（/Slash Commands）
 
 | Skill | 檔案 | 用途 |
 |-------|------|------|
 | `/init-project` | `commands/init-project.md` | 專案知識庫（_AIDocs）初始化 |
+| `/resume` | `commands/resume.md` | 自動續接 Session（MCP 桌面自動化） |
+| `/consciousness-stream` | `commands/consciousness-stream.md` | 識流處理（高風險跨系統任務） |
+| `/svn-update` | `commands/svn-update.md` | SVN 更新工作目錄 |
+| `/unity-yaml` | `commands/unity-yaml.md` | Unity YAML Asset 操作 |
 
-## 記憶系統（原子記憶 V2.4）
+## 記憶系統（原子記憶 V2.8）
 
 ### 雙 LLM 架構
 
@@ -34,6 +38,7 @@
 2. **Atom 檔案**（按需載入）: 由 Trigger 欄位 + 向量搜尋發現
 3. **Vector DB**: LanceDB（`memory/_vectordb/`）
 4. **Episodic atoms**: 自動生成 session 摘要（`memory/episodic/`，TTL 24d，不進 git）
+5. **Wisdom Engine**: 因果圖 + 反思統計（`memory/wisdom/`，V2.8）
 
 ### 記憶檢索管線
 
@@ -67,7 +72,7 @@ SessionEnd 時對 knowledge_queue 做向量搜尋（min_score 0.75）：
 
 | Layer | 路徑 | Atoms |
 |-------|------|-------|
-| global | `~/.claude/memory/` | 4 (preferences, decisions, excel-tools, spec) |
+| global | `~/.claude/memory/` | 7 (preferences, decisions, excel-tools, spec, workflow-rules, failures, toolchain) |
 | episodic | `memory/episodic/` | 動態（TTL 24d，vector search 發現） |
 
 ### 工具鏈
@@ -81,6 +86,7 @@ SessionEnd 時對 knowledge_queue 做向量搜尋（min_score 0.75）：
 | eval-ranked-search.py | `tools/eval-ranked-search.py` | Ranked search 評估 |
 | read-excel.py | `tools/read-excel.py` | Excel 讀取工具 |
 | memory-vector-service/ | `tools/memory-vector-service/` | HTTP 服務 (port 3849) |
+| wisdom_engine.py | `hooks/wisdom_engine.py` | Wisdom Engine（因果圖+情境分類+反思，V2.8） |
 
 ## MCP Servers
 

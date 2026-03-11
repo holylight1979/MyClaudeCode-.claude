@@ -4,13 +4,13 @@
 - Confidence: [固]
 - Trigger: 全域決策, 工具, 工作流, workflow, guardian, hooks, MCP, 記憶系統
 - Last-used: 2026-03-11
-- Confirmations: 24
+- Confirmations: 25
 - Type: decision
 
 ## 知識
 
 ### 核心架構
-- [固] 原子記憶 V2.5：Hybrid RECALL + Ranked Search + 回應捕獲（可操作性標準）+ 跨 Session 鞏固 + Write Gate 強化 + Workflow Guardian
+- [固] 原子記憶 V2.8：Hybrid RECALL + Ranked Search + 回應捕獲 + 跨 Session 鞏固 + Write Gate + 自我迭代 + Wisdom Engine
 - [固] 雙 LLM：Claude Code（雲端決策）+ Ollama qwen3（本地語意處理）
 - [固] 6 hook 事件全由 workflow-guardian.py 統一處理（SessionStart/UserPromptSubmit/PostToolUse/PreCompact/Stop/SessionEnd）
 
@@ -47,6 +47,20 @@
 - [固] _call_ollama_generate: num_predict=2048, timeout=120s（qwen3 thinking mode 需 ~30s on GTX 1050 Ti）
 - [固] V2.4 萃取改用 extract-worker.py 獨立子 process（hook 有 3s timeout，萃取需 ~30s）
 
+### 自我迭代（V2.6）
+- [固] 8 條核心規則：品質函數、收斂優先、證據門檻、淘汰勇氣、震盪偵測、成熟度感知、三維平衡、演進邊界
+- [固] 定期檢閱：SessionStart 檢查 episodic 計數 → 提醒掃描近期 patterns → 收攏為 [觀]/[固]
+
+### 品質回饋與成熟度（V2.7）
+- [固] Output quality check（PostToolUse）、iteration metrics（SessionEnd）、oscillation detection、maturity phase
+- [固] 成熟度三階段：learning(<15) → stable(15-50) → mature(>50)，依 episodic 數量判斷
+
+### Wisdom Engine（V2.8）
+- [固] 三力架構：因果圖（BFS depth=2）+ 情境分類器（加權評分）+ 反思引擎（滑動窗口統計）
+- [固] wisdom_engine.py ~250 行，guardian lazy import + graceful fallback
+- [固] 冷啟動零 token，注入上限 ≤90 tokens
+- [固] 因果圖 Bayesian 更新：hit → ×0.9+0.1, miss → ×0.95, <0.3 自動移除
+
 ### 歷史決策
 - [固] 記憶檢索統一用 Python，已移除 Node.js memory-v2（2026-03-05 退役）
 - [固] Stop hook 只保留 Guardian 閘門，移除 Discord 通知
@@ -68,3 +82,4 @@
 - 2026-03-05: fix: _call_ollama_generate num_predict 500→2048, timeout 3→120s（qwen3 thinking mode 修復）
 - 2026-03-06: fix: V2.4 萃取改用 detached subprocess（extract-worker.py），解決 sys.exit + hook 3s timeout 雙殺問題，萃取首次成功
 - 2026-03-06: feat: V2.5 寫入品質強化 — 萃取 prompt 重寫（可操作性標準）、6 知識類型、150 chars 上限、format:json、Write Gate 可操作性評分、CJK patterns
+- 2026-03-11: feat: V2.8 升級完成（3 sessions）— Wisdom Engine + 自我迭代 V2.6 + 品質回饋 V2.7 + Guardian 增量合併 + SPEC/文件全面更新

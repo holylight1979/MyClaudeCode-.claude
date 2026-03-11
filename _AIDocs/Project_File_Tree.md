@@ -12,17 +12,29 @@
 ├── .gitignore                   ← Git 排除規則
 │
 ├── hooks/                       ← Hook 腳本
-│   └── workflow-guardian.py     ← 統一 Hook 入口（~1878 行，處理 6 events）
+│   ├── workflow-guardian.py     ← 統一 Hook 入口（~2285 行，處理 6 events）
+│   └── wisdom_engine.py        ← Wisdom Engine V2.8（~250 行，因果圖+情境分類+反思）
 │
 ├── commands/                    ← 自訂 Skills（/slash commands）
-│   └── init-project.md          ← /init-project 知識庫初始化
+│   ├── init-project.md          ← /init-project 知識庫初始化
+│   ├── resume.md                ← /resume 自動續接 Session
+│   ├── consciousness-stream.md  ← /consciousness-stream 識流處理
+│   ├── svn-update.md            ← /svn-update SVN 更新
+│   └── unity-yaml.md            ← /unity-yaml Unity YAML 操作
 │
 ├── memory/                      ← 全域記憶層
 │   ├── MEMORY.md                ← Atom 索引（≤30 行，always-loaded）
 │   ├── preferences.md           ← [固] 使用者偏好
 │   ├── decisions.md             ← [固] 全域決策
 │   ├── excel-tools.md           ← [固] Excel 工具知識
-│   ├── SPEC_Atomic_Memory_System.md ← 原子記憶系統規格
+│   ├── workflow-rules.md        ← [固] 版本控制工作流規則
+│   ├── failures.md              ← [觀] 失敗/陷阱知識
+│   ├── toolchain.md             ← [觀] 工具鏈知識
+│   ├── SPEC_Atomic_Memory_System.md ← 原子記憶系統規格 v2.8
+│   ├── wisdom/                  ← Wisdom Engine 資料（V2.8）
+│   │   ├── DESIGN.md            ← 設計文件
+│   │   ├── causal_graph.json    ← 因果關係有向圖
+│   │   └── reflection_metrics.json ← 反思統計
 │   ├── episodic/                ← 自動生成 session 摘要（TTL 24d，不進 git）
 │   ├── _distant/                ← 遙遠記憶區（已淘汰 atoms，不進 git）
 │   └── _vectordb/               ← LanceDB 向量索引（不進 git）
@@ -54,7 +66,8 @@
 │
 ├── _AIDocs/                     ← 知識庫（本目錄）
 │   ├── _INDEX.md                ← 文件索引
-│   ├── _CHANGELOG.md            ← 變更記錄
+│   ├── _CHANGELOG.md            ← 變更記錄（最近 ~8 筆）
+│   ├── _CHANGELOG_ARCHIVE.md    ← 變更記錄封存
 │   ├── Architecture.md          ← 核心架構分析
 │   ├── Project_File_Tree.md     ← 目錄結構（本檔案）
 │   └── AtomicMemory-v2.1-Plan.md ← v2.1 研究計畫（歷史文件）

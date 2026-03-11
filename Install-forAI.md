@@ -1,4 +1,4 @@
-# Atomic Memory V2.5 — 安裝指南
+# Atomic Memory V2.8 — 安裝指南
 
 > **目標讀者**：使用 VS Code + Claude Code Extension，但完全不知道原子記憶是什麼的開發者。
 > 本指南會幫你把原子記憶系統**合併安裝**到你現有的 `~/.claude/` 目錄中。
