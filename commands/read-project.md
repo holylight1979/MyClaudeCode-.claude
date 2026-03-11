@@ -106,6 +106,24 @@
 
 若內容超過 200 行 → 按分類拆分為 `doc-index-{名稱}-01.md`, `-02.md`...
 
+### Step 3.5: 寫入 _AIDocs（若存在）
+
+若專案根目錄有 `_AIDocs/`，同步產出人讀版文件：
+
+1. **建立/更新** `_AIDocs/DocIndex-{名稱}.md`：
+   - 標題：`# {目錄名稱} 文件索引`
+   - **不含** atom metadata（無 Trigger/Confidence/Last-used 等）
+   - 與 atom 相同的分類檔案列表，但使用完整描述
+   - 底部加「速查」段落，將常見問題對應到檔案
+
+2. **更新 `_AIDocs/_INDEX.md`**：在文件清單表格加一列
+   `| N+1 | DocIndex-{名稱}.md | 文件索引 — {來源目錄簡述} |`
+
+3. **追加 `_AIDocs/_CHANGELOG.md`**：
+   `| {日期} | **read-project**: 新增 DocIndex-{名稱}.md（{N} 份文件索引） | DocIndex-{名稱}.md |`
+
+若無 `_AIDocs/` → 跳過此步驟，僅寫 atom。
+
 ### Step 4: 更新索引
 
 1. 將新 atom 加入對應層的 MEMORY.md 索引表

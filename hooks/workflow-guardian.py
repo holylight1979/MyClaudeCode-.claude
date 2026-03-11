@@ -66,6 +66,12 @@ DEFAULTS = {
         "min_score": 0.35,
         "search_timeout_ms": 1500,
     },
+    # v2.10: _AIDocs Bridge
+    "aidocs": {
+        "enabled": True,
+        "max_session_start_entries": 15,
+        "max_prompt_matches": 3,
+    },
     # v2.2 Sprint 2: Proactive classification
     "proactive": {
         "auto_promote_lin": True,   # [臨]→[觀] auto-promote
@@ -300,6 +306,81 @@ def get_project_memory_dir(cwd: str) -> Optional[Path]:
     if project_mem.exists():
         return project_mem
     return None
+
+
+# ─── _AIDocs Bridge (v2.10) ──────────────────────────────────────────────
+
+AiDocsEntry = Tuple[str, str]  # (filename, description)
+
+
+def find_project_root(cwd: str) -> Optional[Path]:
+    """Walk up from CWD to find project root (contains _AIDocs/ or .git/ or .svn/)."""
+    if not cwd:
+        return None
+    p = Path(cwd)
+    for _ in range(4):  # cwd itself + max 3 levels up
+        if (p / "_AIDocs").is_dir():
+            return p
+        if (p / ".git").exists() or (p / ".svn").exists():
+            return p
+        parent = p.parent
+        if parent == p:
+            break
+        p = parent
+    return Path(cwd)  # fallback
+
+
+def parse_aidocs_index(project_root: Path) -> List[AiDocsEntry]:
+    """Parse _AIDocs/_INDEX.md table, return [(filename, description)]."""
+    index_path = project_root / "_AIDocs" / "_INDEX.md"
+    if not index_path.exists():
+        return []
+    try:
+        text = index_path.read_text(encoding="utf-8-sig")
+    except (OSError, UnicodeDecodeError):
+        return []
+
+    entries: List[AiDocsEntry] = []
+    in_table = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not in_table:
+            if stripped.startswith("| #") or stripped.startswith("|#"):
+                in_table = True
+                continue
+        else:
+            if stripped.startswith("|---") or stripped.startswith("| ---"):
+                continue
+            if not stripped.startswith("|"):
+                in_table = False
+                continue
+            cells = [c.strip() for c in stripped.split("|") if c.strip()]
+            if len(cells) >= 3:
+                fname = cells[1].strip("[]() ")
+                # Strip markdown links: [Name](./path) → Name
+                link_match = re.match(r"\[([^\]]+)\]", cells[1])
+                if link_match:
+                    fname = link_match.group(1)
+                desc = cells[2]
+                # Skip deprecated (strikethrough) entries
+                if fname.startswith("~~") or "淘汰" in desc:
+                    continue
+                entries.append((fname, desc))
+    return entries
+
+
+def extract_aidocs_keywords(entries: List[AiDocsEntry]) -> Dict[str, List[str]]:
+    """Extract search keywords from _AIDocs descriptions."""
+    STOP = {"的", "與", "和", "等", "個", "含", "—", "md", "分析", "說明", "文件", "專案"}
+    result: Dict[str, List[str]] = {}
+    for fname, desc in entries:
+        words = re.findall(r"[\u4e00-\u9fff]{2,}|[a-zA-Z_]{3,}", desc.lower())
+        keywords = [w for w in words if w not in STOP]
+        # Also include filename stem as keywords
+        stem = Path(fname).stem.lower().replace("_", " ").replace("-", " ")
+        keywords.extend(stem.split())
+        result[fname] = list(set(keywords))[:10]
+    return result
 
 
 def match_triggers(prompt: str, atoms: List[AtomEntry]) -> List[AtomEntry]:
@@ -767,6 +848,16 @@ def handle_session_start(input_data: Dict[str, Any], config: Dict[str, Any]) -> 
         state["injected_atoms"] = []
         state["phase"] = "working"
 
+        # ── v2.10: _AIDocs Bridge — scan project _AIDocs index ──────────
+        project_root = find_project_root(cwd)
+        aidocs_entries = parse_aidocs_index(project_root) if project_root else []
+        aidocs_keywords = extract_aidocs_keywords(aidocs_entries) if aidocs_entries else {}
+        state["aidocs"] = {
+            "project_root": str(project_root) if project_root else "",
+            "entries": [(f, d) for f, d in aidocs_entries],
+            "keywords": aidocs_keywords,
+        }
+
         g_names = [n for n, _, _ in global_atoms]
         p_names = [n for n, _, _ in project_atoms]
         lines = [
@@ -776,6 +867,15 @@ def handle_session_start(input_data: Dict[str, Any], config: Dict[str, Any]) -> 
         if p_names:
             lines.append(f"Project atoms: {', '.join(p_names)}.")
         lines.append("I will track file modifications and remind you to sync before ending.")
+
+        # Inject compact _AIDocs index (v2.10)
+        max_entries = config.get("aidocs", {}).get("max_session_start_entries", 15)
+        if aidocs_entries:
+            aidocs_lines = [f"[AIDocs] {len(aidocs_entries)} docs in _AIDocs/:"]
+            for fname, desc in aidocs_entries[:max_entries]:
+                clean = re.sub(r"[*~`]", "", desc).strip()
+                aidocs_lines.append(f"  - {fname}: {clean[:80]}")
+            lines.extend(aidocs_lines)
 
     # ── V2.6: Periodic review check ─────────────────────────────────────
     try:
@@ -864,6 +964,28 @@ def handle_user_prompt_submit(
                 lines.append(result["inject"])
         except Exception as e:
             print(f"[v2.8] Wisdom prompt error: {e}", file=sys.stderr)
+
+    # ─── Phase 0.5: _AIDocs keyword matching (v2.10) ──────────────────
+    aidocs_state = state.get("aidocs", {})
+    aidocs_kw_map = aidocs_state.get("keywords", {})
+    max_matches = config.get("aidocs", {}).get("max_prompt_matches", 3)
+    if aidocs_kw_map and prompt.strip():
+        matched_docs: List[str] = []
+        for fname, keywords in aidocs_kw_map.items():
+            if any(kw in prompt_lower for kw in keywords):
+                matched_docs.append(fname)
+        if matched_docs and len(matched_docs) <= 5:
+            aidocs_root = aidocs_state.get("project_root", "")
+            pointer_lines = ["[Guardian:AIDocs] Relevant project docs:"]
+            for doc in matched_docs[:max_matches]:
+                desc = ""
+                for f, d in aidocs_state.get("entries", []):
+                    if f == doc:
+                        desc = d
+                        break
+                doc_path = f"_AIDocs/{doc}" if aidocs_root else doc
+                pointer_lines.append(f"  \u2192 Read `{doc_path}` \u2014 {desc[:80]}")
+            lines.extend(pointer_lines)
 
     # ─── Phase 1: Atom auto-injection (Trigger matching) ─────────────
     atom_index = state.get("atom_index", {})
