@@ -11,7 +11,7 @@
 | Session | 狀態 | 完成項目 | 遇到的問題 | Git commit |
 |---------|------|---------|-----------|------------|
 | S1 | ✅ 完成 | 備份 + 8 檔案新增 + 3 項驗證通過 | 無 | f916780 |
-| S2 | ✅ 完成 | guardian 合併 + CLAUDE.md + MEMORY + SPEC | 無 | (pending) |
+| S2 | ✅ 完成 | guardian 合併 + CLAUDE.md + MEMORY + SPEC | 無 | 21879e6 |
 | S3 | ⏳ 待執行 | 文件更新 + SOP + 全面驗證 | — | — |
 
 ## S1 完成明細
