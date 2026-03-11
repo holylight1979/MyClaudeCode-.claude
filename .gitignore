@@ -32,6 +32,10 @@ memory/_vectordb/*.lance/**
 memory/_vectordb/service.pid
 memory/_vectordb/service.log
 
+# ─── ACT-R access logs (runtime, auto-generated) ──────────
+memory/*.access.json
+**/memory/*.access.json
+
 # ─── Episodic atoms (TTL 24d, auto-generated) ─────────────
 memory/episodic/
 

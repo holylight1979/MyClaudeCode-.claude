@@ -4,7 +4,7 @@
 - Confidence: [固]
 - Trigger: 偏好, 風格, 習慣, style, preference, 語言, 回應
 - Last-used: 2026-03-11
-- Confirmations: 27
+- Confirmations: 28
 - Type: preference
 
 ## 知識

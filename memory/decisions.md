@@ -4,13 +4,13 @@
 - Confidence: [固]
 - Trigger: 全域決策, 工具, 工作流, workflow, guardian, hooks, MCP, 記憶系統
 - Last-used: 2026-03-11
-- Confirmations: 28
+- Confirmations: 29
 - Type: decision
 
 ## 知識
 
 ### 核心架構
-- [固] 原子記憶 V2.8：Hybrid RECALL + Ranked Search + 回應捕獲 + 跨 Session 鞏固 + Write Gate + 自我迭代 + Wisdom Engine
+- [固] 原子記憶 V2.9：Hybrid RECALL + Ranked Search + 回應捕獲 + 跨 Session 鞏固 + Write Gate + 自我迭代 + Wisdom Engine + 檢索強化（Project-Aliases / Related-Edge Spreading / ACT-R Activation / Blind-Spot Reporter）
 - [固] 雙 LLM：Claude Code（雲端決策）+ Ollama qwen3（本地語意處理）
 - [固] 6 hook 事件全由 workflow-guardian.py 統一處理（SessionStart/UserPromptSubmit/PostToolUse/PreCompact/Stop/SessionEnd）
 
@@ -61,6 +61,12 @@
 - [固] 冷啟動零 token，注入上限 ≤90 tokens
 - [固] 因果圖 Bayesian 更新：hit → ×0.9+0.1, miss → ×0.95, <0.3 自動移除
 
+### 記憶檢索強化（V2.9）
+- [固] Project-Aliases：MEMORY.md 加 `> Project-Aliases:` 行，跨專案掃描先比對 aliases → 注入全文
+- [固] Related-Edge Spreading：`spread_related()` BFS depth=1，沿 Related 邊帶出相關 atoms
+- [固] ACT-R Activation Scoring：`B_i = ln(Σ t_k^{-0.5})`，access.json 保留最近 50 筆，高分優先注入
+- [固] Blind-Spot Reporter：三重空判斷（matched + injected + alias 全空）→ 注入 `[Guardian:BlindSpot]`
+
 ### 歷史決策
 - [固] 記憶檢索統一用 Python，已移除 Node.js memory-v2（2026-03-05 退役）
 - [固] Stop hook 只保留 Guardian 閘門，移除 Discord 通知
@@ -84,3 +90,4 @@
 - 2026-03-06: feat: V2.5 寫入品質強化 — 萃取 prompt 重寫（可操作性標準）、6 知識類型、150 chars 上限、format:json、Write Gate 可操作性評分、CJK patterns
 - 2026-03-11: feat: V2.8 升級完成（3 sessions）— Wisdom Engine + 自我迭代 V2.6 + 品質回饋 V2.7 + Guardian 增量合併 + SPEC/文件全面更新
 - 2026-03-11: feat: V2.9 S2 — Related-Edge Spreading（多跳檢索 depth=1）+ ACT-R Activation Scoring（時間加權排序 + .access.json）
+- 2026-03-11: feat: V2.9 S3 完成 — 整合測試通過 + SPEC §十四 + 版號升級 V2.8→V2.9

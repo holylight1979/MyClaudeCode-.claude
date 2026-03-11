@@ -1,6 +1,6 @@
-# 原子記憶系統規格 v2.8
+# 原子記憶系統規格 v2.9
 
-> Atomic Memory System V2.8 Specification
+> Atomic Memory System V2.9 Specification
 > 適用於 Claude Code 跨 session 知識管理。
 > V2：Hybrid RECALL — Keyword Trigger + Vector Semantic Search + Local LLM
 > V2.1 Sprint 1：Write Gate + Decay Enforce + Schema 擴展 + Confirmations 自動遞增
@@ -8,6 +8,7 @@
 > V2.1 Sprint 3：Type Decay + Supersedes Loading + Evolution Compaction + Token Budget + Audit Trail
 > V2.4 Phase 1+2：回應知識捕獲（本地 LLM 逐輪+SessionEnd 萃取）+ 兩層分類（Scope×Type）
 > V2.4 Phase 3：跨 Session 鞏固（向量比對自動晉升）
+> V2.9：Project-Aliases + Blind-Spot Reporter + Related-Edge Spreading + ACT-R Activation Scoring
 
 ---
 
@@ -160,7 +161,7 @@ memory/
 - Type: semantic                 ← v2.1（semantic/episodic/procedural，預設 semantic）
 - Trigger: kw1, kw2, kw3
 - Last-used: YYYY-MM-DD
-- Confirmations: 4
+- Confirmations: 5
 - Created: YYYY-MM-DD            ← v2.1（首次建立日期）
 - TTL: 30d                       ← v2.1（可選，null = 由 confidence 決定）
 - Expires-at: YYYY-MM-DD         ← v2.1（可選，自動計算）
@@ -496,12 +497,15 @@ UserPromptSubmit (3s timeout)
 ├─ HTTP → Vector Service /search/ranked (~200-500ms, timeout 2s) (v2.1 Sprint 2)
 │   └─ FinalScore = 0.45×Semantic + 0.15×Recency + 0.20×IntentBoost
 │                    + 0.10×Confidence + 0.10×(Confirmation + TypeBonus)
+├─ Project-Aliases match: aliases 命中 → 注入專案 MEMORY.md 全文 (v2.9)
 ├─ merge & deduplicate (keyword 優先)
 ├─ Supersedes filter: 被取代的 atom 不載入 (v2.1 Sprint 3)
-├─ Related auto-load: 載入關聯 atom 摘要 (v2.1 Sprint 2)
-└─ load atoms within token budget
-    └─ Token budget: len(prompt)<50 → 1500t; <200 → 3000t; else → 5000t
-    └─ Per-atom cost: len(content) // 4 (char-to-token estimate) (v2.1 Sprint 3)
+├─ ACT-R activation sort: 按 B_i = ln(Σ t_k^{-0.5}) 降序排列 (v2.9)
+├─ load atoms within token budget
+│   └─ Token budget: len(prompt)<50 → 1500t; <200 → 3000t; else → 5000t
+│   └─ Per-atom cost: len(content) // 4 (char-to-token estimate) (v2.1 Sprint 3)
+├─ Related-Edge Spreading: 沿 Related 邊擴散 depth=1，預算內載入 (v2.9)
+└─ Blind-Spot Reporter: 三重空判斷 → 注入盲點提醒 (v2.9)
 ```
 
 #### Intent 分類器（v2.1 Sprint 2）
@@ -853,7 +857,84 @@ score = file_count × w[file]         # 預設 2.0, cap=5
 
 ---
 
-## 十四、版本紀錄
+## 十四、記憶檢索強化（V2.9）
+
+### 14.1 Project-Aliases（跨專案身份辨識）
+
+跨專案掃描時，MEMORY.md 的 atom triggers 可能不含專案別名（如 "sgi"）。Project-Aliases 讓專案可定義別名，hook 比對到時注入該專案的 MEMORY.md 全文。
+
+**格式**：在專案層 MEMORY.md 的 header 區加入：
+
+```markdown
+# Atom Index — SGI Project
+> Project-Aliases: sgi, sgi_server, sgi-server, sgi_client, 遊戲後端
+```
+
+**行為**：
+- `parse_memory_index()` 額外解析 `> Project-Aliases:` 行
+- 跨專案掃描時先比對 aliases → 命中則注入 MEMORY.md 全文 + 逐 atom 比對 triggers
+- 注入標記：`[Guardian:AliasMatch] {project} matched via alias`
+
+### 14.2 Related-Edge Spreading（多跳檢索）
+
+atom 被觸發後，沿 `Related` 欄位擴散 1 跳（可配置 depth），帶出語意相關但未被 keyword/vector 直接命中的 atoms。
+
+**函數**：`spread_related(matched_atoms, all_atoms, already_injected, max_depth=1)`
+
+**行為**：
+- BFS 搜尋，解析 `- Related: atom1, atom2` 欄位
+- `visited` 集合避免重複（含已注入 + 已匹配的 atoms）
+- 回傳 `(AtomEntry, Path)` 元組列表
+- Token 控制：Related 帶出的 atoms 排在主匹配之後，受 token budget 限制
+- 預算不足時降級為摘要（首行）
+- 注入標記：atom 名稱後附 `(related)`
+
+### 14.3 ACT-R Activation Scoring（時間加權排序）
+
+以 ACT-R 基礎激活公式取代平面 Confirmations 排序，讓近期高頻使用的 atom 優先注入。
+
+**公式**：
+
+```
+B_i = ln( Σ_{k=1}^{n} t_k^{-0.5} )
+```
+
+其中 `t_k` = 距離第 k 次存取的秒數。
+
+**實作**：
+- `compute_activation(atom_name, atom_dir)` — 讀取 `{atom_name}.access.json`
+- Access log 格式：`{"timestamps": [1710000000.0, ...]}`，保留最近 50 筆
+- atom 被注入時自動追加 timestamp（`time.time()`）
+- 無 access log 時回傳 `-10.0`（最低優先）
+- 匹配的 atoms 按 activation score 降序排列後載入
+
+**Access log 管理**：
+- 檔案位置：與 atom 同目錄，`{atom_name}.access.json`
+- 滑動窗口：保留最近 50 筆 timestamps
+- 不進 git（.gitignore）
+
+### 14.4 Blind-Spot Reporter（盲點報告）
+
+當 prompt 未命中任何 atom（keyword + vector + alias 全空）時，主動告知 LLM 存在知識盲點。
+
+**觸發條件**：三重空判斷
+
+```python
+if not matched_with_dir and not newly_injected and not alias_injected_projects:
+    # 觸發 BlindSpot 報告
+```
+
+**注入格式**：
+
+```
+[Guardian:BlindSpot] 未找到與 "{prompt前50字}" 相關的記憶 atom。建議 LLM 主動搜尋檔案或詢問使用者。
+```
+
+**設計理念**：承認偏差存在（末那識警示），不假裝全知。
+
+---
+
+## 十五、版本紀錄
 
 | 版本 | 日期 | 變更 |
 |------|------|------|
@@ -868,3 +949,4 @@ score = file_count × w[file]         # 預設 2.0, cap=5
 | 2.6 | 2026-03-10 | **V2.6 自我迭代**：8 條核心規則 + 定期檢閱 + 分類演進（§十一） |
 | 2.7 | 2026-03-10 | **V2.7 品質回饋**：output quality check + iteration metrics + oscillation detection + maturity phase（§十二） |
 | 2.8 | 2026-03-11 | **V2.8 Wisdom Engine**：因果圖（BFS depth=2）+ 情境分類器（加權評分）+ 反思引擎（滑動窗口統計）（§十三） |
+| 2.9 | 2026-03-11 | **V2.9 記憶檢索強化**：Project-Aliases（跨專案身份辨識）+ Related-Edge Spreading（多跳檢索 depth=1）+ ACT-R Activation Scoring（時間加權排序）+ Blind-Spot Reporter（盲點報告）（§十四） |

@@ -1,7 +1,7 @@
 # V2.9 設計規格 — 記憶檢索強化
 
 - Scope: global
-- Confidence: [觀]
+- Confidence: [固]
 - Type: design
 - Trigger: V2.9, V3, 設計, 檢索強化, project-alias, ACT-R, multi-hop, blind-spot
 - Last-used: 2026-03-11
