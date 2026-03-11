@@ -3,8 +3,8 @@
   "metrics": {
     "first_approach_accuracy": {
       "single_file": {
-        "correct": 25,
-        "total": 25
+        "correct": 27,
+        "total": 27
       },
       "multi_file": {
         "correct": 1,
@@ -35,5 +35,5 @@
   "blind_spots": [
     "architecture 首次正確率 0%"
   ],
-  "last_reflection": "2026-03-11T09:17:44.466527+00:00"
+  "last_reflection": "2026-03-11T09:41:50.061228+00:00"
 }
