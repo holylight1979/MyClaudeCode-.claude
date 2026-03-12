@@ -43,11 +43,20 @@ type: project
 11. **Google Slides 支援**
     - 狀態: **已實作**。presentation/d/ pattern + capture_slide()（export PDF + frontmatter .md 索引）
 
+12. **Google export URL 觸發下載而非頁面載入** — `page.goto(export_url)` 不回傳 response body
+    - 原因: Google export 回傳 `Content-Disposition: attachment`，Playwright 轉為 download 事件
+    - 錯誤解法: `expect_download(timeout=30s)` — 權限不足時載入錯誤頁面，等 30s 才超時
+    - 最終解法: `asyncio.wait` race pattern — `page.wait_for_event('download')` + `page.goto` 並行，3s 內沒下載視為頁面載入
+    - 參考: playwright-python #1264, Playwright 官方 Navigations 文件
+
+13. **Google 權限不足錯誤頁偵測** — export URL 無權限時顯示「很抱歉，目前無法開啟這個檔案」
+    - 解法: race timeout 後檢查 `page.content()` 是否含「無法開啟」「很抱歉」等關鍵字 → 回傳 403
+
 ### 架構
 
 - Playwright Chrome (persistent context) → 使用者瀏覽
 - `framenavigated` 偵測 Google Docs/Sheets/Slides URL
-- `page.goto(export_url)` + `resp.body()` → 背景下載 export（HTML/CSV/PDF），自帶 browser auth
+- `page_fetch()`: `asyncio.wait` race（download event vs page load）→ 自帶 browser auth
 - `markdownify` + `BeautifulSoup` → Markdown 轉換 + 連結提取
 - Slides → PDF export（無 HTML export）
 - Dashboard (`http://127.0.0.1:8787`) → 即時進度（含摘要預覽）

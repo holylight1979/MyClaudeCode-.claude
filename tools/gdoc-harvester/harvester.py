@@ -146,15 +146,40 @@ def extract_preview(filepath: Path, max_chars: int = 80) -> str:
 # --------------- Core ---------------
 
 async def page_fetch(context: BrowserContext, url: str) -> tuple[int, bytes]:
-    """用 Playwright page 開 URL，取得 status + raw body，自帶完整 browser auth。"""
+    """用 Playwright page 開 URL，取得 status + raw body，自帶完整 browser auth。
+    Google export URL 會觸發下載（Content-Disposition: attachment）。
+    用 asyncio.wait race 偵測：download 先到 → 讀檔；page 先載完 → 讀 content。"""
     page = await context.new_page()
     try:
-        resp = await page.goto(url, wait_until='load', timeout=30000)
-        status = resp.status if resp else 0
-        body = await resp.body() if resp else b''
-        return status, body
+        # 設定 download 監聽（不阻塞）
+        download_future = asyncio.ensure_future(page.wait_for_event('download'))
+        try:
+            await page.goto(url, timeout=15000)
+        except Exception:
+            pass  # download 觸發時 goto 可能拋 "Download is starting"
+
+        # Race：等 download 事件最多 3 秒
+        done, pending = await asyncio.wait({download_future}, timeout=3)
+        if done:
+            download = download_future.result()
+            tmp_path = await download.path()
+            if tmp_path:
+                return 200, Path(tmp_path).read_bytes()
+            failure = await download.failure()
+            print(f'  ⚠ Download failed: {failure}')
+            return 0, b''
+        else:
+            download_future.cancel()
+            # 沒有 download — 是正常頁面或錯誤頁面
+            content = await page.content()
+            if '無法開啟' in content or '很抱歉' in content or 'not available' in content.lower():
+                return 403, b''
+            return 200, content.encode('utf-8')
     finally:
-        await page.close()
+        try:
+            await page.close()
+        except Exception:
+            pass  # context 可能已關閉
 
 
 async def capture_doc(doc_id: str, depth: int, context: BrowserContext) -> None:
@@ -463,7 +488,7 @@ def generate_index(out_dir: Path) -> None:
 
 
 async def main():
-    global queue, output_dir, max_depth, http_session
+    global queue, output_dir, max_depth
 
     parser = argparse.ArgumentParser(description='Google Docs/Sheets Harvester')
     parser.add_argument('--workdir', '-w', default='c:/tmp/harvester',
