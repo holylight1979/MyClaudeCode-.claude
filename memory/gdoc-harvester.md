@@ -1,55 +1,47 @@
 ---
 name: gdoc-harvester
-description: Google Docs/Sheets 收割工具開發經驗 — Playwright + Chrome + cookie 同步
+description: Google Docs/Sheets 收割工具經驗 — Playwright + Chrome + cookie 同步 + aiohttp
 type: project
 ---
 
-## Google Docs/Sheets Harvester 開發記錄
+## Google Docs/Sheets Harvester
 
-**位置**: `c:/tmp/gdoc-harvester/`
-**目標**: 邊瀏覽邊收割 Google Docs/Sheets → Markdown/CSV → 未來推上公司 GitLab
+**位置**: `~/.claude/tools/gdoc-harvester/`（技能本體，可上 GIT）
+**Skill**: `/harvest`（`~/.claude/commands/harvest.md`）
+**Runtime**: 使用者指定工作目錄（預設 `c:/tmp/harvester/`，含 browser-data + output，不進 GIT）
 
-### 踩坑記錄（按時序）
+### 踩坑記錄
 
-1. **Playwright Chromium 無法登入 Google** — Google 偵測自動化瀏覽器，拒絕登入
-   - 解法: `channel="chrome"` 用本機 Chrome + `--disable-blink-features=AutomationControlled`
+1. **Playwright Chromium 無法登入 Google** — Google 偵測自動化瀏覽器
+   - 解法: `channel="chrome"` + `--disable-blink-features=AutomationControlled`
 
 2. **Chrome profile lock 衝突** — 不能同時用同一個 profile
-   - 解法: 複製 Chrome Default profile 的 Cookies/Login Data 等關鍵檔到獨立目錄
-   - 注意: 複製前需要關閉本機 Chrome
+   - 解法: 複製 Chrome Default 的 Cookies 等關鍵檔到獨立目錄（需先關 Chrome）
 
-3. **`context.request.get()` 不帶 browser cookies** — HTTP 400/401
-   - 這是 Playwright 的設計限制，context.request 不共用 browser cookies
+3. **`context.request.get()` 不帶 browser cookies** — Playwright 設計限制
 
-4. **`page.evaluate` + `fetch()` 被 CORS 擋** — Google export URL redirect 到不同域名
-   - 瀏覽器 fetch 無法跨域跟隨 Google 的 redirect
+4. **`page.evaluate` + `fetch()` 被 CORS 擋** — Google export redirect 跨域
 
-5. **`page.goto()` export URL 觸發 download** — Playwright 報 "Download is starting" 錯誤
-   - 解法: `accept_downloads=True` + `page.expect_download()` 攔截
-   - 成功下載了 Doc，但 export page 的 session 可能跟使用者不同帳號
+5. **export page session 不同步**
+   - 最終解法: **aiohttp + browser cookies 同步**（`context.cookies()` → `aiohttp.CookieJar`）
 
-6. **export page session 不同步** — 用獨立 page 打開 docs.google.com，不一定登入了正確帳號
-   - 最終解法: **aiohttp + browser cookies 同步**
-     - `context.cookies()` 取得所有 cookies
-     - 注入到 `aiohttp.CookieJar`
-     - 用 `aiohttp.ClientSession` 直接 HTTP GET export URL
-     - 每次偵測到新文件時重新同步 cookies
+6. **framenavigated race condition** — 同一 doc_id 多次觸發
+   - 解法: `on_page_navigate` 在第一個 await 前 `visited.add(doc_id)` 佔位
 
-### 最終架構
+### 架構
 
-- Playwright Chrome (persistent context) — 使用者瀏覽用
-- `framenavigated` 事件偵測 Google Docs/Sheets URL
-- `aiohttp` + browser cookies — 背景下載 export HTML/CSV
-- `markdownify` — HTML → Markdown
-- `BeautifulSoup` — 解析標題、提取內部連結
-- Dashboard (`http://127.0.0.1:8787`) — 即時顯示收割進度
-- 連結深度追蹤 — 自動爬取文件內的 Google 連結
+- Playwright Chrome (persistent context) → 使用者瀏覽
+- `framenavigated` 偵測 Google Docs/Sheets URL
+- `aiohttp` + browser cookies → 背景下載 export HTML/CSV
+- `markdownify` + `BeautifulSoup` → Markdown 轉換 + 連結提取
+- Dashboard (`http://127.0.0.1:8787`) → 即時進度（含摘要預覽）
+- 結束後自動產生 `_INDEX.md` 總清單
 
-### 待修
+### 安全設計
 
-- 同一份文件重複偵測（不同 URL 相同 doc_id 但有些是不同文件卻同名）
-- Sheet export 部分帳號權限問題
-- 檔名去重邏輯（目前用 `_1`, `_2` 後綴）
+- 技能本體零硬編碼路徑、零公司 URL
+- browser-data（含所有網站 cookies）存在 runtime 工作目錄，不進 git
+- Skill 流程提醒使用者事後清理敏感資料
 
-**Why:** 使用者要把散落在 Google Drive 的公司文件整理到 GitLab
-**How to apply:** 後續改進此工具或做成 skill `/harvest` 時參考
+**Why:** 使用者要把散落在 Google Drive 的公司文件整理收割
+**How to apply:** `/harvest` skill 使用或後續改進時參考

@@ -1,0 +1,6 @@
+# Runtime data — 不應進入 git
+browser-data/
+output/
+__pycache__/
+*.pyc
+*.json
