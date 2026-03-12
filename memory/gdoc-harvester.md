@@ -46,8 +46,9 @@ type: project
 12. **Google export URL 觸發下載而非頁面載入** — `page.goto(export_url)` 不回傳 response body
     - 原因: Google export 回傳 `Content-Disposition: attachment`，Playwright 轉為 download 事件
     - 錯誤解法: `expect_download(timeout=30s)` — 權限不足時載入錯誤頁面，等 30s 才超時
-    - 最終解法: `asyncio.wait` race pattern — `page.wait_for_event('download')` + `page.goto` 並行，3s 內沒下載視為頁面載入
-    - 參考: playwright-python #1264, Playwright 官方 Navigations 文件
+    - 最終解法: **`context.request.get()`**（共享 browser cookies，直接拿 HTTP status + body + Content-Type）
+    - Fallback: `asyncio.wait` race pattern（若 request API 不帶 cookies）
+    - 參考: playwright-python #1264, Playwright 官方 Downloads/Navigations 文件
 
 13. **Google 權限不足錯誤頁偵測** — export URL 無權限時顯示「很抱歉，目前無法開啟這個檔案」
     - 解法: race timeout 後檢查 `page.content()` 是否含「無法開啟」「很抱歉」等關鍵字 → 回傳 403
@@ -56,7 +57,7 @@ type: project
 
 - Playwright Chrome (persistent context) → 使用者瀏覽
 - `framenavigated` 偵測 Google Docs/Sheets/Slides URL
-- `page_fetch()`: `asyncio.wait` race（download event vs page load）→ 自帶 browser auth
+- `page_fetch()`: `context.request.get()` 優先（直接 HTTP），fallback `asyncio.wait` race
 - `markdownify` + `BeautifulSoup` → Markdown 轉換 + 連結提取
 - Slides → PDF export（無 HTML export）
 - Dashboard (`http://127.0.0.1:8787`) → 即時進度（含摘要預覽）

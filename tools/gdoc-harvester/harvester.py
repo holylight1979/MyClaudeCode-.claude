@@ -146,20 +146,35 @@ def extract_preview(filepath: Path, max_chars: int = 80) -> str:
 # --------------- Core ---------------
 
 async def page_fetch(context: BrowserContext, url: str) -> tuple[int, bytes]:
-    """用 Playwright page 開 URL，取得 status + raw body，自帶完整 browser auth。
-    Google export URL 會觸發下載（Content-Disposition: attachment）。
-    用 asyncio.wait race 偵測：download 先到 → 讀檔；page 先載完 → 讀 content。"""
+    """用 context.request.get() 取得 export 內容，共享瀏覽器 cookie。
+    不需開 page、不需處理 download event。直接拿 HTTP status + body。
+    若 context.request 不帶 cookies（踩坑 #3），fallback 到 page + download race。"""
+    # 優先用 API request — 簡單、快、有 Content-Type
+    try:
+        resp = await context.request.get(url, timeout=15000)
+        ct = resp.headers.get('content-type', '')
+        if resp.ok and 'text/html' not in ct:
+            return resp.status, await resp.body()
+        if resp.ok and 'text/html' in ct:
+            body = await resp.body()
+            text = body.decode('utf-8', errors='replace')
+            if '無法開啟' in text or '很抱歉' in text or 'ServiceLogin' in text:
+                return 403, b''
+            return 200, body
+        return resp.status, await resp.body()
+    except Exception:
+        pass
+
+    # Fallback: 開 page + download race（context.request 可能不帶 cookies）
     page = await context.new_page()
     try:
-        # 設定 download 監聽（不阻塞）
         download_future = asyncio.ensure_future(page.wait_for_event('download'))
         try:
             await page.goto(url, timeout=15000)
         except Exception:
             pass  # download 觸發時 goto 可能拋 "Download is starting"
 
-        # Race：等 download 事件最多 3 秒
-        done, pending = await asyncio.wait({download_future}, timeout=3)
+        done, _ = await asyncio.wait({download_future}, timeout=3)
         if done:
             download = download_future.result()
             tmp_path = await download.path()
@@ -170,7 +185,6 @@ async def page_fetch(context: BrowserContext, url: str) -> tuple[int, bytes]:
             return 0, b''
         else:
             download_future.cancel()
-            # 沒有 download — 是正常頁面或錯誤頁面
             content = await page.content()
             if '無法開啟' in content or '很抱歉' in content or 'not available' in content.lower():
                 return 403, b''
@@ -179,7 +193,7 @@ async def page_fetch(context: BrowserContext, url: str) -> tuple[int, bytes]:
         try:
             await page.close()
         except Exception:
-            pass  # context 可能已關閉
+            pass
 
 
 async def capture_doc(doc_id: str, depth: int, context: BrowserContext) -> None:
