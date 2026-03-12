@@ -11,7 +11,8 @@
   - `start` — 開始收割（必填，無此關鍵字則顯示說明）
   - `--workdir DIR` — 工作目錄（預設 `c:/tmp/harvester`）
   - `--depth N` — 連結追蹤深度（預設 1）
-  - `--fresh` — 重新複製 Chrome 登入狀態（需先關閉 Chrome）
+  - `--fresh` — 清空 browser-data 重新開始（需在瀏覽器內重新登入）
+  - `--copy-chrome` — 從 Chrome 複製登入狀態（需先關閉 Chrome，可選）
 
 ---
 
@@ -31,7 +32,8 @@
   /harvest start          ← 開始收割（互動確認路徑）
   /harvest start --workdir D:/my-harvest
   /harvest start --depth 2
-  /harvest start --fresh  ← 重新複製 Chrome 登入狀態
+  /harvest start --fresh       ← 清空登入資料重新開始
+  /harvest start --copy-chrome ← 從 Chrome 複製登入（需關 Chrome）
 
 功能：
   啟動 Chrome 瀏覽器，邊瀏覽邊自動收割 Google Docs/Sheets/Slides。
@@ -42,11 +44,12 @@
   - 結束後自動產生 _INDEX.md 總清單
 
 工作目錄（預設 c:/tmp/harvester/）：
-  browser-data/  — Chrome 登入副本（含敏感資料，用完建議刪除）
+  browser-data/  — 瀏覽器登入資料（含敏感資料，用完建議刪除）
   output/        — 收割結果
 
 注意：
-  - 首次使用或 --fresh 需先關閉所有 Chrome 視窗
+  - 首次使用需在收割瀏覽器內登入 Google（登入狀態自動保留）
+  - 不需關閉你正在使用的 Chrome
   - 完成後請自行評估是否清理 browser-data/
 ```
 
@@ -74,26 +77,26 @@
 
 檢查 `{workdir}/browser-data/` 是否存在：
 
-**不存在 或 --fresh**：
-1. 提醒使用者：「需要複製 Chrome 的登入狀態。請先**關閉所有 Chrome 視窗**，確認後繼續。」
-2. 等使用者確認後，harvester.py 會自動處理複製。
+**不存在**：
+- 告知使用者：「首次使用，瀏覽器啟動後請先登入 Google 帳號。登入狀態會自動保留到下次。」
+- **不需要關閉 Chrome。**
 
 **已存在（非 --fresh）**：
-1. 用 AskUserQuestion 詢問：
-   - 使用現有登入狀態（不需關 Chrome）
-   - 重新複製（需先關閉 Chrome）
+- 直接使用，不需詢問。
 
-認證說明（向使用者說明）：
-> 複製的是 Chrome 完整 Cookies 檔案，收割瀏覽器也能存取你在 Chrome 已登入的其他網站。
-> 如需存取特定內部網站，請在瀏覽器開啟後自行確認登入狀態。
+**--fresh**：
+- 告知使用者：「將清空現有登入資料，瀏覽器啟動後需重新登入。」
+
+**--copy-chrome**：
+- 需要使用者先關閉 Chrome。用 AskUserQuestion 確認。
 
 ### Step 4: 環境檢查
 
 確認 Python 依賴：
 ```bash
-python -c "import playwright, markdownify, bs4, aiohttp, yarl" 2>&1
+python -c "import playwright, markdownify, bs4" 2>&1
 ```
-- 若失敗 → `python -m pip install playwright markdownify beautifulsoup4 aiohttp yarl`
+- 若失敗 → `python -m pip install playwright markdownify beautifulsoup4`
 
 確認 Playwright Chrome：
 ```bash
@@ -136,7 +139,8 @@ Playwright persistent context 會記住登入狀態，下次啟動（不加 `--f
 
 ## 已知限制
 
-- 首次使用或 `--fresh` 需關閉 Chrome 以複製 cookies
+- 首次使用需在收割瀏覽器裡登入 Google（之後自動保留）
+- `--copy-chrome` 需關閉 Chrome（可選功能，非必要）
 - 部分 Google Workspace 文件可能因帳號權限不同而匯出失敗
 - 同一 doc_id 只會收割一次（跨 URL fragment 去重）
 - Sheet export 目前只匯出第一個 tab（後續改善項目）

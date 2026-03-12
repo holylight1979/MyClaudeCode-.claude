@@ -153,17 +153,20 @@ async def page_fetch(context: BrowserContext, url: str) -> tuple[int, bytes]:
     try:
         resp = await context.request.get(url, timeout=15000)
         ct = resp.headers.get('content-type', '')
+        print(f'    [page_fetch] request.get → {resp.status} | CT: {ct[:60]}')
         if resp.ok and 'text/html' not in ct:
             return resp.status, await resp.body()
         if resp.ok and 'text/html' in ct:
             body = await resp.body()
             text = body.decode('utf-8', errors='replace')
             if '無法開啟' in text or '很抱歉' in text or 'ServiceLogin' in text:
+                print(f'    [page_fetch] → 偵測到錯誤頁 (403)')
                 return 403, b''
             return 200, body
-        return resp.status, await resp.body()
-    except Exception:
-        pass
+        # 非 OK（400/401/403 等）→ 不直接回傳，改 fallback 到 download race
+        print(f'    [page_fetch] → HTTP {resp.status}, fallback to download race')
+    except Exception as e:
+        print(f'    [page_fetch] request.get 失敗: {e}')
 
     # Fallback: 開 page + download race（context.request 可能不帶 cookies）
     page = await context.new_page()
@@ -256,7 +259,7 @@ async def capture_sheet(doc_id: str, depth: int, context: BrowserContext) -> Non
     # CSV export
     csv_data = None
     try:
-        csv_url = f'https://docs.google.com/spreadsheets/d/{doc_id}/export?format=csv'
+        csv_url = f'https://docs.google.com/spreadsheets/d/{doc_id}/export?format=csv&gid=0'
         status, body = await page_fetch(context, csv_url)
         if status == 200 and body:
             csv_data = body.decode('utf-8', errors='replace')
@@ -512,7 +515,9 @@ async def main():
     parser.add_argument('--depth', '-d', type=int, default=1,
                         help='連結追蹤深度（預設 1）')
     parser.add_argument('--fresh', action='store_true',
-                        help='重新複製 Chrome 登入狀態（需先關閉 Chrome）')
+                        help='清空 browser-data 重新開始（需在瀏覽器內重新登入）')
+    parser.add_argument('--copy-chrome', action='store_true',
+                        help='從 Chrome 複製登入狀態（需先關閉 Chrome）')
     args = parser.parse_args()
 
     workdir = Path(args.workdir)
@@ -536,35 +541,38 @@ async def main():
     print(f'            工具會自動擷取，關閉視窗即結束')
     print('=' * 60)
 
-    # Copy Chrome profile
-    chrome_src = Path(os.environ.get('LOCALAPPDATA', '')) / 'Google/Chrome/User Data'
-    if not chrome_src.exists():
-        print(f' ✗ 找不到 Chrome 使用者資料: {chrome_src}')
-        return
-
-    dst_default = browser_data / 'Default'
-
+    # Browser data 管理
     if args.fresh and browser_data.exists():
         shutil.rmtree(browser_data)
+        print(' ✓ 已清空 browser-data')
 
-    if not dst_default.exists():
-        print(' ⟳ 複製 Chrome 登入狀態（完整 profile）...')
-        browser_data.mkdir(parents=True, exist_ok=True)
-        src_default = chrome_src / 'Default'
-        # 完整複製 Default profile（含 Local Storage、IndexedDB 等）
-        # 排除 Cache 等大型不必要目錄
-        skip_dirs = {'Cache', 'Code Cache', 'GPUCache', 'Service Worker',
-                     'File System', 'blob_storage', 'BudgetDatabase'}
-        shutil.copytree(
-            src_default, dst_default,
-            ignore=lambda d, files: [f for f in files if f in skip_dirs],
-            dirs_exist_ok=True,
-        )
-        # Local State（加密 key）放在 User Data 根目錄
-        local_state = chrome_src / 'Local State'
-        if local_state.exists():
-            shutil.copy2(local_state, browser_data / 'Local State')
-        print(' ✓ 完成')
+    if args.copy_chrome:
+        chrome_src = Path(os.environ.get('LOCALAPPDATA', '')) / 'Google/Chrome/User Data'
+        if not chrome_src.exists():
+            print(f' ⚠ 找不到 Chrome 使用者資料: {chrome_src}，將使用空白 profile')
+        else:
+            dst_default = browser_data / 'Default'
+            print(' ⟳ 複製 Chrome 登入狀態（需 Chrome 已關閉）...')
+            browser_data.mkdir(parents=True, exist_ok=True)
+            src_default = chrome_src / 'Default'
+            skip_dirs = {'Cache', 'Code Cache', 'GPUCache', 'Service Worker',
+                         'File System', 'blob_storage', 'BudgetDatabase'}
+            try:
+                shutil.copytree(
+                    src_default, dst_default,
+                    ignore=lambda d, files: [f for f in files if f in skip_dirs],
+                    dirs_exist_ok=True,
+                )
+                local_state = chrome_src / 'Local State'
+                if local_state.exists():
+                    shutil.copy2(local_state, browser_data / 'Local State')
+                print(' ✓ 完成')
+            except PermissionError:
+                print(' ⚠ Chrome 可能未關閉，部分檔案無法複製。將使用現有資料。')
+
+    browser_data.mkdir(parents=True, exist_ok=True)
+    if not (browser_data / 'Default').exists():
+        print(' ℹ 首次使用：瀏覽器啟動後請先登入 Google 帳號')
 
     # Import dashboard from same directory
     import importlib.util
