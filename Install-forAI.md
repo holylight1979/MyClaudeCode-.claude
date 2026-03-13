@@ -1,4 +1,4 @@
-# Atomic Memory V2.10 — 安裝指南
+# Atomic Memory V2.11 — 安裝指南
 
 > **目標讀者**：使用 VS Code + Claude Code Extension，但完全不知道原子記憶是什麼的開發者。
 > 本指南會幫你把原子記憶系統**合併安裝**到你現有的 `~/.claude/` 目錄中。
@@ -128,6 +128,8 @@ cp /tmp/atomic-memory/commands/resume.md ~/.claude/commands/
 cp /tmp/atomic-memory/commands/consciousness-stream.md ~/.claude/commands/
 cp /tmp/atomic-memory/commands/svn-update.md ~/.claude/commands/
 cp /tmp/atomic-memory/commands/unity-yaml.md ~/.claude/commands/
+cp /tmp/atomic-memory/commands/harvest.md ~/.claude/commands/
+cp /tmp/atomic-memory/commands/upgrade.md ~/.claude/commands/
 
 # ── Unity YAML 操作工具 ──
 cp /tmp/atomic-memory/tools/unity-yaml-tool.py ~/.claude/tools/
@@ -373,6 +375,19 @@ python ~/.claude/tools/memory-audit.py
 
 ---
 
+## 安裝後的初步使用
+
+驗證完成後，按以下順序開始使用：
+
+1. **重新載入 VS Code**：按 `Ctrl+Shift+P`，輸入 `Developer: Reload Window` 讓 hooks 和設定生效
+2. **自檢系統**：開新 Claude Code session，輸入 `請確認原子記憶系統是否正確安裝` 讓 AI 自動檢查各子系統狀態
+3. **專案初始化**：在專案資料夾開啟 VS Code，首次使用時執行 `/init-project`，建立 `_AIDocs/` 知識庫骨架
+4. **匯入專案知識**：對想讓 AI 深度記憶的目錄，執行 `/read-project <目標資料夾>`（例如 `/read-project src/core`）
+
+更多 Skills 和進階用法請參閱 [README.md](README.md)。
+
+---
+
 ## 安裝後的目錄結構
 
 安裝完成後，你的 `~/.claude/` 會多出這些（★ = 新增）：
@@ -420,7 +435,9 @@ python ~/.claude/tools/memory-audit.py
 │   ├── resume.md                 ★ /resume — 自動續接 Session
 │   ├── consciousness-stream.md   ★ /consciousness-stream — 識流決策流程
 │   ├── svn-update.md             ★ /svn-update — SVN 工作目錄更新
-│   └── unity-yaml.md             ★ /unity-yaml — Unity YAML 資產操作
+│   ├── unity-yaml.md             ★ /unity-yaml — Unity YAML 資產操作
+│   ├── harvest.md                ★ /harvest — 網頁收割工具
+│   └── upgrade.md                ★ /upgrade — 原子記憶環境升級
 │
 └── (你原有的檔案保持不變)
 ```
