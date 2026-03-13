@@ -42,30 +42,30 @@
 
 ### 假設錯誤（Wrong Assumption）
 
-（記錄格式：{假設內容} → {實際情況}（發現於: {context}））
+（格式：觸發情境 → 直覺假設 → 正確做法）
 
-- [臨] 假設「extract-worker.py 被 guardian spawn 為 detached subprocess」→ 實際上 guardian 從未呼叫 extract-worker，SessionEnd 萃取走的是 guardian 內建的 `_llm_extract_knowledge()`（發現於: 萃取管線診斷，grep 全 guardian 找不到 extract-worker 引用）
-- [臨] 假設「episodic 全域目錄空 = TTL 過期清理」→ 實際上 episodic 依 CWD 存到 project 層（projects/*/memory/episodic/），全域層空是正常行為（發現於: ls 各層 episodic 目錄）
-- [臨] 假設「architecture 0/6 = 架構任務做不好」→ 實際上分類邏輯是「修改 > 4 檔 = architecture」，跟真正的架構任務無關（發現於: 讀 wisdom_engine.py L134-139）
+- [臨] 調查某功能為何沒生效 → 直覺假設「獨立檔案一定有被呼叫」→ 正確做法：先 grep 呼叫端確認是否真的有 import/spawn，再看被呼叫端的邏輯（案例：extract-worker.py 存在但 guardian 從未呼叫它）
+- [臨] 看到某目錄是空的 → 直覺假設「資料被清理了」→ 正確做法：先查資料的存放路徑邏輯，確認是存到別的位置還是真的沒生成（案例：episodic 依 CWD 存到 project 層，全域層空是正常的）
+- [臨] 看到 metrics 數值異常 → 直覺假設「那個功能有問題」→ 正確做法：先驗證 metrics 的計算邏輯本身是否正確、是否真的有在跑（案例：architecture 0/6 的分類邏輯是「檔案 > 4 個就算」，跟真正架構無關）
 
 ### 靜默失敗（Silent Failure）
 
-（記錄格式：{看起來正常的行為} → {實際隱藏的問題} → {發現方式}（根因: {root cause}））
+（格式：你以為正常的現象 → 該警覺的信號 → 驗證方式）
 
-- [臨] reflect() 在 SessionEnd 被呼叫但 exception 被外層 try/except 吞掉 → 所有 metrics（accuracy/over_engineering/silence）從未被更新，數據全部不可信 → 直接 `python -c` 呼叫 reflect() 才發現 KeyError（根因: silence_accuracy 的 key 從 V2.8→V2.11 改了名但 JSON 檔沒遷移，setdefault 不覆蓋既有值，拿到舊結構後存取新 key 爆 KeyError）
-- [臨] guardian `_call_ollama_generate` 沒傳 `think` 參數 + prompt 含 `/no_think` → qwen3.5 長 prompt 秒回空 `[]` → knowledge_queue 永遠空 → episodic atom 知識段只有 metadata → 看起來「正常產生了 episodic」但實際沒有任何萃取內容（根因: A/B 測試改了 extract-worker.py 但沒改真正在跑的 guardian 內建萃取路徑）
+- [臨] 某個 JSON 結構升級後，用 `setdefault()` 讀取舊檔案 → **信號：舊檔的 key 與新 code 的 key 不一致，setdefault 拿到舊結構不報錯但後續 KeyError 被 try/except 吞掉** → 驗證：直接 `python -c` 單獨呼叫該函數，不經外層 try/except（案例：wisdom reflect() 的 silence_accuracy key 遷移漏了）
+- [臨] episodic atom 有生成但「知識」段只有 metadata 沒有萃取項目 → **信號：knowledge_queue 永遠是空的** → 驗證：在 SessionEnd state JSON 裡檢查 knowledge_queue 長度，為 0 代表 LLM 萃取失敗或沒被正確呼叫
 
 ### 模式誤用（Pattern Misapplication）
 
-（記錄格式：{套用的模式} → {為什麼不適用}（應改用: {correct approach}））
+（格式：想測量 X → 錯誤代理指標 → 更好的指標）
 
-- [臨] 用「修改檔案數量」作為「任務複雜度/類型」的 proxy → 一個重命名跨 6 檔也算 architecture，一個真正的架構設計只改 1 檔卻算 single_file → 改用 Wisdom classify_situation 的 approach 結果（plan=architecture）（應改用: 語意層判斷而非數量代理）
+- [臨] 想測量「任務複雜度」→ 用修改檔案數量當 proxy → 應改用語意層判斷（如 Wisdom classify_situation 的 approach 結果），因為數量不反映複雜度（重命名跨 6 檔 ≠ 架構任務）
 
 ### 生成品質回饋（Output Quality Feedback）
 
-（記錄格式：{生成內容描述} → {被重寫/修正的部分} → {重寫原因}（品質訊號: −））
+（格式：使用者的反應 → AI 做錯了什麼 → 下次該怎麼做）
 
-- [臨] AI 診斷萃取問題時反覆說「think=False 會失敗」但沒說清楚為什麼是 False → 使用者無法理解因果鏈 → 根因是沒區分「哪個檔案真正在跑」vs「哪個檔案被測試過」（品質訊號: 使用者說「看不懂你在說什麼」「在打轉」）
+- [臨] 使用者說「看不懂」「在打轉」→ AI 反覆陳述結論（think=False 會失敗）卻沒交代因果鏈（為什麼是 False、誰在呼叫、哪個檔案才是真正在跑的）→ 下次診斷問題時，先用一句話說清「誰呼叫誰」的完整路徑，再說結論
 
 ## 行動
 
