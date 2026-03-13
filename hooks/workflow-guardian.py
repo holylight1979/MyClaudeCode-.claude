@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 sys.path.insert(0, str(Path.home() / ".claude" / "tools"))
-from ollama_client import get_client
+from ollama_client import get_client, check_long_die_status, disable_backend, OllamaClient
 
 # ─── V2.8: Wisdom Engine (lazy import, graceful fallback) ────────────────────
 try:
@@ -986,6 +986,20 @@ def handle_session_start(input_data: Dict[str, Any], config: Dict[str, Any]) -> 
         except Exception as e:
             print(f"[v2.8] Wisdom reflection error: {e}", file=sys.stderr)
 
+    # ── Dual-Backend: long_die user confirmation ────────────────────────
+    try:
+        long_die = check_long_die_status()
+        if long_die:
+            backend_name = long_die.get("backend", "remote")
+            until = long_die.get("until", "?")
+            lines.append(
+                f"[⚠ Long DIE] 遠端 Ollama backend '{backend_name}' 多次連線失敗，"
+                f"已暫停至 {until}。請確認是否要永久停用此 backend？"
+                f"（回覆「停用 {backend_name}」或「保持」）"
+            )
+    except Exception as e:
+        print(f"[dual-backend] Long DIE check error: {e}", file=sys.stderr)
+
     # ── Vector Service auto-start ──────────────────────────────────────
     if config.get("vector_search", {}).get("auto_start_service", True):
         _ensure_vector_service(config)
@@ -1010,7 +1024,28 @@ def handle_user_prompt_submit(
         return
 
     prompt = input_data.get("prompt", "")
+    prompt_lower = prompt.lower().strip()
     lines: List[str] = []
+
+    # ─── Dual-Backend: long_die user response ─────────────────────────
+    try:
+        long_die = check_long_die_status()
+        if long_die:
+            backend_name = long_die.get("backend", "")
+            if any(kw in prompt_lower for kw in ("停用", "disable")):
+                if disable_backend(backend_name):
+                    OllamaClient._clear_long_die_marker()
+                    lines.append(
+                        f"[Dual-Backend] 已永久停用 '{backend_name}'。"
+                        f"如需重新啟用，修改 config.json 中 enabled: true。"
+                    )
+                else:
+                    lines.append(f"[Dual-Backend] 停用 '{backend_name}' 失敗，請手動修改 config.json。")
+            elif any(kw in prompt_lower for kw in ("保持", "keep", "忽略")):
+                OllamaClient._clear_long_die_marker()
+                lines.append(f"[Dual-Backend] 保持 '{backend_name}'，long_die 將在時間段到期後自動恢復。")
+    except Exception as e:
+        print(f"[dual-backend] Long DIE response error: {e}", file=sys.stderr)
 
     # ─── Phase 0: Session Context Injection (first prompt only) ────────
     budget = compute_token_budget(prompt)
