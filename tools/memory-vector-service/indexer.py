@@ -95,14 +95,18 @@ def discover_atoms(
         layer_skip_files = extra_skip.get(layer_name, set())
         is_extra = layer_name.startswith("extra:")
 
-        # Extra layers support recursive scanning; standard layers scan root + episodic/
-        glob_patterns = ["**/*.md"] if is_extra else ["*.md", "episodic/*.md"]
+        # Recursive scanning for all layers; skip files in _-prefixed directories
+        glob_patterns = ["**/*.md"]
         seen_paths: set = set()
         for glob_pattern in glob_patterns:
             for md_file in sorted(mem_dir.glob(glob_pattern)):
                 if md_file in seen_paths:
                     continue
                 seen_paths.add(md_file)
+                # Skip files inside any _-prefixed directory (e.g. _distant, _vectordb)
+                rel_parts = md_file.relative_to(mem_dir).parts
+                if any(part.startswith("_") for part in rel_parts[:-1]):
+                    continue
                 if md_file.name in SKIP_FILENAMES:
                     continue
                 if any(md_file.name.startswith(p) for p in SKIP_PREFIXES):
