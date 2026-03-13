@@ -2326,13 +2326,16 @@ def handle_session_end(input_data: Dict[str, Any], config: Dict[str, Any]) -> No
                     kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS
                 else:
                     kwargs["start_new_session"] = True
+                worker_log = CLAUDE_DIR / "workflow" / "extract-worker.log"
+                worker_log_fh = open(worker_log, "a", encoding="utf-8")
                 proc = subprocess.Popen(
                     [sys.executable, str(worker_path)],
                     stdin=subprocess.PIPE,
                     stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
+                    stderr=worker_log_fh,
                     **kwargs,
                 )
+                worker_log_fh.close()  # fd inherited by child; parent can close
                 proc.stdin.write(worker_ctx.encode("utf-8"))
                 proc.stdin.close()
                 print(

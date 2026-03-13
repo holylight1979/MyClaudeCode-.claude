@@ -111,7 +111,8 @@
       "Bash(find /c/Users/holylight/.claude -name *extract* -type f)",
       "Bash(find /c/Users/holylight/.claude -name config*.json -o -name *.config.json)",
       "Bash(find c:Projectssgi_client -name *MapSystem*.cs -type f)",
-      "Bash(find c:Projectssgi_client -name *SceneSystem*.cs -type f)"
+      "Bash(find c:Projectssgi_client -name *SceneSystem*.cs -type f)",
+      "Bash(grep -r \"ImageTextLoaderAdapt\\\\|LanguageImage\" c:/Projects/sgi_client --include=*.cs)"
     ],
     "additionalDirectories": [
       "C:\\Users\\holylight\\.claude",
@@ -198,6 +199,5 @@
       }
     ]
   },
-  "autoUpdatesChannel": "latest",
-  "effortLevel": "max"
+  "autoUpdatesChannel": "latest"
 }
