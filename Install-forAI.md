@@ -78,7 +78,7 @@ cp ~/.claude/settings.json ~/.claude/settings.json.backup
 ### Step 1: Clone repo 到暫存位置
 
 ```bash
-git clone https://gitlab.uj.com.tw/holylight/ClaudeCode-AtomMemory.git /tmp/atomic-memory
+git clone <你的-repo-URL> /tmp/atomic-memory
 ```
 
 ### Step 2: 複製系統檔案
@@ -95,8 +95,10 @@ cp /tmp/atomic-memory/USER.md ~/.claude/USER.md
 # ── Hook 腳本 ──
 mkdir -p ~/.claude/hooks
 cp /tmp/atomic-memory/hooks/workflow-guardian.py ~/.claude/hooks/
-cp /tmp/atomic-memory/hooks/extract-worker.py ~/.claude/hooks/
 cp /tmp/atomic-memory/hooks/wisdom_engine.py ~/.claude/hooks/
+
+# ── Ollama Client (Dual-Backend) ──
+cp /tmp/atomic-memory/tools/ollama_client.py ~/.claude/tools/
 
 # ── 工具鏈 ──
 mkdir -p ~/.claude/tools/memory-vector-service
@@ -241,7 +243,7 @@ cat > ~/.claude/memory/MEMORY.md << 'EOF'
 
 ## 高頻事實
 
-- 原子記憶 V2.10
+- 原子記憶 V2.11
 EOF
 ```
 
@@ -316,6 +318,54 @@ curl -s http://127.0.0.1:3849/index/full
 ```
 
 > Vector Service 在每次 Claude Code session 啟動時會由 Guardian 自動啟動，不需要手動常駐。
+
+### Step 5.5: （可選）設定遠端 Ollama Backend（Dual-Backend）
+
+如果團隊有遠端 GPU 伺服器（例如搭載 Open WebUI + Ollama），可在 `config.json` 加入遠端 backend，享受 GPU 加速推論並自動 failover 到本地：
+
+```bash
+# 編輯設定
+nano ~/.claude/workflow/config.json
+```
+
+在 `vector_search` 區塊中加入 `ollama_backends`：
+
+```jsonc
+"ollama_backends": {
+  "remote-gpu": {
+    "base_url": "https://your-ollama-server.example.com/ollama",
+    "auth": {
+      "type": "bearer_ldap",
+      "login_url": "https://your-ollama-server.example.com/api/v1/auths/ldap",
+      "password_file": "~/.claude/workflow/.rdchat_password"
+    },
+    "llm_model": "qwen3.5:latest",
+    "embedding_model": "qwen3-embedding:latest",
+    "priority": 1,
+    "enabled": true
+  },
+  "local": {
+    "base_url": "http://127.0.0.1:11434",
+    "llm_model": "qwen3:1.7b",
+    "embedding_model": "qwen3-embedding",
+    "priority": 2
+  }
+}
+```
+
+建立密碼檔（已在 `.gitignore`，不會被上傳）：
+
+```bash
+# 寫入你的 LDAP 密碼（公司登入密碼）
+echo "你的密碼" > ~/.claude/workflow/.rdchat_password
+```
+
+- **帳號**：自動取 `os.getlogin()`（Windows 登入帳號），無需設定
+- **認證方式**：LDAP bearer token，自動登入、自動重新認證
+- **Failover**：遠端不可用時自動切換到本地，三階段退避（正常→短DIE 60s→長DIE 等到下個 6h 時段）
+- **靜態停用**：設 `"enabled": false` 可永久跳過某個 backend
+
+> 不設定 `ollama_backends` 時，系統自動使用 legacy 模式（單一本地 Ollama :11434）。
 
 ### Step 6: （可選）註冊 Dashboard MCP Server
 
@@ -401,10 +451,10 @@ python ~/.claude/tools/memory-audit.py
 │
 ├── hooks/                        ★
 │   ├── workflow-guardian.py       ★ 統一 Hook 入口
-│   ├── extract-worker.py         ★ 非同步知識萃取 worker
 │   └── wisdom_engine.py          ★ Wisdom Engine (V2.8+)
 │
 ├── tools/                        ★
+│   ├── ollama_client.py          ★ Dual-Backend Ollama Client
 │   ├── memory-audit.py           ★ 健檢工具
 │   ├── memory-write-gate.py      ★ 寫入品質閘門
 │   ├── memory-conflict-detector.py ★ 衝突偵測
