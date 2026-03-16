@@ -195,7 +195,39 @@ def parse_memory_index(memory_dir: Path) -> List[AtomEntry]:
             if stripped.startswith("|---") or stripped.startswith("| ---"):
                 continue
             if not stripped.startswith("|"):
-                break
+                in_table = False
+                continue
+            cells = [c.strip() for c in stripped.split("|") if c.strip()]
+            if len(cells) >= 3:
+                name = cells[0]
+                rel_path = cells[1]
+                triggers = [t.strip().lower() for t in cells[2].split(",") if t.strip()]
+                atoms.append((name, rel_path, triggers))
+            elif cells:
+                atoms.append((cells[0], "", []))
+    return atoms
+
+
+def _parse_atom_index_file(file_path: Path) -> List[AtomEntry]:
+    """Parse a standalone atom index file (like _AIAtoms/_ATOM_INDEX.md)."""
+    try:
+        text = file_path.read_text(encoding="utf-8-sig")
+    except (OSError, UnicodeDecodeError):
+        return []
+    atoms: List[AtomEntry] = []
+    in_table = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not in_table:
+            if stripped.startswith("| Atom") or stripped.startswith("|Atom"):
+                in_table = True
+                continue
+        else:
+            if stripped.startswith("|---") or stripped.startswith("| ---"):
+                continue
+            if not stripped.startswith("|"):
+                in_table = False
+                continue
             cells = [c.strip() for c in stripped.split("|") if c.strip()]
             if len(cells) >= 3:
                 name = cells[0]
@@ -928,17 +960,27 @@ def handle_session_start(input_data: Dict[str, Any], config: Dict[str, Any]) -> 
         global_atoms = parse_memory_index(MEMORY_DIR)
         project_mem_dir = get_project_memory_dir(cwd)
         project_atoms = parse_memory_index(project_mem_dir) if project_mem_dir else []
+        project_root = find_project_root(cwd)
+
+        # Merge shared atoms from _AIAtoms/_ATOM_INDEX.md (single source of truth)
+        if project_root:
+            atom_index_path = project_root / "_AIAtoms" / "_ATOM_INDEX.md"
+            if atom_index_path.exists():
+                shared_atoms = _parse_atom_index_file(atom_index_path)
+                if shared_atoms:
+                    existing_names = {a[0] for a in shared_atoms}
+                    project_atoms = [a for a in project_atoms if a[0] not in existing_names] + shared_atoms
 
         state["atom_index"] = {
             "global": [(n, p, t) for n, p, t in global_atoms],
             "project": [(n, p, t) for n, p, t in project_atoms],
             "project_memory_dir": str(project_mem_dir) if project_mem_dir else "",
+            "project_root": str(project_root) if project_root else "",
         }
         state["injected_atoms"] = []
         state["phase"] = "working"
 
         # ── v2.10: _AIDocs Bridge — scan project _AIDocs index ──────────
-        project_root = find_project_root(cwd)
         aidocs_entries = parse_aidocs_index(project_root) if project_root else []
         aidocs_keywords = extract_aidocs_keywords(aidocs_entries) if aidocs_entries else {}
         state["aidocs"] = {
@@ -1118,11 +1160,18 @@ def handle_user_prompt_submit(
         name, rel_path, triggers = entry
         all_atoms.append(((name, rel_path, triggers), MEMORY_DIR.parent))
     proj_dir_str = atom_index.get("project_memory_dir", "")
+    proj_root_str = atom_index.get("project_root", "")
     if proj_dir_str:
         proj_parent = Path(proj_dir_str).parent  # projects/slug/memory → projects/slug/
+        proj_root = Path(proj_root_str) if proj_root_str else None
         for entry in atom_index.get("project", []):
             name, rel_path, triggers = entry
-            all_atoms.append(((name, rel_path, triggers), proj_parent))
+            # _AIAtoms/ paths are relative to project root, others to projects/slug/
+            if rel_path.startswith("_AIAtoms/") and proj_root:
+                base = proj_root
+            else:
+                base = proj_parent
+            all_atoms.append(((name, rel_path, triggers), base))
 
     # Match prompt against triggers (keyword)
     matched_with_dir: List[Tuple[AtomEntry, Path]] = []
