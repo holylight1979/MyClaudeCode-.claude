@@ -57,7 +57,7 @@
     },
     "search_top_k": 5,
     "search_min_score": 0.65,
-    "search_timeout_ms": 2000,
+    "search_timeout_ms": 3500,
     "auto_start_service": true,
     "auto_index_on_change": true
   },

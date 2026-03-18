@@ -618,12 +618,15 @@ def _atom_debug_log(tag: str, content: str, config: Dict[str, Any] = None) -> No
 
 
 def _atom_debug_error(source: str, exc: Exception) -> None:
-    """Log error with source context and stack trace."""
-    import traceback
-    tb = traceback.format_exc()
-    if "NoneType" in tb:
-        tb = f"{type(exc).__name__}: {exc}"
-    _atom_debug_log("ERROR", f"[{source}] {tb}", {"atom_debug": True})
+    """Log error with source context. Network errors get one-line summary."""
+    if isinstance(exc, (TimeoutError, OSError, ConnectionError)):
+        msg = f"{type(exc).__name__}: {exc}"
+    else:
+        import traceback
+        msg = traceback.format_exc()
+        if "NoneType" in msg:
+            msg = f"{type(exc).__name__}: {exc}"
+    _atom_debug_log("ERROR", f"[{source}] {msg}", {"atom_debug": True})
 
 
 # ─── Intent Classifier (v2.1 Sprint 2) ───────────────────────────────────────
@@ -1077,9 +1080,17 @@ def handle_session_start(input_data: Dict[str, Any], config: Dict[str, Any]) -> 
     except Exception as e:
         print(f"[dual-backend] Long DIE check error: {e}", file=sys.stderr)
 
-    # ── Vector Service auto-start ──────────────────────────────────────
+    # ── Vector Service auto-start + warmup ─────────────────────────────
     if config.get("vector_search", {}).get("auto_start_service", True):
         _ensure_vector_service(config)
+        # Warmup: fire a non-blocking dummy search to preload embedding model
+        try:
+            vs_port = config.get("vector_search", {}).get("service_port", 3849)
+            warmup_url = f"http://127.0.0.1:{vs_port}/search?q=warmup&top_k=1&min_score=0.99"
+            warmup_req = urllib.request.Request(warmup_url)
+            urllib.request.urlopen(warmup_req, timeout=8)
+        except Exception:
+            pass  # best-effort warmup
 
     write_state(session_id, state)
 
