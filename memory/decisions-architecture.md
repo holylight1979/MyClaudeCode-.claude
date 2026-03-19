@@ -4,7 +4,7 @@
 - Confidence: [固]
 - Trigger: 架構細節, vector service, ollama backend, extraction, ACT-R, episodic tracking, context budget
 - Last-used: 2026-03-19
-- Confirmations: 61
+- Confirmations: 62
 - Type: decision
 - Tags: architecture, infrastructure
 - Related: decisions, toolchain
@@ -39,6 +39,15 @@
 - [固] 純閱讀 Session：accessed_files ≥ 5 且無修改 → 也生成 episodic
 - [固] 暫存區：`projects/{slug}/memory/_staging/`，每個專案獨立
 
+### Token Diet（V2.14）
+- [固] `_strip_atom_for_injection()`：注入前 regex strip 9 種 metadata（Scope/Type/Trigger/Last-used/Created/Confirmations/Tags/TTL/Expires-at）+ `## 行動` / `## 演化日誌` section。保留 Confidence + Related
+- [固] Episodic 閱讀軌跡壓縮：`_build_read_tracking_section()` 改為摘要格式（`讀 N 檔: area (count)`），不列完整路徑
+- [固] SessionEnd 從 state `byte_offset` 開始讀（overlap=1000），跳過 per-turn 已處理段
+- [固] Cross-session lazy search：word_overlap ≥ 0.30 預篩，新 item 無匹配則跳過 vector search
+- [固] 移除 extract-worker pre-filter dedup 注入（post-filter 0.65 已足夠）
+- [固] failure weak_min_match 2→3（減少日常用語誤觸發）
+- [固] 實測省量：注入側 ~350 tok/session + 萃取側 ~1200 tok/session
+
 ### Wisdom Engine 細節
 - [固] 反思指標：over_engineering_rate（同檔 Edit 2+次）+ silence_accuracy（held_back 追蹤）
 - [固] Bayesian 校準：architecture 連續 3+ 失敗 → 提升 arch 敏感度
@@ -60,3 +69,4 @@
 | 日期 | 變更 | 來源 |
 |------|------|------|
 | 2026-03-19 | 從 decisions.md 拆出技術細節 | 系統精修 |
+| 2026-03-19 | 新增 Token Diet V2.14 段落（7 條 [固]） | V2.14 驗證 |
