@@ -337,7 +337,7 @@ def _cross_session_search(
     port = vs_config.get("service_port", 3849)
     cs_config = config.get("cross_session", {})
     min_score = cs_config.get("min_score", 0.75)
-    timeout_s = cs_config.get("timeout_seconds", 5)
+    timeout_s = cs_config.get("timeout_seconds", 15)
     current_prefix = session_id[:8] if session_id else ""
 
     observations = []

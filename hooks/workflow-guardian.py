@@ -742,7 +742,7 @@ def _search_episodic_context(
     port = vs_config.get("service_port", 3849)
     top_k = sc_config.get("max_episodic", 3)
     min_score = sc_config.get("min_score", 0.35)
-    timeout_s = sc_config.get("search_timeout_ms", 1500) / 1000.0
+    timeout_s = sc_config.get("search_timeout_ms", 8000) / 1000.0
 
     try:
         import urllib.parse
@@ -948,7 +948,7 @@ def _semantic_search(
     port = vs_config.get("service_port", 3849)
     top_k = vs_config.get("search_top_k", 5)
     min_score = vs_config.get("search_min_score", 0.65)
-    timeout_s = vs_config.get("search_timeout_ms", 2000) / 1000.0
+    timeout_s = vs_config.get("search_timeout_ms", 8000) / 1000.0
 
     try:
         import urllib.parse
@@ -1146,7 +1146,7 @@ def handle_session_start(input_data: Dict[str, Any], config: Dict[str, Any]) -> 
             vs_port = config.get("vector_search", {}).get("service_port", 3849)
             warmup_url = f"http://127.0.0.1:{vs_port}/search?q=warmup&top_k=1&min_score=0.99"
             warmup_req = urllib.request.Request(warmup_url)
-            urllib.request.urlopen(warmup_req, timeout=2)
+            urllib.request.urlopen(warmup_req, timeout=15)
         except Exception:
             pass  # best-effort warmup
 
