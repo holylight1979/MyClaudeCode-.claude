@@ -11,7 +11,7 @@
 ## 知識
 
 ### 核心架構
-- [固] 原子記憶 V2.15：Hybrid RECALL + Ranked Search + 回應捕獲（全量+逐輪） + 跨 Session 鞏固 + Write Gate + 自我迭代 + Wisdom Engine + 檢索強化 + Context Budget + 衝突偵測 + Fix Escalation + Failures 自動化 + Token Diet
+- [固] 原子記憶 V2.17：Hybrid RECALL + Ranked Search + 回應捕獲（全量+逐輪） + 跨 Session 鞏固 + Write Gate + 自我迭代自動化 + Wisdom Engine + 檢索強化 + Context Budget + 衝突偵測 + Fix Escalation + Failures 自動化 + Token Diet + 覆轍偵測
 - [固] 雙 LLM：Claude Code（雲端決策）+ Ollama（本地語意處理）
 - [固] 6 hook 事件全由 workflow-guardian.py 統一處理
 
@@ -38,6 +38,9 @@
 - [固] Write Gate：品質閘門，dedup 0.80，使用者明確指示時跳過
 - [固] 衝突偵測：SessionEnd 對修改 atoms 做向量搜尋，寫入 episodic 警告
 - [固] 自我迭代精簡為 3 條：品質函數（Hook）、證據門檻（Claude）、震盪偵測（Hook）
+- [固] V2.16 自我迭代自動化：SessionEnd 衰減分數掃描 + [臨]→[觀] 自動晉升（Confirmations ≥ 20）+ 震盪狀態跨 Session 持久化
+- [觀] V2.17 覆轍偵測：episodic 寫入覆轍信號（same_file_3x / retry_escalation）→ SessionStart 掃描跨 session 重複 → 注入 [Guardian:覆轍] 警告
+- [固] AIDocs 內容閘門：PostToolUse 偵測 _AIDocs/ 下暫時性檔名（Plan/TODO/Roadmap/Draft 等）→ additionalContext 警告（不硬擋）
 
 ### Wisdom Engine
 - [固] 2 硬規則（file_count+is_feature → confirm; touches_arch+file_count → plan）
@@ -62,3 +65,6 @@
 > 詳細版本演進：`_reference/decisions-history.md`
 
 - 2026-03-19: 精修拆分 — 技術細節移至 decisions-architecture，歷史移至 _reference
+- 2026-03-22: V2.16 自我迭代自動化決策記錄
+- 2026-03-22: V2.17 覆轍偵測 — 寄生式跨 session 重複失敗模式偵測
+- 2026-03-23: V2.17 合併升級至公司電腦

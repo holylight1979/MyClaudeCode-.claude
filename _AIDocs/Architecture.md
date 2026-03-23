@@ -2,7 +2,7 @@
 
 ## Hooks 系統
 
-6 個 hook 事件，定義在 `settings.json`，全部由 `workflow-guardian.py`（~2770 行）處理：
+6 個 hook 事件，定義在 `settings.json`，全部由 `workflow-guardian.py`（~3500 行）處理：
 
 | Hook | 觸發時機 | 用途 |
 |------|---------|------|
@@ -36,7 +36,7 @@
 | `rules/session-management.md` | 對話管理 + 續航 + 自我迭代 + 精確修正升級 |
 | `rules/sync-workflow.md` | 工作結束同步 + Guardian 閘門 |
 
-## 記憶系統（原子記憶 V2.15）
+## 記憶系統（原子記憶 V2.17）
 
 ### 雙 LLM 架構 + Dual-Backend
 

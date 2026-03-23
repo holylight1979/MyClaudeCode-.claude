@@ -14,3 +14,6 @@
 - 2026-03-19: V2.14 Token Diet — 注入 strip + SessionEnd 跳段 + lazy search 預篩
 - 2026-03-19: atom 精準拆分（toolchain-ollama + workflow-icld）+ 設定檔精修 + vector timeout 修正
 - 2026-03-19: V2.15 定義版本 — 全文件版本號統一 + 內嵌版本標註清理 + CHANGELOG 補完
+- 2026-03-22: V2.16 自我迭代自動化 — SessionEnd 衰減分數掃描 + [臨]→[觀] 自動晉升 + 震盪持久化
+- 2026-03-22: V2.17 覆轍偵測 — 寄生式 episodic 信號 + 跨 session 掃描 + AIDocs 內容閘門
+- 2026-03-23: V2.17 合併升級至公司電腦（從 C:\myHomeClaude 合併）

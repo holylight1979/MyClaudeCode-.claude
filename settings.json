@@ -9,6 +9,7 @@
       "Grep(*)",
       "WebSearch",
       "WebFetch(*)",
+      "mcp__MCPControl__get_screen_size",
       "mcp__workflow-guardian__workflow_signal",
       "mcp__workflow-guardian__workflow_status",
       "mcp__playwright__browser_navigate",
@@ -63,6 +64,26 @@
             "type": "command",
             "command": "python -c \"import runpy,pathlib;runpy.run_path(str(pathlib.Path.home()/'.claude/hooks/workflow-guardian.py'),run_name='__main__')\"",
             "timeout": 8
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node C:/Users/holylight/.claude/scripts/inbox-check.js"
+          }
+        ]
+      },
+      {
+        "matcher": "WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude/hooks/webfetch-guard.sh\"",
+            "timeout": 20
           }
         ]
       }

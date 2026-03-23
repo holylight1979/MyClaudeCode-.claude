@@ -1,4 +1,4 @@
-# Atomic Memory V2.15 — 安裝指南
+# Atomic Memory V2.17 — 安裝指南
 
 > **目標讀者**：使用 VS Code + Claude Code Extension，但完全不知道原子記憶是什麼的開發者。
 > 本指南會幫你把原子記憶系統**合併安裝**到你現有的 `~/.claude/` 目錄中。
@@ -243,7 +243,7 @@ cat > ~/.claude/memory/MEMORY.md << 'EOF'
 
 ## 高頻事實
 
-- 原子記憶 V2.15
+- 原子記憶 V2.17
 EOF
 ```
 

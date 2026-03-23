@@ -53,6 +53,21 @@
 - [固] Bayesian 校準：architecture 連續 3+ 失敗 → 提升 arch 敏感度
 - [固] PostToolUse 品質追蹤：同檔 Edit 2+ → reverted_count → reflection_metrics
 
+### 自我迭代自動化（V2.16）
+- [固] 衰減分數公式：`score = 0.5 * recency + 0.5 * usage`，recency = `exp(-ln2 * days / half_life)`，usage = `min(1, log10(confirmations+1) / 2)`
+- [固] half_life=30d, archive_threshold=0.3（config.json `self_iteration` 區塊可調）
+- [固] SessionEnd 掃描 `memory/*.md` + `memory/failures/*.md`，跳過 MEMORY.md / SPEC / `_` 前綴
+- [固] [臨]→[觀] 自動晉升條件：atom Confirmations ≥ 20（promote_min_confirmations），行首 `- [臨]` → `- [觀]` 直接覆寫
+- [固] Archive candidates：score < 0.3 的 atoms 寫入 `_staging/archive-candidates.md`
+- [固] 震盪持久化：`_save_oscillation_state()` SessionEnd 寫 `workflow/oscillation_state.json`；`_load_oscillation_warnings()` SessionStart 讀取注入 `[Guardian:Oscillation]` 警告
+- [固] config.json `self_iteration` 欄位：decay_half_life_days, promote_min_confirmations, archive_score_threshold, oscillation_window, oscillation_threshold, review_interval
+
+### 覆轍偵測（V2.17）
+- [觀] 寄生式設計：不新增檔案/參數/子系統，附著在 episodic atom 上
+- [觀] SessionEnd：`edit_counts ≥ 3` → `same_file_3x:{filename}` 信號；`retry_count ≥ 2` → `retry_escalation` 信號，寫入 episodic 的「覆轍信號:」欄位
+- [觀] SessionStart：`_detect_rut_patterns()` 掃描最近 N 個 episodic（共用 oscillation_window），同一信號出現 ≥ 2 sessions → 注入 `[Guardian:覆轍]`
+- [觀] 職責切分：session 內重試 → fix-escalation；atom 反覆修改 → 震盪偵測；跨 session 行為模式 → 覆轍偵測
+
 ### 環境維護
 - [固] rules/ 模組化：CLAUDE.md ~50 行，4 規則檔自動載入
 - [固] Atom 健康度：atom-health-check.py（Related 完整性 + 懸空引用 + 過期掃描）
@@ -70,3 +85,6 @@
 |------|------|------|
 | 2026-03-19 | 從 decisions.md 拆出技術細節 | 系統精修 |
 | 2026-03-19 | 新增 Token Diet V2.14 段落（7 條 [固]） | V2.14 驗證 |
+| 2026-03-22 | 新增自我迭代自動化（V2.16）段落（7 條 [固]） | V2.16 文件同步 |
+| 2026-03-22 | 新增覆轍偵測（V2.17）段落（4 條 [觀]） | 覆轍偵測實作 |
+| 2026-03-23 | V2.17 合併升級至公司電腦 | 跨機合併 |
