@@ -3,8 +3,8 @@
 - Scope: global
 - Confidence: [固]
 - Trigger: 偏好, 風格, 習慣, style, preference, 語言, 回應, 執P, 執驗上P, 上GIT, 上傳GIT
-- Last-used: 2026-03-19
-- Confirmations: 56
+- Last-used: 2026-03-23
+- Confirmations: 57
 - Type: preference
 
 ## 知識
