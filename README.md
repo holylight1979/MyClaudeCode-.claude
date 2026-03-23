@@ -529,27 +529,27 @@ flowchart TD
 
 ## 版本歷史
 
-| 版本 | 日期 | 核心變更 |
-|------|------|---------|
-| V1.0 | 2026-03-02 | 三層分類 `[固]/[觀]/[臨]` + 資料夾結構 + memory-audit 健檢 |
-| V2.0 | 2026-03-03 | **Hybrid RECALL**：keyword + vector search + LLM re-ranking |
-| V2.1 Sprint 1 | 2026-03-04 | Schema 擴展、Write Gate、自動淘汰、Confirmations 遞增 |
-| V2.1 Sprint 2 | 2026-03-04 | Intent classifier、ranked search、衝突偵測、刪除傳播 |
-| V2.1 Sprint 3 | 2026-03-04 | Type decay、Supersedes loading、日誌壓縮、audit trail |
-| V2.4 | 2026-03-05 | **回應知識捕獲 + 跨 Session 鞏固**：逐輪+SessionEnd 本地 LLM 萃取、兩層分類（Scope×Type）、向量比對自動晉升 [臨]→[觀] |
-| V2.5 | 2026-03-06 | **寫入品質強化**：萃取 prompt 加入可操作性標準 + negative examples、知識類型 4→6（+decision/preference）、content 上限 80→150 chars、Ollama format:json 強制、Write Gate 可操作性評分（+0.15）含 CJK patterns、dedup 前綴 40→60 chars |
-| V2.6 | 2026-03-10 | **自我迭代**：8 條核心規則 + 定期檢閱 + 分類演進 |
-| V2.7 | 2026-03-10 | **品質回饋**：output quality check + iteration metrics + oscillation detection + maturity phase |
-| V2.8 | 2026-03-11 | **Wisdom Engine**：因果圖（BFS depth=2）+ 情境分類器（加權評分）+ 反思引擎（滑動窗口統計） |
-| V2.9 | 2026-03-11 | **記憶檢索強化**：Project-Aliases（跨專案身份辨識）+ Related-Edge Spreading（多跳檢索 depth=1）+ ACT-R Activation Scoring（時間加權排序）+ Blind-Spot Reporter（盲點報告） |
-| V2.10 | 2026-03-11 | **Session 全軌跡追蹤**：Read Tracking（閱讀檔案去重記錄）+ VCS Query Capture（git/svn 版控查詢捕獲）+ 閱讀軌跡 section（episodic atom）+ 純閱讀 session episodic 生成 + `_staging/` 暫存區管理 |
-| **V2.11** | **2026-03-13** | **精簡+品質+模組化+Dual-Backend**：僅 SessionEnd 萃取（移除逐輪 extract-worker）+ 簡化鞏固 + 自我迭代精簡為 3 條 + Wisdom（硬規則+反思校準）+ Context Budget（3000t）+ 衝突偵測 + Atom 健康度 + `rules/` 模組化 + `/harvest` `/upgrade` skills + Dual-Backend Ollama（三階段退避+Long DIE 使用者確認+靜態停用旗標） |
-| V2.12 | 2026-03-17 | **精確修正+逐輪萃取**：Fix Escalation Protocol（6 Agent 會議制）+ Stop hook 逐輪增量萃取（byte_offset + cooldown + PID guard）+ `/atom-debug` skill + 注入精準化（IDE 標籤過濾+keyword boundary） |
-| V2.13 | 2026-03-19 | **Failures 自動化系統**：UserPromptSubmit 偵測失敗關鍵字（strong ×1 / weak ×3）→ detached extract-worker 萃取失敗模式 → 三維路由（失敗類型 × 專案 × 領域tags）自動寫入對應 failure atom |
-| V2.14 | 2026-03-19 | **Token Diet**：注入前 strip 9 種 metadata + 行動/演化日誌。SessionEnd 從 byte_offset 跳已萃取段。cross-session lazy search（word_overlap ≥ 0.30 預篩）。省 ~1550 tok/session |
-| V2.15 | 2026-03-19 | **定義版本**：atom 精準拆分（toolchain-ollama + workflow-icld）+ 設定檔精修（去重/瘦身）+ vector service timeout 修正 + failures 拆分子 atoms + 全文件版本號統一 + CHANGELOG 補完 |
-| V2.16 | 2026-03-22 | **自我迭代自動化**：SessionEnd 衰減分數掃描（half_life=30d）+ [臨]→[觀] 自動晉升（Confirmations ≥ 20）+ Archive candidates 輸出 + 震盪狀態跨 Session 持久化（oscillation_state.json） |
-| **V2.17** | **2026-03-22** | **覆轍偵測**：寄生式設計（附著 episodic atom，零新檔案/參數）+ SessionEnd 寫入覆轍信號（same_file_3x / retry_escalation）+ SessionStart 跨 session 掃描 → `[Guardian:覆轍]` 警告注入 + AIDocs 內容閘門（PostToolUse 偵測暫時性檔名） |
+| 版本 | 日期 | 白話說明 | 核心變更 |
+|------|------|---------|---------|
+| V1.0 | 2026-03-02 | 記憶有了三級可信度，能自動健檢格式 | 三層分類 `[固]/[觀]/[臨]` + 資料夾結構 + memory-audit 健檢 |
+| V2.0 | 2026-03-03 | 搜記憶不再只靠關鍵字，加上語意理解 | **Hybrid RECALL**：keyword + vector search + LLM re-ranking |
+| V2.1 Sprint 1 | 2026-03-04 | 寫入前先檢查品質，垃圾記憶擋在門外 | Schema 擴展、Write Gate、自動淘汰、Confirmations 遞增 |
+| V2.1 Sprint 2 | 2026-03-04 | 能判斷你在問什麼類型的問題，搜得更準 | Intent classifier、ranked search、衝突偵測、刪除傳播 |
+| V2.1 Sprint 3 | 2026-03-04 | 舊記憶自動衰退，不會無限堆積 | Type decay、Supersedes loading、日誌壓縮、audit trail |
+| V2.4 | 2026-03-05 | AI 回答中的有用知識會被自動抓出來存起來，跨 session 反覆出現的還會自動升級 | **回應知識捕獲 + 跨 Session 鞏固**：逐輪+SessionEnd 本地 LLM 萃取、兩層分類（Scope×Type）、向量比對自動晉升 [臨]→[觀] |
+| V2.5 | 2026-03-06 | 萃取出來的知識更實用，不再存一堆廢話 | **寫入品質強化**：萃取 prompt 加入可操作性標準 + negative examples、知識類型 4→6（+decision/preference）、content 上限 80→150 chars、Ollama format:json 強制、Write Gate 可操作性評分（+0.15）含 CJK patterns、dedup 前綴 40→60 chars |
+| V2.6 | 2026-03-10 | 記憶系統會自我檢討，定期清理過時規則 | **自我迭代**：8 條核心規則 + 定期檢閱 + 分類演進 |
+| V2.7 | 2026-03-10 | 追蹤 AI 輸出品質，抓出過度工程和反覆修改 | **品質回饋**：output quality check + iteration metrics + oscillation detection + maturity phase |
+| V2.8 | 2026-03-11 | 大改動前先想清楚再動手，避免衝動寫 code | **Wisdom Engine**：因果圖（BFS depth=2）+ 情境分類器（加權評分）+ 反思引擎（滑動窗口統計） |
+| V2.9 | 2026-03-11 | 找記憶更聰明：會沿著關聯找到相關知識，常用的排前面，找不到會提醒 | **記憶檢索強化**：Project-Aliases（跨專案身份辨識）+ Related-Edge Spreading（多跳檢索 depth=1）+ ACT-R Activation Scoring（時間加權排序）+ Blind-Spot Reporter（盲點報告） |
+| V2.10 | 2026-03-11 | 記住每次 session 讀了哪些檔、查了哪些版控，純看 code 也會留紀錄 | **Session 全軌跡追蹤**：Read Tracking（閱讀檔案去重記錄）+ VCS Query Capture（git/svn 版控查詢捕獲）+ 閱讀軌跡 section（episodic atom）+ 純閱讀 session episodic 生成 + `_staging/` 暫存區管理 |
+| **V2.11** | **2026-03-13** | 大瘦身：砍掉冗餘機制、模組化拆檔、加入 Ollama 雙機備援 | **精簡+品質+模組化+Dual-Backend**：僅 SessionEnd 萃取（移除逐輪 extract-worker）+ 簡化鞏固 + 自我迭代精簡為 3 條 + Wisdom（硬規則+反思校準）+ Context Budget（3000t）+ 衝突偵測 + Atom 健康度 + `rules/` 模組化 + `/harvest` `/upgrade` skills + Dual-Backend Ollama（三階段退避+Long DIE 使用者確認+靜態停用旗標） |
+| V2.12 | 2026-03-17 | 同一個 bug 修第二次就自動召開 6 Agent 會議精確修正；對話中途也能萃取知識 | **精確修正+逐輪萃取**：Fix Escalation Protocol（6 Agent 會議制）+ Stop hook 逐輪增量萃取（byte_offset + cooldown + PID guard）+ `/atom-debug` skill + 注入精準化（IDE 標籤過濾+keyword boundary） |
+| V2.13 | 2026-03-19 | 踩坑自動記錄：偵測到失敗就萃取教訓，按類型存到對應的失敗記憶 | **Failures 自動化系統**：UserPromptSubmit 偵測失敗關鍵字（strong ×1 / weak ×3）→ detached extract-worker 萃取失敗模式 → 三維路由（失敗類型 × 專案 × 領域tags）自動寫入對應 failure atom |
+| V2.14 | 2026-03-19 | 省 token：注入記憶前先瘦身，萃取時跳過已處理段，每 session 省 ~1550 tokens | **Token Diet**：注入前 strip 9 種 metadata + 行動/演化日誌。SessionEnd 從 byte_offset 跳已萃取段。cross-session lazy search（word_overlap ≥ 0.30 預篩）。省 ~1550 tok/session |
+| V2.15 | 2026-03-19 | 整理內務：拆分過大的 atom、統一版本號、修 bug | **定義版本**：atom 精準拆分（toolchain-ollama + workflow-icld）+ 設定檔精修（去重/瘦身）+ vector service timeout 修正 + failures 拆分子 atoms + 全文件版本號統一 + CHANGELOG 補完 |
+| V2.16 | 2026-03-22 | 過時記憶自動降級：用衰減公式算活躍度，太久沒用的標記封存，夠格的自動晉升 | **自我迭代自動化**：SessionEnd 衰減分數掃描（half_life=30d）+ [臨]→[觀] 自動晉升（Confirmations ≥ 20）+ Archive candidates 輸出 + 震盪狀態跨 Session 持久化（oscillation_state.json） |
+| **V2.17** | **2026-03-22** | 跨 session 抓重複犯錯：同個坑踩兩次以上，下次開 session 就會收到警告 | **覆轍偵測**：寄生式設計（附著 episodic atom，零新檔案/參數）+ SessionEnd 寫入覆轍信號（same_file_3x / retry_escalation）+ SessionStart 跨 session 掃描 → `[Guardian:覆轍]` 警告注入 + AIDocs 內容閘門（PostToolUse 偵測暫時性檔名） |
 
 ---
 
