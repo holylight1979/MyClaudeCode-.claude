@@ -1045,7 +1045,7 @@ def _semantic_search(
                 seen.add(name)
         return entries
     except Exception as e:
-        _atom_debug_error("_semantic_search", e)
+        _atom_debug_error("注入:_semantic_search", e)
         return []  # graceful fallback
 
 
@@ -1905,7 +1905,7 @@ def _spawn_extract_worker(ctx_dict: dict) -> int:
         proc.stdin.close()
         return proc.pid
     except Exception as e:
-        _atom_debug_error("_spawn_extract_worker", e)
+        _atom_debug_error("萃取:_spawn_extract_worker", e)
         return 0
 
 
@@ -3027,7 +3027,7 @@ def handle_session_end(input_data: Dict[str, Any], config: Dict[str, Any]) -> No
             episodic_generated = True
         except Exception as e:
             print(f"[episodic] generation failed: {e}", file=sys.stderr)
-            _atom_debug_error("_generate_episodic_atom", e)
+            _atom_debug_error("萃取:_generate_episodic_atom", e)
 
     # V2.11-fix: Save review marker if review was due this session
     if state.get("review_due"):

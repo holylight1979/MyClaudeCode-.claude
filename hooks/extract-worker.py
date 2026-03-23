@@ -157,7 +157,7 @@ def _call_ollama(prompt: str, model: str = None, timeout: int = 120) -> str:
             think=True, temperature=0.1, num_predict=8192,
         )
     except Exception as e:
-        _atom_debug_error("_call_ollama", e)
+        _atom_debug_error("萃取:_call_ollama", e)
         return ""
 
 
@@ -413,7 +413,7 @@ def _cross_session_search(
             observations.append(obs)
 
         except Exception as e:
-            _atom_debug_error("_cross_session_search", e)
+            _atom_debug_error("萃取:_cross_session_search", e)
             continue  # Skip this item, try next
 
     return observations
@@ -722,7 +722,7 @@ def main():
         sys.stdout.write(json.dumps(result, ensure_ascii=False))
     except Exception as e:
         print(f"[extract-worker] error: {e}", file=sys.stderr)
-        _atom_debug_error("extract-worker:main", e)
+        _atom_debug_error("萃取:extract-worker:main", e)
         sys.stdout.write(json.dumps(_empty_result()))
 
 
