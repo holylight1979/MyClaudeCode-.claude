@@ -4,7 +4,7 @@
 - Confidence: [固]
 - Trigger: 工具, 環境, 指令, command, bash, git, python, npm
 - Last-used: 2026-03-24
-- Confirmations: 84
+- Confirmations: 85
 - Type: procedural
 - Tags: toolchain, environment, commands
 - Related: fail-env, toolchain-ollama, decisions-architecture, doc-index-system
@@ -16,7 +16,7 @@
 - [固] Claude Code 的 bash 環境是 MSYS2，路徑格式 `/c/Users/` 而非 `C:\Users\`，但 Python Path 物件自動轉換
 - [固] Windows 上 bash 指令的 `/dev/null` 有效（MSYS2 模擬），不需改成 `NUL`
 - [固] `timeout` 指令在 MSYS2 bash 不可用，需用 Python 的 subprocess timeout 或其他替代
-- [觀] Windows 環境變數用 `$env:VAR`（PowerShell）或 `$VAR`（bash），混用易出錯
+- [固] Windows 環境變數用 `$env:VAR`（PowerShell）或 `$VAR`（bash），混用易出錯
 
 ### 已驗證的指令組合
 
@@ -27,8 +27,6 @@
 
 ### 路徑與版本
 
-- [觀] Python: Windows 預設路徑 — 需確認具體 session 中的 `which python` 結果
-- [觀] Node.js: 用於 inbox-check.js hook — 需確認版本
 - [固] Ollama models 位置: 預設 `~/.ollama/models/`
 - [固] LanceDB 資料: `~/.claude/memory/_vectordb/`
 

@@ -447,6 +447,13 @@ def test_episodic_generation(ctx: TestContext) -> TestResult:
         original_memory_dir = mod.MEMORY_DIR
         mod.MEMORY_DIR = ctx.memory_dir
 
+        # Patch _resolve_episodic_dir to write into test dir (not real project dir)
+        import wg_episodic
+        original_resolve = wg_episodic._resolve_episodic_dir
+        test_episodic_dir = ctx.memory_dir / "episodic"
+        test_episodic_dir.mkdir(parents=True, exist_ok=True)
+        wg_episodic._resolve_episodic_dir = lambda state: (test_episodic_dir, "project:test")
+
         fake_state = {
             "session": {
                 "id": "test-session-abc123",
@@ -482,12 +489,13 @@ def test_episodic_generation(ctx: TestContext) -> TestResult:
             result = mod._generate_episodic_atom("test-session-abc123", fake_state, config)
         finally:
             mod.MEMORY_DIR = original_memory_dir
+            wg_episodic._resolve_episodic_dir = original_resolve
 
         if result is None:
             return TestResult("episodic_generation", False, "returned None (skipped)")
 
-        # Verify file exists
-        atom_path = ctx.memory_dir / f"{result}.md"
+        # Verify file exists (episodic atoms are in episodic/ subdir)
+        atom_path = test_episodic_dir / f"{result}.md"
         if not atom_path.exists():
             return TestResult("episodic_generation", False,
                               f"atom file not found: {result}.md")
