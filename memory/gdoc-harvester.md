@@ -4,7 +4,7 @@
 - Confidence: [固]
 - Trigger: harvester, Google Docs, Sheets, 收割, Playwright, cookie, export
 - Last-used: 2026-03-24
-- Confirmations: 17
+- Confirmations: 18
 
 ## 知識
 

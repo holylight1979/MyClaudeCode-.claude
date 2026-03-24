@@ -5,12 +5,14 @@ Unity YAML uses custom `!u!{ClassID}` tags that standard YAML parsers can't hand
 This tool provides a layer that preserves Unity's format while enabling programmatic access.
 
 Usage:
-    python unity-yaml-tool.py parse <file>                     # Parse and dump as JSON
-    python unity-yaml-tool.py generate-asset <json> <output>   # Generate .asset from JSON spec
-    python unity-yaml-tool.py generate-meta <output> [--guid]  # Generate .meta file
-    python unity-yaml-tool.py modify <file> <field> <value>    # Modify a field in-place
-    python unity-yaml-tool.py template <src> <output> <json>   # Clone asset, replace fields
-    python unity-yaml-tool.py generate-prefab <json> <output>  # Generate simple prefab
+    python unity-yaml-tool.py parse <file>                         # Parse and dump as JSON
+    python unity-yaml-tool.py generate-asset <json> <output>       # Generate .asset from JSON spec
+    python unity-yaml-tool.py generate-meta <output> [--guid]      # Generate .meta file
+    python unity-yaml-tool.py modify <file> <field> <value>        # Modify a field in-place
+    python unity-yaml-tool.py template <src> <output> <json>       # Clone asset, replace fields
+    python unity-yaml-tool.py generate-prefab <json> <output>      # Generate simple prefab
+    python unity-yaml-tool.py generate-ui-prefab <json> <output>   # Generate WndForm UI prefab
+    python unity-yaml-tool.py validate <file>                      # Validate prefab integrity
 """
 
 import sys
@@ -33,17 +35,63 @@ CLASS_IDS = {
     "MeshRenderer": 23,
     "MeshFilter": 33,
     "BoxCollider": 65,
+    "Animator": 95,
     "SphereCollider": 135,
     "MonoBehaviour": 114,
     "MonoScript": 115,
     "ParticleSystem": 198,
     "ParticleSystemRenderer": 199,
+    "CanvasRenderer": 222,
+    "Canvas": 223,
+    "RectTransform": 224,
+    "CanvasGroup": 225,
     "OcclusionCullingSettings": 29,
     "RenderSettings": 104,
     "LightmapSettings": 157,
     "NavMeshSettings": 196,
     "Prefab": 1001,
     "PrefabInstance": 1001480554,
+}
+
+# ── Anchor Presets ────────────────────────────────────────────────────────────
+# Each preset: (anchorMin, anchorMax, pivot)
+# sizeDelta is set separately (0,0 for stretch, explicit for fixed)
+
+ANCHOR_PRESETS = {
+    "stretch":       ({"x": 0, "y": 0}, {"x": 1, "y": 1}, {"x": 0.5, "y": 0.5}),
+    "top-left":      ({"x": 0, "y": 1}, {"x": 0, "y": 1}, {"x": 0, "y": 1}),
+    "top-center":    ({"x": 0.5, "y": 1}, {"x": 0.5, "y": 1}, {"x": 0.5, "y": 1}),
+    "top-right":     ({"x": 1, "y": 1}, {"x": 1, "y": 1}, {"x": 1, "y": 1}),
+    "middle-left":   ({"x": 0, "y": 0.5}, {"x": 0, "y": 0.5}, {"x": 0, "y": 0.5}),
+    "center":        ({"x": 0.5, "y": 0.5}, {"x": 0.5, "y": 0.5}, {"x": 0.5, "y": 0.5}),
+    "middle-right":  ({"x": 1, "y": 0.5}, {"x": 1, "y": 0.5}, {"x": 1, "y": 0.5}),
+    "bottom-left":   ({"x": 0, "y": 0}, {"x": 0, "y": 0}, {"x": 0, "y": 0}),
+    "bottom-center": ({"x": 0.5, "y": 0}, {"x": 0.5, "y": 0}, {"x": 0.5, "y": 0}),
+    "bottom-right":  ({"x": 1, "y": 0}, {"x": 1, "y": 0}, {"x": 1, "y": 0}),
+    "stretch-top":   ({"x": 0, "y": 1}, {"x": 1, "y": 1}, {"x": 0.5, "y": 1}),
+    "stretch-bottom":({"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 0.5, "y": 0}),
+    "stretch-left":  ({"x": 0, "y": 0}, {"x": 0, "y": 1}, {"x": 0, "y": 0.5}),
+    "stretch-right": ({"x": 1, "y": 0}, {"x": 1, "y": 1}, {"x": 1, "y": 0.5}),
+}
+
+# ── UI Component GUIDs (SGI Client project) ──────────────────────────────────
+# From .cs.meta and .dll.meta — do NOT hardcode, update from project sources
+
+UI_GUIDS = {
+    "ILUIWnd":                "92d84008b0651f44b82b6792322b6551",
+    "ILUIWidget":             "c4d39f5c5f9f8b544915a8e00f055d80",
+    "ILUIScrollerController": "38afe61accd76f840899fdc078e09ef9",
+    "ILUIScrollerView":       "c03f8bb183d633a49986b0e8525f3c4e",
+    "UIPerformance":          "e462dac500424c5439978c56da2c7c27",
+    "UIButtonCustom":         "89779232b761c444897d167013b46555",
+    "UIButton":               "7d12bfc32d0d797428cf0191288caabd",
+    "GraphicRaycaster":       "dc42784cf147c0c48a680349fa168899",
+    "Image":                  "fe87c0e1cc204ed48ad3b37840f39efc",
+    "RawImage":               "1344c3c82d62a2a41a3576d8abb8e3ea",
+    "Button":                 "4e29b1a8efbd4b44bb3f3716e73f07ff",
+    "EnhancedScroller":       "9c1b74f910281224a8cae6d8e4fc1f43",
+    "Text":                   "5f7201a12d95ffc409449d95f23cf332",
+    "ScrollRect":             "1aa08ab6e0800fa44ae55d278d1423e3",
 }
 
 UNITY_YAML_HEADER = "%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n"
@@ -848,6 +896,409 @@ def generate_prefab(spec: dict, output_path: str):
     print(f"Generated prefab: {output_path}")
 
 
+def generate_ui_prefab(spec: dict, output_path: str):
+    """Generate a WndForm UI prefab with proper root structure and RefDb.
+
+    spec = {
+        "name": "WndForm_UITutorial",
+        "children": [
+            {"name": "Load_Title", "type": "Text", "anchor": "stretch",
+             "size": {"x": 400, "y": 60}},
+            {"name": "Confirm", "type": "UIButtonCustom", "anchor": "center",
+             "size": {"x": 200, "y": 60}},
+            {"name": "Scroller", "type": "Scroller", "anchor": "stretch",
+             "scroll_class": "UITutorialScroller"}
+        ]
+    }
+
+    Supported child types: Text, Image, UIButtonCustom, Scroller, Empty
+    """
+    doc = UnityDocument()
+
+    def next_id():
+        return str(random.randint(1000000000000000, 9999999999999999))
+
+    def make_mono(go_id, guid, fields=None):
+        """Create a MonoBehaviour component."""
+        cid = next_id()
+        data = OrderedDict()
+        data["m_ObjectHideFlags"] = 0
+        data["m_CorrespondingSourceObject"] = {"fileID": 0}
+        data["m_PrefabInstance"] = {"fileID": 0}
+        data["m_PrefabAsset"] = {"fileID": 0}
+        data["m_GameObject"] = {"fileID": int(go_id)}
+        data["m_Enabled"] = 1
+        data["m_EditorHideFlags"] = 0
+        data["m_Script"] = {"fileID": 11500000, "guid": guid, "type": 3}
+        data["m_Name"] = None
+        data["m_EditorClassIdentifier"] = None
+        if fields:
+            for k, v in fields.items():
+                data[k] = v
+        return UnityObject(114, cid, "MonoBehaviour", data), cid
+
+    def make_rect_transform(go_id, parent_tr_id, children_tr_ids, root_order, anchor="stretch", size=None, pos=None):
+        """Create a RectTransform (ClassID 224)."""
+        tr_id = next_id()
+        preset = ANCHOR_PRESETS.get(anchor, ANCHOR_PRESETS["stretch"])
+        anchor_min, anchor_max, pivot = preset
+
+        # For stretch: sizeDelta=0,0. For fixed: use size param
+        if anchor == "stretch" and size is None:
+            size_delta = {"x": 0, "y": 0}
+        else:
+            size_delta = size or {"x": 100, "y": 100}
+
+        data = OrderedDict()
+        data["m_ObjectHideFlags"] = 0
+        data["m_CorrespondingSourceObject"] = {"fileID": 0}
+        data["m_PrefabInstance"] = {"fileID": 0}
+        data["m_PrefabAsset"] = {"fileID": 0}
+        data["m_GameObject"] = {"fileID": int(go_id)}
+        data["m_LocalRotation"] = {"x": 0, "y": 0, "z": 0, "w": 1}
+        data["m_LocalPosition"] = {"x": 0, "y": 0, "z": 0}
+        data["m_LocalScale"] = {"x": 1, "y": 1, "z": 1}
+        data["m_ConstrainProportionsScale"] = 0
+        data["m_Children"] = [{"fileID": int(c)} for c in children_tr_ids]
+        data["m_Father"] = {"fileID": int(parent_tr_id) if parent_tr_id else 0}
+        data["m_RootOrder"] = root_order
+        data["m_LocalEulerAnglesHint"] = {"x": 0, "y": 0, "z": 0}
+        data["m_AnchorMin"] = anchor_min
+        data["m_AnchorMax"] = anchor_max
+        data["m_AnchoredPosition"] = pos or {"x": 0, "y": 0}
+        data["m_SizeDelta"] = size_delta
+        data["m_Pivot"] = pivot
+        return UnityObject(224, tr_id, "RectTransform", data), tr_id
+
+    def make_canvas(go_id):
+        cid = next_id()
+        data = OrderedDict()
+        data["m_ObjectHideFlags"] = 0
+        data["m_CorrespondingSourceObject"] = {"fileID": 0}
+        data["m_PrefabInstance"] = {"fileID": 0}
+        data["m_PrefabAsset"] = {"fileID": 0}
+        data["m_GameObject"] = {"fileID": int(go_id)}
+        data["m_Enabled"] = 1
+        data["serializedVersion"] = 3
+        data["m_RenderMode"] = 2
+        data["m_Camera"] = {"fileID": 0}
+        data["m_PlaneDistance"] = 100
+        data["m_PixelPerfect"] = 0
+        data["m_ReceivesEvents"] = 1
+        data["m_OverrideSorting"] = 0
+        data["m_OverridePixelPerfect"] = 0
+        data["m_SortingBucketNormalizedSize"] = 0
+        data["m_VertexColorAlwaysGammaSpace"] = 0
+        data["m_AdditionalShaderChannelsFlag"] = 25
+        data["m_UpdateRectTransformForStandalone"] = 0
+        data["m_SortingLayerID"] = 0
+        data["m_SortingOrder"] = 0
+        data["m_TargetDisplay"] = 0
+        return UnityObject(223, cid, "Canvas", data), cid
+
+    def make_canvas_group(go_id):
+        cid = next_id()
+        data = OrderedDict()
+        data["m_ObjectHideFlags"] = 0
+        data["m_CorrespondingSourceObject"] = {"fileID": 0}
+        data["m_PrefabInstance"] = {"fileID": 0}
+        data["m_PrefabAsset"] = {"fileID": 0}
+        data["m_GameObject"] = {"fileID": int(go_id)}
+        data["m_Enabled"] = 1
+        data["m_Alpha"] = 1
+        data["m_Interactable"] = 1
+        data["m_BlocksRaycasts"] = 1
+        data["m_IgnoreParentGroups"] = 0
+        return UnityObject(225, cid, "CanvasGroup", data), cid
+
+    def make_canvas_renderer(go_id):
+        cid = next_id()
+        data = OrderedDict()
+        data["m_ObjectHideFlags"] = 0
+        data["m_CorrespondingSourceObject"] = {"fileID": 0}
+        data["m_PrefabInstance"] = {"fileID": 0}
+        data["m_PrefabAsset"] = {"fileID": 0}
+        data["m_GameObject"] = {"fileID": int(go_id)}
+        data["m_CullTransparentMesh"] = 1
+        return UnityObject(222, cid, "CanvasRenderer", data), cid
+
+    def make_gameobject(name, component_ids, layer=5):
+        go_id = next_id()
+        data = OrderedDict()
+        data["m_ObjectHideFlags"] = 0
+        data["m_CorrespondingSourceObject"] = {"fileID": 0}
+        data["m_PrefabInstance"] = {"fileID": 0}
+        data["m_PrefabAsset"] = {"fileID": 0}
+        data["serializedVersion"] = 6
+        data["m_Component"] = [{"component": {"fileID": int(c)}} for c in component_ids]
+        data["m_Layer"] = layer
+        data["m_Name"] = name
+        data["m_TagString"] = "Untagged"
+        data["m_Icon"] = {"fileID": 0}
+        data["m_NavMeshLayer"] = 0
+        data["m_StaticEditorFlags"] = 0
+        data["m_IsActive"] = 1
+        return UnityObject(1, go_id, "GameObject", data), go_id
+
+    # ── Build children first (bottom-up) ──
+    child_results = []  # list of (objects, tr_id, refdb_entry)
+    refdb_objects = []
+
+    for idx, child_spec in enumerate(spec.get("children", [])):
+        child_name = child_spec["name"]
+        child_type = child_spec.get("type", "Empty")
+        child_anchor = child_spec.get("anchor", "stretch")
+        child_size = child_spec.get("size")
+        child_pos = child_spec.get("position")
+        objects = []
+
+        # Placeholder IDs — will be assigned during assembly
+        tr_id_placeholder = next_id()
+        go_id_placeholder = next_id()
+
+        # Build components based on type
+        extra_comp_ids = []
+        extra_objs = []
+        refdb_comp_id = None
+        refdb_type_name = child_type
+
+        if child_type == "Text":
+            text_guid = UI_GUIDS.get("Text")
+            if text_guid:
+                cr_obj, cr_id = make_canvas_renderer(go_id_placeholder)
+                extra_objs.append(cr_obj)
+                extra_comp_ids.append(cr_id)
+                mono_obj, mono_id = make_mono(go_id_placeholder, text_guid, {
+                    "m_Text": child_spec.get("text", ""),
+                    "m_FontSize": child_spec.get("font_size", 28),
+                })
+                extra_objs.append(mono_obj)
+                extra_comp_ids.append(mono_id)
+                refdb_comp_id = mono_id
+            else:
+                # Fallback: empty child, Text GUID not available
+                print(f"Warning: Text GUID not configured, '{child_name}' created as empty", file=sys.stderr)
+
+        elif child_type == "Image":
+            img_guid = UI_GUIDS.get("Image")
+            if img_guid:
+                cr_obj, cr_id = make_canvas_renderer(go_id_placeholder)
+                extra_objs.append(cr_obj)
+                extra_comp_ids.append(cr_id)
+                mono_obj, mono_id = make_mono(go_id_placeholder, img_guid)
+                extra_objs.append(mono_obj)
+                extra_comp_ids.append(mono_id)
+                refdb_comp_id = mono_id
+
+        elif child_type == "UIButtonCustom":
+            btn_guid = UI_GUIDS.get("UIButtonCustom")
+            img_guid = UI_GUIDS.get("Image")
+            if btn_guid:
+                cr_obj, cr_id = make_canvas_renderer(go_id_placeholder)
+                extra_objs.append(cr_obj)
+                extra_comp_ids.append(cr_id)
+                # Image background
+                if img_guid:
+                    img_obj, img_id = make_mono(go_id_placeholder, img_guid)
+                    extra_objs.append(img_obj)
+                    extra_comp_ids.append(img_id)
+                # UIButtonCustom
+                mono_obj, mono_id = make_mono(go_id_placeholder, btn_guid)
+                extra_objs.append(mono_obj)
+                extra_comp_ids.append(mono_id)
+                refdb_comp_id = mono_id
+
+        elif child_type == "Scroller":
+            scroller_guid = UI_GUIDS.get("EnhancedScroller")
+            ctrl_guid = UI_GUIDS.get("ILUIScrollerController")
+            if scroller_guid and ctrl_guid:
+                # EnhancedScroller
+                es_obj, es_id = make_mono(go_id_placeholder, scroller_guid)
+                extra_objs.append(es_obj)
+                extra_comp_ids.append(es_id)
+                # ILUIScrollerController
+                scroll_class = child_spec.get("scroll_class", "")
+                ctrl_obj, ctrl_id = make_mono(go_id_placeholder, ctrl_guid, {
+                    "_scrollClassName": scroll_class,
+                })
+                extra_objs.append(ctrl_obj)
+                extra_comp_ids.append(ctrl_id)
+                refdb_comp_id = ctrl_id
+                refdb_type_name = "ILUIScrollerController"
+
+        # Assemble child: RectTransform first, then extras
+        all_comp_ids = [tr_id_placeholder] + extra_comp_ids
+        go_obj, go_id = make_gameobject(child_name, all_comp_ids)
+
+        # Fix go_id references in components
+        for obj in extra_objs:
+            if "m_GameObject" in obj.data:
+                obj.data["m_GameObject"] = {"fileID": int(go_id)}
+
+        # RectTransform (parent set later)
+        rt_obj, rt_id = make_rect_transform(go_id, None, [], idx, child_anchor, child_size, child_pos)
+        # Overwrite placeholder tr_id in component list
+        go_obj.data["m_Component"][0] = {"component": {"fileID": int(rt_id)}}
+
+        objects = [go_obj, rt_obj] + extra_objs
+
+        # RefDb entry
+        if refdb_comp_id:
+            refdb_objects.append({
+                "_key": child_name,
+                "_typeName": refdb_type_name,
+                "Objs": [{"fileID": int(refdb_comp_id)}],
+            })
+
+        child_results.append((objects, rt_id))
+
+    # ── Build root ──
+    child_tr_ids = [tr_id for _, tr_id in child_results]
+
+    root_tr_id = next_id()
+    root_go_id = next_id()
+
+    # Root components: RectTransform + Canvas + GraphicRaycaster + CanvasGroup + UIPerformance + ILUIWnd
+    canvas_obj, canvas_id = make_canvas(root_go_id)
+    raycaster_obj, raycaster_id = make_mono(root_go_id, UI_GUIDS["GraphicRaycaster"])
+    cg_obj, cg_id = make_canvas_group(root_go_id)
+    perf_obj, perf_id = make_mono(root_go_id, UI_GUIDS["UIPerformance"])
+
+    # ILUIWnd with RefDb
+    wnd_name = spec.get("name", "WndForm_Unknown")
+    wnd_fields = OrderedDict()
+    wnd_fields["_refDb"] = OrderedDict()
+    wnd_fields["_refDb"]["_objects"] = refdb_objects
+    wnd_fields["_refDb"]["_fieldDb"] = {"_fields": []}
+    wnd_fields["_uiWndID"] = wnd_name
+    wnd_fields["DisableInvokeUpdate"] = 0
+    wnd_fields["UsingFrameUpdate"] = 1
+    wnd_fields["UpdateFrameRate"] = 0
+    wnd_fields["UpdateInterval"] = 1
+    wnd_obj, wnd_id = make_mono(root_go_id, UI_GUIDS["ILUIWnd"], wnd_fields)
+
+    root_comp_ids = [root_tr_id, canvas_id, raycaster_id, cg_id, perf_id, wnd_id]
+    root_go_obj, actual_root_go_id = make_gameobject(wnd_name, root_comp_ids)
+    # Fix root go_id in all root components
+    for obj in [canvas_obj, raycaster_obj, cg_obj, perf_obj, wnd_obj]:
+        if "m_GameObject" in obj.data:
+            obj.data["m_GameObject"] = {"fileID": int(actual_root_go_id)}
+
+    # Root RectTransform
+    root_rt_obj, actual_root_tr_id = make_rect_transform(
+        actual_root_go_id, None, child_tr_ids, 0, "stretch"
+    )
+    # Fix component list to use actual tr_id
+    root_go_obj.data["m_Component"][0] = {"component": {"fileID": int(actual_root_tr_id)}}
+
+    # Fix child RectTransform parent references
+    for child_objs, _ in child_results:
+        for obj in child_objs:
+            if obj.class_id == 224:  # RectTransform
+                obj.data["m_Father"] = {"fileID": int(actual_root_tr_id)}
+
+    # Assemble document: root first, then children
+    doc.objects.append(root_go_obj)
+    doc.objects.append(root_rt_obj)
+    doc.objects.append(canvas_obj)
+    doc.objects.append(raycaster_obj)
+    doc.objects.append(cg_obj)
+    doc.objects.append(perf_obj)
+    doc.objects.append(wnd_obj)
+
+    for child_objs, _ in child_results:
+        doc.objects.extend(child_objs)
+
+    with open(output_path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(doc.serialize())
+
+    print(f"Generated UI prefab: {output_path} ({len(doc.objects)} objects)")
+
+
+def validate_prefab(filepath: str):
+    """Validate a prefab file for common issues.
+
+    Checks:
+    1. All fileID cross-references resolve to existing objects
+    2. All MonoBehaviour m_Script GUIDs are non-zero
+    3. All m_GameObject references resolve
+    4. RectTransform parent/child consistency
+    """
+    doc = parse_unity_yaml(filepath)
+    errors = []
+    warnings = []
+
+    # Build fileID lookup
+    known_ids = {obj.file_id for obj in doc.objects}
+
+    for obj in doc.objects:
+        # Check m_Script on MonoBehaviours
+        if obj.class_id == 114:  # MonoBehaviour
+            script = obj.data.get("m_Script", {})
+            if isinstance(script, dict):
+                guid = script.get("guid", "")
+                if not guid or guid == "0" or guid == 0:
+                    errors.append(f"[{obj.file_id}] MonoBehaviour has zero m_Script GUID")
+
+        # Check m_GameObject reference
+        go_ref = obj.data.get("m_GameObject", {})
+        if isinstance(go_ref, dict):
+            fid = str(go_ref.get("fileID", 0))
+            if fid != "0" and fid not in known_ids:
+                errors.append(f"[{obj.file_id}] m_GameObject references unknown fileID {fid}")
+
+        # Check m_Component references (on GameObjects)
+        if obj.class_id == 1:  # GameObject
+            for comp_entry in obj.data.get("m_Component", []):
+                comp_ref = comp_entry.get("component", {})
+                if isinstance(comp_ref, dict):
+                    fid = str(comp_ref.get("fileID", 0))
+                    if fid != "0" and fid not in known_ids:
+                        errors.append(f"[{obj.file_id}] m_Component references unknown fileID {fid}")
+
+        # Check Transform/RectTransform references
+        if obj.class_id in (4, 224):
+            # Father
+            father_ref = obj.data.get("m_Father", {})
+            if isinstance(father_ref, dict):
+                fid = str(father_ref.get("fileID", 0))
+                if fid != "0" and fid not in known_ids:
+                    errors.append(f"[{obj.file_id}] m_Father references unknown fileID {fid}")
+            # Children
+            for child_ref in obj.data.get("m_Children", []):
+                if isinstance(child_ref, dict):
+                    fid = str(child_ref.get("fileID", 0))
+                    if fid != "0" and fid not in known_ids:
+                        errors.append(f"[{obj.file_id}] m_Children references unknown fileID {fid}")
+
+    # Check RefDb references (ILUIWnd MonoBehaviours)
+    for obj in doc.objects:
+        if obj.class_id == 114:
+            refdb = obj.data.get("_refDb")
+            if refdb and isinstance(refdb, dict):
+                for entry in refdb.get("_objects", []):
+                    if isinstance(entry, dict):
+                        for ref in entry.get("Objs", []):
+                            if isinstance(ref, dict):
+                                fid = str(ref.get("fileID", 0))
+                                if fid != "0" and fid not in known_ids:
+                                    errors.append(f"[{obj.file_id}] RefDb '{entry.get('_key')}' references unknown fileID {fid}")
+
+    # Summary
+    print(f"Validated: {filepath}")
+    print(f"  Objects: {len(doc.objects)}")
+    print(f"  Errors: {len(errors)}")
+    print(f"  Warnings: {len(warnings)}")
+    for e in errors:
+        print(f"  ERROR: {e}")
+    for w in warnings:
+        print(f"  WARN: {w}")
+
+    if errors:
+        sys.exit(1)
+    return True
+
+
 def modify_file(filepath: str, field_path: str, value: Any):
     """Modify a field in a Unity YAML file. Uses text-based replacement for safety."""
     doc = parse_unity_yaml(filepath)
@@ -993,6 +1444,25 @@ def main():
         else:
             replacements = json.loads(rep_arg)
         template_asset(src, output, replacements)
+
+    elif cmd == "generate-ui-prefab":
+        if len(sys.argv) < 4:
+            print("Usage: unity-yaml-tool.py generate-ui-prefab <json-spec> <output>", file=sys.stderr)
+            sys.exit(1)
+        spec_arg = sys.argv[2]
+        output = sys.argv[3]
+        if os.path.isfile(spec_arg):
+            with open(spec_arg, "r", encoding="utf-8") as f:
+                spec = json.load(f)
+        else:
+            spec = json.loads(spec_arg)
+        generate_ui_prefab(spec, output)
+
+    elif cmd == "validate":
+        if len(sys.argv) < 3:
+            print("Usage: unity-yaml-tool.py validate <file>", file=sys.stderr)
+            sys.exit(1)
+        validate_prefab(sys.argv[2])
 
     else:
         print(f"Unknown command: {cmd}", file=sys.stderr)
