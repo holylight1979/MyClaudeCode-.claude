@@ -4,7 +4,7 @@
 - Confidence: [固]
 - Trigger: 工具鏈, 環境設定, bash指令, command, bash, git, python, npm
 - Last-used: 2026-03-25
-- Confirmations: 102
+- Confirmations: 103
 - Type: procedural
 - Tags: toolchain, environment, commands
 - Related: fail-env, toolchain-ollama, decisions-architecture, doc-index-system
@@ -51,7 +51,9 @@
 
 ### MCP 新增規則
 
-- [固] **一律全域安裝 + 絕對路徑**：`npm i -g {pkg}` → `.mcp.json` 用 `node.exe` + 絕對路徑指向 `AppData/Roaming/npm/node_modules/{pkg}/dist/{entry}.js`
+- [固] **全域 MCP 設定位置**：`~/.claude.json`（注意不是 `~/.claude/.mcp.json`）的 `mcpServers` 欄位 → 所有專案顯示為 "User" scope
+- [固] **`~/.claude/.mcp.json` 是專案層**：只在 `~/.claude` 作為工作目錄時生效，其他專案看不到
+- [固] **一律全域安裝 + 絕對路徑**：`npm i -g {pkg}` → 用 `node.exe` + 絕對路徑指向 `AppData/Roaming/npm/node_modules/{pkg}/dist/{entry}.js`
 - [固] **禁用 npx 啟動**：`cmd /c npx` 在 VSCode 擴充環境不穩定，MCP server 會無法啟動
 - [固] 入口查找：`package.json` 的 `bin` 欄位確認 entry point
 - [固] 範本：`"command": "C:\\Program Files\\nodejs\\node.exe", "args": ["C:\\Users\\holylight\\AppData\\Roaming\\npm\\node_modules\\{pkg}\\dist\\{entry}.js"]`

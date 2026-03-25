@@ -4,7 +4,7 @@
 - Confidence: [臨]
 - Trigger: prefab SOP, 程式化建立 prefab, generate-ui-prefab, WndForm 建立
 - Last-used: 2026-03-25
-- Confirmations: 3
+- Confirmations: 4
 - Related: unity-yaml, unity-prefab-component-guids, unity-wndform-yaml-template
 
 ## 知識
