@@ -17,6 +17,14 @@
       "type": "stdio",
       "command": "C:\\Program Files\\nodejs\\node.exe",
       "args": ["C:\\Users\\holylight\\.claude\\tools\\workflow-guardian-mcp\\server.js"]
+    },
+    "excel": {
+      "type": "stdio",
+      "command": "C:\\Program Files\\nodejs\\node.exe",
+      "args": ["C:\\Users\\holylight\\AppData\\Roaming\\npm\\node_modules\\@negokaz\\excel-mcp-server\\dist\\launcher.js"],
+      "env": {
+        "EXCEL_MCP_PAGING_CELLS_LIMIT": "4000"
+      }
     }
   }
 }

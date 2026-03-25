@@ -52,6 +52,7 @@ type: reference
 | Component | GUID | Note |
 |-----------|------|------|
 | EnhancedScroller | `9c1b74f910281224a8cae6d8e4fc1f43` | `EnhancedScroller v2/Plugins/` |
+| EnhancedScrollerCellView | `1f75717e94199704f82f26fcf6953e84` | Cell 基底類，Widget cell root 掛載 |
 
 ### MonoBehaviour m_Script 格式
 

@@ -3,8 +3,8 @@
 - Scope: global
 - Confidence: [臨]
 - Trigger: prefab SOP, 程式化建立 prefab, generate-ui-prefab, WndForm 建立
-- Last-used: 2026-03-24
-- Confirmations: 2
+- Last-used: 2026-03-25
+- Confirmations: 3
 - Related: unity-yaml, unity-prefab-component-guids, unity-wndform-yaml-template
 
 ## 知識
@@ -127,6 +127,18 @@ python unity_batch.py -p sgi_client/client -m ClaudeEditorHelper.AutoGenUICode -
 
 - ScrollRect 設定：m_Horizontal: 0, m_Vertical: 1, m_MovementType: 2
 
+#### Widget Cell（Scroller 的列表項目）
+
+| # | 元件 | YAML Type | 備註 |
+|---|------|-----------|------|
+| 1 | RectTransform | !u!224 | |
+| 2 | EnhancedScrollerCellView | !u!114 | guid: `1f75717e`... — Cell 基底類（可選，部分 cell 有） |
+| 3 | **ILUIWidget** | !u!114 | guid: `c4d39f5c`... — 含 RefDb |
+| 4 | **ILUIScrollerView** | !u!114 | guid: `c03f8bb1`... |
+
+- 最小 cell 只需 RectTransform + ILUIWidget + ILUIScrollerView（3 元件）
+- EnhancedScrollerCellView 為第三方插件基底，部分舊 cell 有掛載
+
 #### Text
 
 | # | 元件 | YAML Type | 備註 |
@@ -147,7 +159,7 @@ python unity_batch.py -p sgi_client/client -m ClaudeEditorHelper.AutoGenUICode -
 
 - RefDb 的 _typeName 要與元件的 C# class name 一致
 - EmptyGraphic 序列化格式比 Image 簡單（無 m_Sprite、m_Type 等欄位）
-- generate-ui-prefab 工具的 UIButtonCustom/Scroller 輸出有已知問題，需參照本 atom stack 修正
+- generate-ui-prefab 工具已修正（2026-03-25）：UIButtonCustom 用 EmptyGraphic + CanvasGroup，Scroller 含完整 7 元件 stack
 - 測試/練習用的 prefab 不上傳 SVN
 
 ## 行動
@@ -162,3 +174,4 @@ python unity_batch.py -p sgi_client/client -m ClaudeEditorHelper.AutoGenUICode -
 |------|------|------|
 | 2026-03-24 | 初始建立（claude-native 格式） | Phase 2A 實測 |
 | 2026-03-25 | 格式修正：claude-native → 原子記憶標準格式 | memory-health 診斷 |
+| 2026-03-25 | 工具修正確認 + Widget Cell stack + EnhancedScrollerCellView GUID | Phase 2B/C/D |

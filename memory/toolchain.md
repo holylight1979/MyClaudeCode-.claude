@@ -4,7 +4,7 @@
 - Confidence: [固]
 - Trigger: 工具鏈, 環境設定, bash指令, command, bash, git, python, npm
 - Last-used: 2026-03-25
-- Confirmations: 100
+- Confirmations: 102
 - Type: procedural
 - Tags: toolchain, environment, commands
 - Related: fail-env, toolchain-ollama, decisions-architecture, doc-index-system
@@ -41,6 +41,20 @@
 - [固] 常見用途：Unity Editor UI 驗證、截圖比對、自動化 GUI 操作、協助使用者確認視覺結果
 - [固] **使用者明確要求**：需要看畫面時優先用 MCPControl，不要說「看不到」。若 MCPControl 未連線，fallback 用 PowerShell 截圖：`CopyFromScreen` → 存 PNG → Read tool 讀取
 - [固] PowerShell 截圖配方：`Add-Type System.Windows.Forms + System.Drawing` → `Bitmap` → `Graphics.CopyFromScreen` → `.Save()`；可 `Bitmap.Clone(Rectangle)` 裁切特定區域
+
+### MCP Server：Excel（@negokaz/excel-mcp-server）
+
+- [固] 全域安裝：`npm i -g @negokaz/excel-mcp-server`，目前版本 0.12.0
+- [固] 功能：describe_sheets / read_sheet / write_to_sheet / create_table / format_range / screen_capture
+- [固] 支援 xlsx/xlsm/xltx/xltm；**不支援舊版 .xls**（舊版用 `tools/read-excel.py` + xlrd）
+- [固] 跨專案可用（全域 `.mcp.json`）
+
+### MCP 新增規則
+
+- [固] **一律全域安裝 + 絕對路徑**：`npm i -g {pkg}` → `.mcp.json` 用 `node.exe` + 絕對路徑指向 `AppData/Roaming/npm/node_modules/{pkg}/dist/{entry}.js`
+- [固] **禁用 npx 啟動**：`cmd /c npx` 在 VSCode 擴充環境不穩定，MCP server 會無法啟動
+- [固] 入口查找：`package.json` 的 `bin` 欄位確認 entry point
+- [固] 範本：`"command": "C:\\Program Files\\nodejs\\node.exe", "args": ["C:\\Users\\holylight\\AppData\\Roaming\\npm\\node_modules\\{pkg}\\dist\\{entry}.js"]`
 
 ### 環境特殊配置
 
