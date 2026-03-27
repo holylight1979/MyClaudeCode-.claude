@@ -6,6 +6,7 @@
 
 | 日期 | 變更 | 涉及檔案 |
 |------|------|---------|
+| 2026-03-27 | **V2.21 Phase 2 Project Registry + 路徑切換**：`register_project()` + `_load_registry/save_registry()` 新增於 wg_paths。`find_project_root()` 加入 `.claude/memory/MEMORY.md` 最高優先辨識（W1）。`get_project_memory_dir()` 切換為新路徑優先、舊路徑 fallback（C4）。`discover_all_project_memory_dirs()` 改 registry-first + 舊路徑補充。`workflow-guardian.py` 移除 _AIAtoms merge 邏輯，改呼叫 `register_project(cwd)`。`wg_atoms.parse_memory_index()` 加入 `Status: migrated-v2.21` 指標型重導向（W2）。`server.js` apiEpisodic/apiAtoms 加 registry 掃描 | `hooks/wg_paths.py`, `hooks/workflow-guardian.py`, `hooks/wg_atoms.py`, `tools/workflow-guardian-mcp/server.js`, `memory/project-registry.json` |
 | 2026-03-27 | **V2.20 Phase 0.3 C2 修復**：`_truncate_context_by_activation` 加 `source_dirs: Dict[str, Path]` 參數，activation 計算從 atom 實際所在目錄查 `.access.json`（原硬編 `MEMORY_DIR` 導致專案層 atom ACT-R score 永遠 -10.0）。workflow-guardian 載入迴圈記錄每個 atom 的 source dir | `hooks/wg_atoms.py`, `hooks/workflow-guardian.py` |
 | 2026-03-24 | **V2.18 Phase 2 Section-Level 注入**：向量服務新增 `ranked_search_sections()` + `/search/ranked-sections` endpoint。`_semantic_search()` 回傳帶 sections。注入迴圈新增 section 提取（`_extract_sections()`），大 atom 省 69-87% tokens。安全防護：0 匹配/70% 閾值/服務不可用皆 fallback 全量注入 | `searcher.py`, `service.py`, `wg_intent.py`, `wg_atoms.py`, `workflow-guardian.py` |
 | 2026-03-23 | **V2.18 Phase 0+1**：環境清理（LanceDB 289→25MB、刪 7 死檔）+ 9 atom Trigger 精準化 + misdiagnosis/harvester 內容精簡 | `memory/*.md`, `MEMORY.md`, `workflow/config.json` |

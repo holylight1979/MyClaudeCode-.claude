@@ -4,13 +4,15 @@
 - Confidence: [固]
 - Trigger: 全域決策, workflow, guardian, hooks, MCP, 記憶系統決策, 記憶系統架構
 - Last-used: 2026-03-27
-- Confirmations: 92
+- Confirmations: 93
 - Type: decision
 - Related: decisions-architecture
 
 ## 知識
 
 ### 核心架構
+- [固] 原子記憶 V2.21 Phase 2：Project Registry + 路徑切換。`register_project()` SessionStart 自動呼叫；`get_project_memory_dir()` 新路徑優先（{project_root}/.claude/memory/）；`find_project_root()` 加 `.claude/memory/MEMORY.md` 辨識；_AIAtoms merge 邏輯移除
+- [固] 原子記憶 V2.20：路徑集中化（wg_paths.py）+ bug 修復（C5~C7, W8~W13）
 - [固] 原子記憶 V2.18：V2.17 全功能 + Section-Level 注入 + Trigger 精準化 + 規則精簡 + 反向參照自動修復
 - [固] 雙 LLM：Claude Code（雲端決策）+ Ollama（本地語意處理）
 - [固] 6 hook 事件全由 workflow-guardian.py 統一處理
