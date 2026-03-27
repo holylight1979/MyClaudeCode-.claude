@@ -3,6 +3,21 @@
     "c--users-holylight--claude": {
       "root": "c:\\Users\\holylight\\.claude",
       "last_seen": "2026-03-27"
+    },
+    "c--projects": {
+      "root": "C:\\Projects",
+      "last_seen": "2026-03-27",
+      "aliases": [
+        "sgi",
+        "sgi_server",
+        "sgi-server",
+        "sgi_client",
+        "遊戲後端"
+      ]
+    },
+    "c--tmp-office": {
+      "root": "C:\\tmp\\office",
+      "last_seen": "2026-03-27"
     }
   }
 }
