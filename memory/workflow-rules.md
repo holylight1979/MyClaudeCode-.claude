@@ -6,7 +6,7 @@
 - Trigger: 工作流程, 大型任務, 分階段, SOP, 任務拆分, 上版, GIT, Phase
 - Last-used: 2026-03-27
 - Created: 2026-03-06
-- Confirmations: 78
+- Confirmations: 79
 - Tags: workflow, vcs
 - Related: decisions, workflow-svn, workflow-icld
 

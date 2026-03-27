@@ -264,7 +264,8 @@ def load_atoms_within_budget(
 
 
 def _truncate_context_by_activation(
-    lines: List[str], limit: int = CONTEXT_BUDGET_DEFAULT
+    lines: List[str], limit: int = CONTEXT_BUDGET_DEFAULT,
+    source_dirs: Optional[Dict[str, Path]] = None,
 ) -> List[str]:
     """V2.11: Truncate additionalContext lines to fit within token budget.
 
@@ -305,9 +306,13 @@ def _truncate_context_by_activation(
 
     for ab in atom_blocks:
         atom_name = ab["name"]
-        ab["activation"] = compute_activation(atom_name, MEMORY_DIR)
-        if ab["activation"] <= -10.0:
-            ab["activation"] = compute_activation(atom_name, EPISODIC_DIR)
+        src_dir = source_dirs.get(atom_name) if source_dirs else None
+        if src_dir:
+            ab["activation"] = compute_activation(atom_name, src_dir)
+        else:
+            ab["activation"] = compute_activation(atom_name, MEMORY_DIR)
+            if ab["activation"] <= -10.0:
+                ab["activation"] = compute_activation(atom_name, EPISODIC_DIR)
 
     atom_blocks.sort(key=lambda x: x["activation"])
 

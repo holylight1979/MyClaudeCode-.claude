@@ -6,6 +6,9 @@
 
 | 日期 | 變更 | 涉及檔案 |
 |------|------|---------|
+| 2026-03-19 | **vector service timeout 修正**：冷啟動 7.5s 但 caller timeout 2-5s，調整 timeout + 預熱 | `hooks/workflow-guardian.py`, `tools/memory-vector-service/` |
+| 2026-03-18 | **V2.12 逐輪增量萃取**：Stop hook per-turn extraction（byte_offset + cooldown 120s + PID guard）+ 萃取 dedup 統一 0.65 + intent 選取 bug 修正 | `hooks/extract-worker.py`, `hooks/workflow-guardian.py`, `workflow/config.json` |
+| 2026-03-18 | **注入精準化**：AIDocs keyword 重新設計 + IDE 標籤過濾 + keyword boundary 防誤匹配 + `/atom-debug` skill | `_AIDocs/_INDEX.md`, `hooks/workflow-guardian.py`, `commands/atom-debug.md` |
 | 2026-03-13 | **選擇性 cherry-pick**：從來源 V2.10 合併 `/continue` skill + `/resume` staging 安全網 + `BOOTSTRAP.md` + `workflow-rules.md` 補回大型計畫/GIT/同步判斷段落 | `commands/continue.md`, `commands/resume.md`, `BOOTSTRAP.md`, `memory/workflow-rules.md` |
 | 2026-03-13 | **/read-project**: 新增 DocIndex-System.md（76 檔系統索引）+ doc-index-system atom | `_AIDocs/DocIndex-System.md`, `memory/doc-index-system.md`, `memory/MEMORY.md` |
 

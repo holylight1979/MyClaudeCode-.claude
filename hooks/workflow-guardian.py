@@ -480,6 +480,7 @@ def handle_user_prompt_submit(
 
     # Load atoms within budget
     newly_injected: List[str] = []
+    atom_source_dirs: Dict[str, Path] = {}
     if matched_with_dir:
         atom_lines: List[str] = []
         used_tokens = 0
@@ -488,6 +489,7 @@ def handle_user_prompt_submit(
             atom_path = (base_dir / rel_path) if rel_path else (base_dir / "memory" / f"{name}.md")
             if not atom_path.exists():
                 continue
+            atom_source_dirs[name] = atom_path.parent
             try:
                 content = atom_path.read_text(encoding="utf-8-sig")
             except (OSError, UnicodeDecodeError):
@@ -525,6 +527,7 @@ def handle_user_prompt_submit(
             rpath = (base_dir / rel_path) if rel_path else (base_dir / "memory" / f"{rname}.md")
             if not rpath.exists():
                 continue
+            atom_source_dirs[rname] = rpath.parent
             try:
                 content = rpath.read_text(encoding="utf-8-sig")
             except (OSError, UnicodeDecodeError):
@@ -714,7 +717,7 @@ def handle_user_prompt_submit(
 
     if lines:
         # V2.11: Context budget hard cap
-        lines = _truncate_context_by_activation(lines, budget)
+        lines = _truncate_context_by_activation(lines, budget, atom_source_dirs)
         output_json({
             "hookSpecificOutput": {
                 "hookEventName": "UserPromptSubmit",
