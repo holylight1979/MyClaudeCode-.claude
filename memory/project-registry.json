@@ -26,6 +26,15 @@
     "d--mydev": {
       "root": "d:\\MyDev",
       "last_seen": "2026-03-27"
+    },
+    "c--myofficeai": {
+      "root": "C:\\MyOfficeAI",
+      "last_seen": "2026-03-30",
+      "aliases": [
+        "office",
+        "辦公",
+        "MyOfficeAI"
+      ]
     }
   }
 }
