@@ -4,7 +4,7 @@
 - Confidence: [固]
 - Trigger: 架構細節, vector service, ollama backend, extraction, ACT-R, episodic tracking, context budget
 - Last-used: 2026-04-02
-- Confirmations: 115
+- Confirmations: 117
 - Type: decision
 - Tags: architecture, infrastructure
 - Related: decisions, toolchain, toolchain-ollama, DESIGN, SPEC_impl_params

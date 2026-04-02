@@ -16,6 +16,7 @@
 | feedback-no-test-to-svn | memory/feedback_no_test_to_svn.md | 上SVN, svn commit, 測試碼, 新手作業, 練習, 不可上傳 |
 | feedback-global-install | memory/feedback_global_install.md | 安裝MCP, 安裝skill, install MCP, install skill, add MCP, 新增MCP, 新增skill |
 | feedback-memory-path | memory/feedback_memory_path.md | 寫入記憶, 暫存, _staging, memory path, 寫atom, Write memory, 記憶路徑 |
+| gdoc-harvester | memory/gdoc-harvester.md | harvester, Google Docs, Sheets, 收割, Playwright, cookie, export |
 
 > **知識庫查閱**：遇到以下主題，先 Read 對應的 `_INDEX.md` 取得細節知識。
 

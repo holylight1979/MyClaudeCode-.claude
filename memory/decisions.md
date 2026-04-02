@@ -4,7 +4,7 @@
 - Confidence: [固]
 - Trigger: 決策, 記憶系統, 原子記憶, guardian, hooks, MCP
 - Last-used: 2026-04-02
-- Confirmations: 131
+- Confirmations: 133
 - Related: decisions-architecture
 
 ## 知識
