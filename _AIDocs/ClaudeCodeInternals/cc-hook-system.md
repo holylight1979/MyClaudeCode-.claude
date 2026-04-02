@@ -51,6 +51,11 @@
 - [固] Hook 崩潰/超時 → 結果被忽略，工具照常執行（建議性而非強制性）
 - [固] Memoized Hook Loading：檔案變更驅動快取失效
 
+### Hook 輸出能力差異（additionalContext 可用性）
+- [固] PostToolUse 的 additionalContext 是**即時生效**的（同一 turn 內 Claude 可見，不需等下一輪）
+- [固] Async hook 完成後 systemMessage 自動注入下一輪（additionalContext 同理，但 Stop 不適用）
+- [固] Stop hook 不支援 additionalContext，只有 block + reason + systemMessage
+
 ## 行動
 
 - 開發 hook 腳本：用 JSON stdout/stdin 協議，任何語言都可

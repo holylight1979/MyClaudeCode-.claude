@@ -32,6 +32,15 @@
     "ollama_base_url": "http://127.0.0.1:11434",
     "ollama_llm_model": "qwen3:1.7b",
     "ollama_backends": {
+      "rdchat-direct": {
+        "base_url": "http://192.168.199.130:11434",
+        "llm_model": "qwen3.5:latest",
+        "embedding_model": "qwen3-embedding:latest",
+        "priority": 1,
+        "enabled": true,
+        "think": true,
+        "llm_num_predict": 8192
+      },
       "rdchat": {
         "base_url": "https://rdchat.uj.com.tw/ollama",
         "auth": {
@@ -41,7 +50,7 @@
         },
         "llm_model": "qwen3.5:latest",
         "embedding_model": "qwen3-embedding:latest",
-        "priority": 1,
+        "priority": 2,
         "enabled": true,
         "think": true,
         "llm_num_predict": 8192
@@ -50,7 +59,7 @@
         "base_url": "http://127.0.0.1:11434",
         "llm_model": "qwen3:1.7b",
         "embedding_model": "qwen3-embedding",
-        "priority": 2,
+        "priority": 3,
         "think": false,
         "llm_num_predict": 2048
       }
@@ -88,6 +97,14 @@
     "oscillation_window": 3,
     "oscillation_threshold": 2,
     "review_interval": 6
+  },
+  "hot_cache": {
+    "enabled": true,
+    "quick_extract_timeout": 15,
+    "quick_extract_num_predict": 512,
+    "quick_extract_min_chars": 100,
+    "max_summary_tokens": 100,
+    "deep_overwrite": true
   },
   "response_capture": {
     "enabled": true,

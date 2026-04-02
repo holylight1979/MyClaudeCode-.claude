@@ -15,7 +15,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from wg_paths import CLAUDE_DIR
+from wg_paths import CLAUDE_DIR, WORKFLOW_DIR
 from wg_core import _atom_debug_error
 
 # ─── Intent Classifier (v2.1 Sprint 2) ───────────────────────────────────────
@@ -103,6 +103,9 @@ def _search_episodic_context(
         return []
     sc_config = config.get("session_context", {})
     if not sc_config.get("enabled", True):
+        return []
+    # V3/1.5C: Quick flag check — skip expensive network call if vector not ready
+    if not (WORKFLOW_DIR / "vector_ready.flag").exists():
         return []
 
     port = vs_config.get("service_port", 3849)
@@ -311,6 +314,9 @@ def _semantic_search(
     """
     vs_config = config.get("vector_search", {})
     if not vs_config.get("enabled", True):
+        return []
+    # V3/1.5C: Quick flag check — skip expensive network call if vector not ready
+    if not (WORKFLOW_DIR / "vector_ready.flag").exists():
         return []
     port = vs_config.get("service_port", 3849)
     top_k = vs_config.get("search_top_k", 5)

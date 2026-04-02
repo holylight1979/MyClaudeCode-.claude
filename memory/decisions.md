@@ -3,8 +3,8 @@
 - Scope: global
 - Confidence: [固]
 - Trigger: 全域決策, workflow, guardian, hooks, MCP, 記憶系統決策, 記憶系統架構, 記憶系統, 原子記憶, atom memory, 決策
-- Last-used: 2026-04-01
-- Confirmations: 112
+- Last-used: 2026-04-02
+- Confirmations: 120
 - Related: decisions-architecture
 
 ## 知識
@@ -24,6 +24,17 @@
 - [固] SessionEnd 全量掃描 + Stop hook 逐輪增量萃取，共用 _spawn_extract_worker()
 - [固] 萃取結果一律 [臨]，由 Confirmations 計數驅動後續晉升
 - [固] SessionEnd 萃取由 extract-worker.py detached subprocess 執行（hook timeout 不足）
+
+### V3 三層即時管線
+- [觀] Stop async hook（quick-extract.py）→ qwen3:1.7b 快篩 5s → hot_cache.json → systemMessage
+- [觀] PostToolUse mid-turn injection: 讀 hot cache → additionalContext 即時注入（同 turn 內可見）
+- [觀] UserPromptSubmit hot cache 快速路徑: 優先讀 hot cache → 命中則減少 vector search 依賴
+- [觀] deep extract（extract-worker.py）完成後覆寫 hot cache，重置 injected=False
+
+### SessionStart 風暴修復
+- [觀] SessionStart 去重: 同 cwd 60s 內 active state → 複用（resume 合併，startup 跳過 vector init）
+- [觀] 孤兒清理分層 TTL: prompt_count=0 working→10m, prompt_count>0 working→30m, done→24h
+- [觀] Vector service 非阻塞: fire-and-forget subprocess + vector_ready.flag
 
 ### 跨 Session 鞏固
 - [固] 自動晉升 [臨]→[觀]：Confirmations ≥ 20 時 SessionEnd 自動執行

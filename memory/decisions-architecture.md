@@ -20,12 +20,12 @@
 ### Async Hook 行為
 - [觀] Stop async hook: systemMessage 自動注入下一輪；不支援 additionalContext
 - [觀] quick-extract.py: str.format() prompt 內的 JSON 範例需 {{ }} 跳脫
-- [臨] PostToolUse additionalContext 即時生效（同一 turn 內 Claude 可見）
+- [觀] PostToolUse additionalContext 即時生效（同一 turn 內 Claude 可見）
 
 ### SessionStart 去重
-- [臨] _find_active_sibling_state(): 掃描同 cwd + phase=working + 60s 內 → 複用 state
-- [臨] merged_into redirect: _ensure_state() 自動跟隨，後續 hook 透明使用目標 state
-- [臨] vector_ready.flag: SessionStart 清除 → 背景 subprocess 寫入 → _semantic_search 檢查
+- [觀] _find_active_sibling_state(): 掃描同 cwd + phase=working + 60s 內 → 複用 state
+- [觀] merged_into redirect: _ensure_state() 自動跟隨，後續 hook 透明使用目標 state
+- [觀] vector_ready.flag: SessionStart 清除 → 背景 subprocess 寫入 → _semantic_search 檢查
 
 ### 回應捕獲
 - [固] 逐輪增量（Stop hook）+ SessionEnd 全量，共用 _spawn_extract_worker()

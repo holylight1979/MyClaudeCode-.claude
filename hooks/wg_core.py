@@ -198,12 +198,75 @@ def new_state(session_id: str, cwd: str, source: str) -> Dict[str, Any]:
     }
 
 
+def _find_active_sibling_state(
+    cwd: str, current_session_id: str, window_seconds: int = 60
+) -> Optional[Dict[str, Any]]:
+    """掃描 WORKFLOW_DIR/state-*.json，找同 cwd + 近期活躍的兄弟 state。
+
+    用於 SessionStart 去重：若同 workspace 已有活躍 state，回傳之。
+    多個匹配時回傳 mtime 最新的。任何異常安全降級回 None。
+    """
+    try:
+        norm_cwd = cwd.lower().replace("\\", "/")
+        best: Optional[Dict[str, Any]] = None
+        best_mtime: float = 0.0
+        now = datetime.now(timezone.utc).astimezone()
+
+        for fp in WORKFLOW_DIR.glob("state-*.json"):
+            # 跳過自己
+            if current_session_id in fp.name:
+                continue
+            try:
+                with open(fp, "r", encoding="utf-8") as f:
+                    candidate = json.load(f)
+            except (json.JSONDecodeError, OSError):
+                continue
+
+            # 比對 cwd
+            candidate_cwd = candidate.get("session", {}).get("cwd", "")
+            if candidate_cwd.lower().replace("\\", "/") != norm_cwd:
+                continue
+
+            # 必須是 working 且未合併
+            if candidate.get("phase") != "working":
+                continue
+            if candidate.get("merged_into"):
+                continue
+
+            # 檢查 started_at 是否在 window 內
+            started_at_str = candidate.get("session", {}).get("started_at", "")
+            if not started_at_str:
+                continue
+            try:
+                started_at = datetime.fromisoformat(started_at_str)
+                delta = (now - started_at).total_seconds()
+                if delta < 0 or delta > window_seconds:
+                    continue
+            except (ValueError, TypeError):
+                continue
+
+            # 多匹配取 mtime 最新
+            mtime = fp.stat().st_mtime
+            if mtime > best_mtime:
+                best = candidate
+                best_mtime = mtime
+
+        return best
+    except Exception:
+        return None
+
+
 def _ensure_state(
     session_id: str, input_data: Dict[str, Any], config: Dict[str, Any]
 ) -> Optional[Dict[str, Any]]:
     """Read state; if missing (SessionStart was skipped), auto-create one."""
     state = read_state(session_id)
     if state:
+        merged_into = state.get("merged_into")
+        if merged_into:
+            target = read_state(merged_into)
+            if target:
+                return target
         return state
     cwd = input_data.get("cwd", "")
     state = new_state(session_id, cwd, "fallback")
