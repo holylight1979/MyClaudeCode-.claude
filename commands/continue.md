@@ -17,13 +17,13 @@
 
 ## Step 1: 掃描暫存區
 
-從系統 context 的 "Additional working directories" 或 CWD 找到 staging 區，用 **Glob tool** 掃描（V2.21 新路徑優先）：
+從系統 context 的 "Additional working directories" 或 CWD 找到 staging 區，用 **Glob tool** 掃描：
 
 ```
 {project_root}/.claude/memory/_staging/next-phase*.md
 ```
 
-> V2.21 後，staging 在 `{project_root}/.claude/memory/_staging/`（專案已遷移）。
+> staging 在 `{project_root}/.claude/memory/_staging/`（專案自治層）。
 > 未遷移的舊專案：`~/.claude/projects/{slug}/memory/_staging/next-phase*.md`
 > 例：CWD `C:\Projects` → 優先掃描 `C:\Projects\.claude\memory\_staging\next-phase*.md`
 

@@ -144,7 +144,7 @@ Session Ready
 - **wisdom/**（live state）— DESIGN.md + reflection_metrics.json + causal_graph.json
 - **Runtime**（gitignore）— episodic/, _vectordb/, _staging/, _distant/, state-*.json, *.access.json
 
-## 8. 專案自治層（V2.21）
+## 8. 專案自治層
 
 每個已註冊專案的 `{project_root}/.claude/` 結構：
 

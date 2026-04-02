@@ -2,7 +2,7 @@
 
 ## Hooks 系統
 
-6 個 hook 事件，定義在 `settings.json`。主 dispatcher `workflow-guardian.py`（~1259 行）+ 7 個模組化子檔（合計 ~5300 行）：
+7 個 hook 事件（含 async Stop），定義在 `settings.json`。主 dispatcher `workflow-guardian.py`（~1450 行）+ 8 個模組化子檔（合計 ~5966 行）：
 
 | Hook | 觸發時機 | 用途 |
 |------|---------|------|
@@ -10,23 +10,26 @@
 | `PostToolUse` | Edit/Write 後 | 追蹤修改檔案 + 增量索引 + Read Tracking + over_engineering 追蹤 |
 | `PreCompact` | Context 壓縮前 | 快照 state（壓縮前保護） |
 | `Stop` | 對話結束前 | 閘門：未同步則阻止結束 + Fix Escalation 信號注入 + 逐輪增量萃取 |
-| `SessionStart` | Session 開始 | 初始化 session state + Wisdom 盲點提醒 + 定期檢閱提醒 + 專案自治層 delegate |
+| `Stop (async)` | 對話結束後 | V3 quick-extract.py：qwen3:1.7b 5s 快篩 → hot_cache.json |
+| `SessionStart` | Session 開始 | 初始化 session state + 去重（V3）+ Wisdom 盲點提醒 + 定期檢閱提醒 + 專案自治層 delegate |
 | `SessionEnd` | Session 結束 | Episodic atom 生成 + 回應萃取（全量）+ 鞏固（簡化計數）+ 衝突偵測 + Wisdom 反思 |
 
 ### Hook 模組拆分
 
 | 模組 | 行數 | 職責 |
 |------|------|------|
-| `workflow-guardian.py` | ~1259 | 瘦身 dispatcher：6 event handlers 編排 |
+| `workflow-guardian.py` | ~1447 | 瘦身 dispatcher：7 event handlers 編排 |
 | `wg_paths.py` | ~314 | 路徑唯一真相來源：slug/root/staging/registry |
-| `wg_core.py` | ~270 | 共用常數/設定/state IO/output/debug |
-| `wg_atoms.py` | ~563 | 索引解析/trigger 匹配/ACT-R/載入/budget/section-level 注入 |
-| `wg_intent.py` | ~357 | 意圖分類/session context/MCP/vector service |
-| `wg_extraction.py` | ~285 | per-turn 萃取/worker 管理/failure 偵測 |
-| `wg_episodic.py` | ~856 | episodic 生成/衝突偵測/品質回饋 |
+| `wg_core.py` | ~333 | 共用常數/設定/state IO/output/debug |
+| `wg_atoms.py` | ~559 | 索引解析/trigger 匹配/ACT-R/載入/budget/section-level 注入 |
+| `wg_intent.py` | ~387 | 意圖分類/session context/MCP/vector service |
+| `wg_extraction.py` | ~295 | per-turn 萃取/worker 管理/failure 偵測 |
+| `wg_hot_cache.py` | ~139 | Hot Cache 讀寫/注入 [V3.0] |
+| `wg_episodic.py` | ~860 | episodic 生成/衝突偵測/品質回饋 |
 | `wg_iteration.py` | ~431 | 自我迭代/震盪/衰減/晉升/覆轍偵測 |
-| `extract-worker.py` | ~774 | SessionEnd/per-turn/failure 子程序：LLM 萃取 + dedup |
-| `wisdom_engine.py` | ~199 | 反思引擎：硬規則 + 反思指標 |
+| `extract-worker.py` | ~806 | SessionEnd/per-turn/failure 子程序：LLM 萃取 + dedup |
+| `quick-extract.py` | ~155 | Stop async 快篩：qwen3:1.7b → hot_cache [V3.0] |
+| `wisdom_engine.py` | ~177 | 反思引擎：硬規則 + 反思指標 |
 
 ### 輔助 Hook 腳本
 
@@ -68,7 +71,7 @@
 | `rules/session-management.md` | 對話管理 + 續航 + 自我迭代 + 精確修正升級 |
 | `rules/sync-workflow.md` | 工作結束同步 + Guardian 閘門 |
 
-## 記憶系統（原子記憶 V2.21）
+## 記憶系統（原子記憶 V3.0）
 
 ### 雙 LLM 架構 + Dual-Backend
 
@@ -100,12 +103,13 @@ config.json → ollama_backends:
 3. **Vector DB**: LanceDB（`memory/_vectordb/`）
 4. **Episodic atoms**: 自動生成 session 摘要（`memory/episodic/`，TTL 24d，不進 git）
 5. **Wisdom Engine**: 反思統計（`memory/wisdom/`）
-6. **專案自治層**（V2.21）: `{project_root}/.claude/memory/` — 每專案獨立 atoms + episodic + failures
+6. **專案自治層**: `{project_root}/.claude/memory/` — 每專案獨立 atoms + episodic + failures
 
 ### 記憶檢索管線
 
 ```
 使用者訊息 → UserPromptSubmit hook (workflow-guardian.py)
+  ├─ [V3] Hot Cache 快速路徑 (injected=false? → 注入)
   ├─ Intent 分類 (rule-based ~1ms)
   ├─ MEMORY.md Trigger 匹配 (keyword ~10ms)
   ├─ Vector Search (LanceDB + qwen3-embedding ~200-500ms)
@@ -126,7 +130,23 @@ config.json → ollama_backends:
 
 情境感知萃取（依 intent 調整 prompt）。萃取結果一律 `[臨]`。注入前 Token Diet strip 9 種 metadata + 行動/演化日誌。
 
-### 專案自治層（V2.21）
+#### V3 三層即時管線
+
+```
+Claude 回應結束 → [Stop async] quick-extract.py (qwen3:1.7b, 5s)
+                    → hot_cache.json (injected=false)
+Claude 使用工具 → [PostToolUse] hot cache check → mid-turn 注入
+使用者下一句   → [UserPromptSubmit] hot cache 快速路徑 + 完整 pipeline
+Deep extract   → [detached] extract-worker.py → 覆寫 hot cache → 正式 atom
+```
+
+### SessionStart 去重（V3.0）
+
+- 同 cwd 60s 內 active state → 複用（resume 合併，startup 跳過 vector init）
+- 分層孤兒清理：prompt_count=0 working→10m, prompt_count>0 working→30m, done→24h
+- Vector service 非阻塞：fire-and-forget subprocess + `vector_ready.flag`
+
+### 專案自治層
 
 - **Project Registry**（`memory/project-registry.json`）：SessionStart 自動 `register_project(cwd)`，跨專案發現
 - **路徑切換**：`get_project_memory_dir()` 新路徑 `{project_root}/.claude/memory/` 優先，舊路徑 fallback

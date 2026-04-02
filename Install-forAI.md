@@ -1,4 +1,4 @@
-# Atomic Memory V2.21 — 安裝指南
+# Atomic Memory V3.0 — 安裝指南
 
 > **目標讀者**：使用 VS Code + Claude Code Extension，但完全不知道原子記憶是什麼的開發者。
 > 本指南會幫你把原子記憶系統**合併安裝**到你現有的 `~/.claude/` 目錄中。
@@ -129,6 +129,9 @@ cp /tmp/atomic-memory/hooks/wg_extraction.py ~/.claude/hooks/
 cp /tmp/atomic-memory/hooks/wg_episodic.py ~/.claude/hooks/
 cp /tmp/atomic-memory/hooks/wg_iteration.py ~/.claude/hooks/
 cp /tmp/atomic-memory/hooks/extract-worker.py ~/.claude/hooks/
+cp /tmp/atomic-memory/hooks/quick-extract.py ~/.claude/hooks/      # V3.0 async 快篩
+cp /tmp/atomic-memory/hooks/wg_hot_cache.py ~/.claude/hooks/       # V3.0 Hot Cache
+cp /tmp/atomic-memory/hooks/wg_content_classify.py ~/.claude/hooks/
 cp /tmp/atomic-memory/hooks/wisdom_engine.py ~/.claude/hooks/
 cp /tmp/atomic-memory/hooks/user-init.sh ~/.claude/hooks/
 
@@ -245,6 +248,12 @@ cp /tmp/atomic-memory/tools/unity-yaml-tool.py ~/.claude/tools/
             "type": "command",
             "command": "python \"$HOME/.claude/hooks/workflow-guardian.py\"",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "python \"$HOME/.claude/hooks/quick-extract.py\"",
+            "async": true,
+            "timeout": 30
           }
         ]
       }
@@ -285,7 +294,7 @@ cat > ~/.claude/memory/MEMORY.md << 'EOF'
 
 ## 高頻事實
 
-- 原子記憶 V2.21
+- 原子記憶 V3.0
 EOF
 ```
 
@@ -504,13 +513,16 @@ python ~/.claude/tools/memory-audit.py
 │
 ├── hooks/                        ★
 │   ├── workflow-guardian.py       ★ 統一 Hook 入口
-│   ├── wg_paths.py               ★ 路徑唯一真相來源 [V2.20]
+│   ├── wg_paths.py               ★ 路徑唯一真相來源
 │   ├── wg_core.py                ★ 共用常數/設定/IO
 │   ├── wg_atoms.py               ★ 索引解析/trigger/ACT-R/section 注入
 │   ├── wg_intent.py              ★ 意圖分類/向量搜尋
 │   ├── wg_extraction.py          ★ 回應萃取
+│   ├── wg_hot_cache.py           ★ Hot Cache 讀寫/注入 [V3.0]
 │   ├── wg_episodic.py            ★ Episodic 管理
 │   ├── wg_iteration.py           ★ 自我迭代/衰減/覆轍
+│   ├── extract-worker.py         ★ LLM 萃取子程序 (detached)
+│   ├── quick-extract.py          ★ Stop async 快篩 [V3.0]
 │   ├── wisdom_engine.py          ★ Wisdom Engine
 │   └── user-init.sh              ★ 多人 USER.md 初始化
 │
@@ -538,7 +550,9 @@ python ~/.claude/tools/memory-audit.py
 │   └── _vectordb/                  （自動生成向量索引）
 │
 ├── workflow/                     ★
-│   └── config.json               ★ 系統設定
+│   ├── config.json               ★ 系統設定
+│   ├── hot_cache.json              （V3.0 自動生成，快篩知識快取）
+│   └── vector_ready.flag           （V3.0 自動生成，Vector service 就緒旗標）
 │
 ├── commands/                     ★ Slash commands (Skills)
 │   ├── init-project.md           ★ /init-project — 專案知識庫初始化
@@ -555,10 +569,33 @@ python ~/.claude/tools/memory-audit.py
 
 ---
 
+## V2 → V3 升級
+
+已安裝 V2.21 的使用者升級步驟：
+
+```bash
+# 1. 更新程式碼
+cd ~/.claude && git pull
+
+# 2. 確認新增的 hook 檔案
+ls -la hooks/quick-extract.py hooks/wg_hot_cache.py hooks/wg_content_classify.py
+```
+
+### Checklist
+
+- [ ] `settings.json` 的 Stop hook 有 async `quick-extract.py` entry（`install.py` 會自動處理）
+- [ ] `workflow/config.json` 有 `hot_cache` section（git pull 已包含）
+- [ ] Ollama `qwen3:1.7b` 模型可用（`ollama list | grep qwen3:1.7b`）
+- [ ] 首次啟動 session 後，觀察 `workflow/hot_cache.json` 出現
+
+> **新安裝者**：`install.py` 一鍵安裝已包含 V3 所有設定（settings.json 自動有 async hook），無需額外步驟。
+
+---
+
 ## 常見問題
 
 ### Q: 安裝後 Claude Code 啟動變慢？
-**A**: 正常。系統會在啟動時檢查 Vector Service 和 Ollama 狀態，約增加 200-800ms。每次 prompt 增加 ~300-600ms（語意搜尋）。
+**A**: 正常。V3.0 已大幅改善：SessionStart 去重 + 非阻塞 vector 啟動，延遲降至 50-200ms。每次 prompt 增加 ~300-600ms（語意搜尋）。
 
 ### Q: Vector Service 啟動失敗？
 **A**: 檢查 `pip install lancedb` 是否成功（需 AVX2 CPU）。檢查 port 3849 是否被佔用。無 AVX2 則改用 ChromaDB 並修改 `workflow/config.json` 的 `vector_search` 區塊。

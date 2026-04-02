@@ -45,7 +45,7 @@ $ARGUMENTS
 1. **進行中的工作單元**：掃描 atoms 中標記為 🔄 的工作單元
 2. **Todo list**：檢查是否有未完成的 todo items
 3. **最近的 git 變更**：`git status` + `git log --oneline -5`
-4. **暫存區**：檢查 `{project_root}/.claude/memory/_staging/`（V2.21 新路徑）或 `projects/{slug}/memory/_staging/` 是否有續接 prompt
+4. **暫存區**：檢查 `{project_root}/.claude/memory/_staging/` 或 `projects/{slug}/memory/_staging/` 是否有續接 prompt
 
 ### 分流邏輯
 

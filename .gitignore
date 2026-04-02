@@ -28,6 +28,8 @@ stats-cache.json
 workflow/state-*.json
 workflow/guardian-crash.log
 workflow/extract-worker.log
+workflow/hot_cache.json
+workflow/vector_ready.flag
 
 # ─── Runtime logs (atom-debug, hook output) ───────────────
 Logs/

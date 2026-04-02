@@ -1,7 +1,7 @@
 # /memory-health — 記憶品質診斷
 
 > 合併執行 `memory-audit.py` + `atom-health-check.py`，一次產出完整健康報告。
-> **V2.21**：有專案自治層（`{project_root}/.claude/memory/`）時，優先診斷專案層。
+> 有專案自治層（`{project_root}/.claude/memory/`）時，優先診斷專案層。
 
 ---
 

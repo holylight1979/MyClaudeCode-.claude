@@ -11,26 +11,29 @@
 ├── BOOTSTRAP.md                 ← 首次設定引導
 ├── README.md                    ← 對外說明（設計哲學、流程圖、Token 對比）
 ├── Install-forAI.md             ← AI 可讀安裝指南
-├── settings.json                ← Hooks + 權限設定（6 hook events）
+├── settings.json                ← Hooks + 權限設定（7 hook events, 含 async Stop）
 ├── .mcp.json                    ← MCP server 設定（專案層）
 ├── .gitignore                   ← Git 排除規則
 │
 ├── hooks/                       ← Hook 腳本（模組化）
-│   ├── workflow-guardian.py     ← 瘦身 dispatcher（~1259 行，6 events 編排）
+│   ├── workflow-guardian.py     ← 瘦身 dispatcher（~1447 行，7 events 編排）
 │   ├── wg_paths.py             ← 路徑真相來源（slug/root/staging/registry）
 │   ├── wg_core.py              ← 共用常數/設定/state IO/output/debug
 │   ├── wg_atoms.py             ← 索引解析/trigger 匹配/ACT-R/載入/budget
 │   ├── wg_intent.py            ← 意圖分類/session context/MCP/vector
 │   ├── wg_extraction.py        ← per-turn 萃取/worker 管理/failure 偵測
+│   ├── wg_hot_cache.py         ← Hot Cache 讀寫/注入 [V3.0]
 │   ├── wg_episodic.py          ← episodic 生成/衝突偵測/品質回饋
 │   ├── wg_iteration.py         ← 自我迭代/震盪/衰減/晉升/覆轍偵測
 │   ├── extract-worker.py       ← LLM 萃取子程序（SessionEnd/per-turn/failure）
+│   ├── quick-extract.py        ← Stop async 快篩（qwen3:1.7b → hot_cache）[V3.0]
+│   ├── wg_content_classify.py  ← 內容分類
 │   ├── wisdom_engine.py        ← Wisdom Engine（情境分類+反思指標）
 │   ├── user-init.sh            ← 多人 USER.md 初始化
 │   ├── ensure-mcp.py           ← MCP server 可用性確認
 │   └── webfetch-guard.sh       ← WebFetch 安全護欄
 │
-├── commands/                    ← 自訂 Skills（/slash commands，16 個）
+├── commands/                    ← 自訂 Skills（/slash commands，17 個）
 │   ├── init-project.md          ← /init-project 知識庫 + 自治層初始化
 │   ├── resume.md                ← /resume 自動續接 Session
 │   ├── continue.md              ← /continue 讀取 _staging 續接
@@ -56,7 +59,7 @@
 │
 ├── memory/                      ← 全域記憶層（25 atoms）
 │   ├── MEMORY.md                ← Atom 索引（≤30 行，always-loaded）
-│   ├── project-registry.json    ← 專案根路徑索引（V2.21 跨專案發現）
+│   ├── project-registry.json    ← 專案根路徑索引（跨專案發現）
 │   ├── preferences.md           ← [固] 使用者偏好
 │   ├── decisions.md             ← [固] 全域決策
 │   ├── decisions-architecture.md ← [固] 架構技術細節
@@ -129,7 +132,9 @@
 │       └── server.js            ← Node.js MCP @ :3848（含「已知專案」分頁）
 │
 ├── workflow/
-│   ├── config.json              ← 統一設定檔（vector_search, write_gate, response_capture, cross_session）
+│   ├── config.json              ← 統一設定檔（vector_search, write_gate, response_capture, cross_session, hot_cache）
+│   ├── hot_cache.json           ← V3 快篩知識快取（ephemeral）
+│   ├── vector_ready.flag        ← V3 Vector service 就緒旗標（ephemeral）
 │   └── state-{session-id}.json  ← Session 狀態追蹤（ephemeral，不進 git）
 │
 ├── projects/                    ← 各專案的 auto-memory（Claude Code 內建）
@@ -154,7 +159,7 @@
     └── todos/
 ```
 
-## 專案自治層（V2.21）
+## 專案自治層
 
 每個已註冊專案的 `.claude/` 目錄結構：
 

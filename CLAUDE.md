@@ -4,7 +4,7 @@
 @USER.md
 @memory/MEMORY.md
 
-# 通用工作流引擎（原子記憶 V2.22）
+# 通用工作流引擎（原子記憶 V3.0）
 
 > 全域自動載入指令。專案特有知識由各專案根目錄 `CLAUDE.md` 定義。
 > 專業規則已模組化至 `.claude/rules/`，Claude Code 自動載入。
