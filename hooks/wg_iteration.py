@@ -156,8 +156,8 @@ def _load_oscillation_warnings() -> Optional[str]:
             return None
         atoms = ", ".join(o["atom"] for o in oscillations)
         return (
-            f"[Guardian:Oscillation] 以下 atoms 近期被反覆修改，"
-            f"建議暫停修改等待穩定：{atoms}"
+            f"[Guardian:Oscillation] 以下 atoms 近期被反覆修改：{atoms}。"
+            f"行動：1) 暫停修改 2) Read 該 atom 確認前次意圖 3) 收集更多證據再評估"
         )
     except (json.JSONDecodeError, OSError):
         return None
@@ -367,8 +367,8 @@ def _detect_rut_patterns(
         return None
 
     return (
-        f"[Guardian:覆轍] 以下模式跨 session 反覆出現，"
-        f"考慮深入根因分析：{', '.join(repeated)}"
+        f"[Guardian:覆轍] 跨 session 反覆出現：{', '.join(repeated)}。"
+        f"行動：1) 停止表面修復 2) 分析根因 3) 記錄到 atom 防止再犯"
     )
 
 

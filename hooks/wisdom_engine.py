@@ -55,9 +55,9 @@ def classify_situation(prompt_analysis: Dict[str, Any]) -> Dict[str, str]:
     plan_threshold = 2 if arch_elevated else 3
 
     if touches_arch or file_count > plan_threshold:
-        result = {"approach": "plan", "inject": "[情境:規劃] 架構級變更，建議 Plan Mode"}
+        result = {"approach": "plan", "inject": "[情境:規劃] 架構級變更。行動：先 EnterPlanMode 列出影響範圍再動手"}
     elif file_count > 2 and is_feature:
-        result = {"approach": "confirm", "inject": "[情境:確認] 跨檔修改，建議先列範圍"}
+        result = {"approach": "confirm", "inject": "[情境:確認] 跨檔修改。行動：先列出要修改的完整檔案清單確認再開始"}
     else:
         result = {"approach": "direct", "inject": ""}
 
@@ -91,13 +91,28 @@ def _empty_reflection() -> Dict[str, Any]:
     }
 
 
+# V3.1: 自描述行動指令，依 task_type 分支
+_BLIND_SPOT_ACTIONS = {
+    "single_file": "行動：修改前先確認理解正確，避免假設",
+    "multi_file": "行動：修改 >2 檔時先列清單確認範圍",
+    "architecture": "行動：架構級任務先用 Plan Mode",
+}
+
+
 def get_reflection_summary() -> List[str]:
-    """SessionStart: inject blind spot reminders (only if data exists)."""
+    """SessionStart: inject blind spot reminders with actionable guidance."""
     metrics = _load_json(REFLECTION_PATH, {})
-    blind_spots = metrics.get("blind_spots", [])
-    if not blind_spots:
-        return []
-    return [f"[自知] {spot}" for spot in blind_spots[:2]]
+    faa = metrics.get("metrics", {}).get("first_approach_accuracy", {})
+    lines = []
+    for tt, b in faa.items():
+        total = b.get("total", 0)
+        correct = b.get("correct", 0)
+        if total >= 3:
+            rate = correct / total
+            if rate < 0.7:
+                action = _BLIND_SPOT_ACTIONS.get(tt, "")
+                lines.append(f"[自知] {tt} 首次正確率 {rate:.0%}。{action}")
+    return lines[:2]
 
 
 def reflect(state: Dict[str, Any]) -> None:

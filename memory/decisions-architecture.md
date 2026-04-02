@@ -30,14 +30,6 @@
 ### 檢索強化
 - [固] Project-Aliases：MEMORY.md `> Project-Aliases:` 行，跨專案掃描
 
-### Wisdom Engine
-- [固] 反思指標：over_engineering_rate + silence_accuracy
-- [固] Bayesian 校準：architecture 連續 3+ 失敗 → 提升 arch 敏感度
-
-### 覆轍偵測
-- [固] 寄生式：附著在 episodic atom，SessionEnd 寫信號 → SessionStart 跨 session 偵測
-- [固] 職責切分：session 內重試 → fix-escalation；atom 反覆修改 → 震盪偵測；跨 session 行為模式 → 覆轍偵測
-
 ## 行動
 
 - 開發/調修記憶系統時載入此 atom

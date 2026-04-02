@@ -34,13 +34,7 @@
 - [固] [觀]→[固] 晉升：4+ sessions 命中 → 建議晉升（不自動執行，需使用者同意）
 
 ### 品質機制
-- [固] Write Gate：品質閘門，dedup 0.80，使用者明確指示時跳過
 - [固] 自我迭代精簡為 3 條：品質函數（Hook）、證據門檻（Claude）、震盪偵測（Hook）
-- [固] 覆轍偵測：episodic 寫入覆轍信號（same_file_3x / retry_escalation）→ SessionStart 掃描跨 session 重複 → 注入 [Guardian:覆轍] 警告
-
-### Wisdom Engine
-- [固] 2 硬規則（touches_arch OR file_count>threshold → plan; file_count>2 AND is_feature → confirm）
-- [固] 冷啟動零 token，注入上限 ≤90 tokens，lazy import + graceful fallback
 
 ### Fix Escalation
 - [固] 同一問題修正第 2 次起 → 6 Agent 精確修正會議
