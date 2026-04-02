@@ -4,8 +4,8 @@
 | Atom | Path | Trigger |
 |------|------|---------|
 | preferences | memory/preferences.md | 偏好, 風格, 習慣, 語言, 回應, 執P, 執驗上P, 上GIT |
-| decisions | memory/decisions.md | 全域決策, workflow, guardian, hooks, MCP, 記憶系統決策, 記憶系統架構, 記憶系統, 原子記憶, atom memory, 決策 |
-| decisions-architecture | memory/decisions-architecture.md | 架構細節, vector service, ollama backend, extraction, ACT-R, episodic tracking, context budget, 萃取, 注入, injection, vector, 向量, token budget |
+| decisions | memory/decisions.md | 決策, 記憶系統, 原子記憶, guardian, hooks, MCP |
+| decisions-architecture | memory/decisions-architecture.md | 架構細節, vector service, ollama backend, extraction, ACT-R, episodic tracking, context budget |
 | workflow-rules | memory/workflow-rules.md | 工作流程, 大型任務, 分階段, SOP, 任務拆分, 上版, GIT, Phase |
 | workflow-icld | memory/workflow-icld.md | ICLD, 閉環, Sprint, 功能拆解, 開發計畫, 大型新功能, 新系統規劃, 規格書 |
 | workflow-svn | memory/workflow-svn.md | svn, svn-update, TortoiseSVN, 衝突, conflict |
