@@ -1,4 +1,4 @@
-# Atomic Memory V3.0 — 安裝指南
+# Atomic Memory V3.1 — 安裝指南
 
 > **目標讀者**：使用 VS Code + Claude Code Extension，但完全不知道原子記憶是什麼的開發者。
 > 本指南會幫你把原子記憶系統**合併安裝**到你現有的 `~/.claude/` 目錄中。
@@ -129,8 +129,8 @@ cp /tmp/atomic-memory/hooks/wg_extraction.py ~/.claude/hooks/
 cp /tmp/atomic-memory/hooks/wg_episodic.py ~/.claude/hooks/
 cp /tmp/atomic-memory/hooks/wg_iteration.py ~/.claude/hooks/
 cp /tmp/atomic-memory/hooks/extract-worker.py ~/.claude/hooks/
-cp /tmp/atomic-memory/hooks/quick-extract.py ~/.claude/hooks/      # V3.0 async 快篩
-cp /tmp/atomic-memory/hooks/wg_hot_cache.py ~/.claude/hooks/       # V3.0 Hot Cache
+cp /tmp/atomic-memory/hooks/quick-extract.py ~/.claude/hooks/      # async 快篩
+cp /tmp/atomic-memory/hooks/wg_hot_cache.py ~/.claude/hooks/       # Hot Cache
 cp /tmp/atomic-memory/hooks/wg_content_classify.py ~/.claude/hooks/
 cp /tmp/atomic-memory/hooks/wisdom_engine.py ~/.claude/hooks/
 cp /tmp/atomic-memory/hooks/user-init.sh ~/.claude/hooks/
@@ -294,7 +294,7 @@ cat > ~/.claude/memory/MEMORY.md << 'EOF'
 
 ## 高頻事實
 
-- 原子記憶 V3.0
+- 原子記憶 V3.1
 EOF
 ```
 
@@ -518,11 +518,11 @@ python ~/.claude/tools/memory-audit.py
 │   ├── wg_atoms.py               ★ 索引解析/trigger/ACT-R/section 注入
 │   ├── wg_intent.py              ★ 意圖分類/向量搜尋
 │   ├── wg_extraction.py          ★ 回應萃取
-│   ├── wg_hot_cache.py           ★ Hot Cache 讀寫/注入 [V3.0]
+│   ├── wg_hot_cache.py           ★ Hot Cache 讀寫/注入
 │   ├── wg_episodic.py            ★ Episodic 管理
 │   ├── wg_iteration.py           ★ 自我迭代/衰減/覆轍
 │   ├── extract-worker.py         ★ LLM 萃取子程序 (detached)
-│   ├── quick-extract.py          ★ Stop async 快篩 [V3.0]
+│   ├── quick-extract.py          ★ Stop async 快篩
 │   ├── wisdom_engine.py          ★ Wisdom Engine
 │   └── user-init.sh              ★ 多人 USER.md 初始化
 │
@@ -551,8 +551,8 @@ python ~/.claude/tools/memory-audit.py
 │
 ├── workflow/                     ★
 │   ├── config.json               ★ 系統設定
-│   ├── hot_cache.json              （V3.0 自動生成，快篩知識快取）
-│   └── vector_ready.flag           （V3.0 自動生成，Vector service 就緒旗標）
+│   ├── hot_cache.json              （自動生成，快篩知識快取）
+│   └── vector_ready.flag           （自動生成，Vector service 就緒旗標）
 │
 ├── commands/                     ★ Slash commands (Skills)
 │   ├── init-project.md           ★ /init-project — 專案知識庫初始化
@@ -595,7 +595,7 @@ ls -la hooks/quick-extract.py hooks/wg_hot_cache.py hooks/wg_content_classify.py
 ## 常見問題
 
 ### Q: 安裝後 Claude Code 啟動變慢？
-**A**: 正常。V3.0 已大幅改善：SessionStart 去重 + 非阻塞 vector 啟動，延遲降至 50-200ms。每次 prompt 增加 ~300-600ms（語意搜尋）。
+**A**: 正常。V3.1 已大幅改善：SessionStart 去重 + 非阻塞 vector 啟動，延遲降至 50-200ms。每次 prompt 增加 ~300-600ms（語意搜尋）。
 
 ### Q: Vector Service 啟動失敗？
 **A**: 檢查 `pip install lancedb` 是否成功（需 AVX2 CPU）。檢查 port 3849 是否被佔用。無 AVX2 則改用 ChromaDB 並修改 `workflow/config.json` 的 `vector_search` 區塊。

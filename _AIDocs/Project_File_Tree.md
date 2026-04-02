@@ -22,11 +22,11 @@
 │   ├── wg_atoms.py             ← 索引解析/trigger 匹配/ACT-R/載入/budget
 │   ├── wg_intent.py            ← 意圖分類/session context/MCP/vector
 │   ├── wg_extraction.py        ← per-turn 萃取/worker 管理/failure 偵測
-│   ├── wg_hot_cache.py         ← Hot Cache 讀寫/注入 [V3.0]
+│   ├── wg_hot_cache.py         ← Hot Cache 讀寫/注入
 │   ├── wg_episodic.py          ← episodic 生成/衝突偵測/品質回饋
 │   ├── wg_iteration.py         ← 自我迭代/震盪/衰減/晉升/覆轍偵測
 │   ├── extract-worker.py       ← LLM 萃取子程序（SessionEnd/per-turn/failure）
-│   ├── quick-extract.py        ← Stop async 快篩（qwen3:1.7b → hot_cache）[V3.0]
+│   ├── quick-extract.py        ← Stop async 快篩（qwen3:1.7b → hot_cache）
 │   ├── wg_content_classify.py  ← 內容分類
 │   ├── wisdom_engine.py        ← Wisdom Engine（情境分類+反思指標）
 │   ├── user-init.sh            ← 多人 USER.md 初始化

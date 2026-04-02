@@ -24,11 +24,11 @@
 | `wg_atoms.py` | ~559 | 索引解析/trigger 匹配/ACT-R/載入/budget/section-level 注入 |
 | `wg_intent.py` | ~387 | 意圖分類/session context/MCP/vector service |
 | `wg_extraction.py` | ~295 | per-turn 萃取/worker 管理/failure 偵測 |
-| `wg_hot_cache.py` | ~139 | Hot Cache 讀寫/注入 [V3.0] |
+| `wg_hot_cache.py` | ~139 | Hot Cache 讀寫/注入 |
 | `wg_episodic.py` | ~860 | episodic 生成/衝突偵測/品質回饋 |
 | `wg_iteration.py` | ~431 | 自我迭代/震盪/衰減/晉升/覆轍偵測 |
 | `extract-worker.py` | ~806 | SessionEnd/per-turn/failure 子程序：LLM 萃取 + dedup |
-| `quick-extract.py` | ~155 | Stop async 快篩：qwen3:1.7b → hot_cache [V3.0] |
+| `quick-extract.py` | ~155 | Stop async 快篩：qwen3:1.7b → hot_cache |
 | `wisdom_engine.py` | ~177 | 反思引擎：硬規則 + 反思指標 |
 
 ### 輔助 Hook 腳本
@@ -71,7 +71,7 @@
 | `rules/session-management.md` | 對話管理 + 續航 + 自我迭代 + 精確修正升級 |
 | `rules/sync-workflow.md` | 工作結束同步 + Guardian 閘門 |
 
-## 記憶系統（原子記憶 V3.0）
+## 記憶系統（原子記憶 V3.1）
 
 ### 雙 LLM 架構 + Dual-Backend
 
@@ -140,7 +140,7 @@ Claude 使用工具 → [PostToolUse] hot cache check → mid-turn 注入
 Deep extract   → [detached] extract-worker.py → 覆寫 hot cache → 正式 atom
 ```
 
-### SessionStart 去重（V3.0）
+### SessionStart 去重
 
 - 同 cwd 60s 內 active state → 複用（resume 合併，startup 跳過 vector init）
 - 分層孤兒清理：prompt_count=0 working→10m, prompt_count>0 working→30m, done→24h
