@@ -1041,6 +1041,57 @@ def handle_post_tool_use(input_data: Dict[str, Any], config: Dict[str, Any]) -> 
                 )
                 print(f"[v2.15] AIDocs gate triggered: {fname}", file=sys.stderr)
 
+        # V2.25: _AIDocs Drift Detection — src changed but docs not updated
+        if normalized.endswith(".ts") and "/src/" in normalized:
+            _drift_warned = state.setdefault("_aidocs_drift_warned", set())
+            # Convert set from JSON (lists) back if needed
+            if isinstance(_drift_warned, list):
+                _drift_warned = set(_drift_warned)
+                state["_aidocs_drift_warned"] = _drift_warned
+
+            if normalized not in _drift_warned:
+                _proj_root_drift = state.get("session", {}).get("cwd", "")
+                if _proj_root_drift:
+                    _aidocs_dir = os.path.join(_proj_root_drift, "_AIDocs", "modules")
+                    if os.path.isdir(_aidocs_dir):
+                        # Derive candidate .md name from src path
+                        _src_rel = normalized.split("/src/", 1)[-1]  # e.g. core/agent-loop.ts
+                        _ts_name = _src_rel.rsplit("/", 1)[-1].replace(".ts", "")  # agent-loop
+
+                        # Directory-level mappings (src/memory/*.ts → memory-engine.md, etc.)
+                        _dir_map = {
+                            "memory": "memory-engine",
+                            "providers": "providers",
+                            "tools": "tool-registry",
+                            "skills": "skills",
+                            "hooks": "hooks",
+                            "accounts": "accounts",
+                            "safety": "safety",
+                            "workflow": "workflow",
+                            "mcp": "mcp-client",
+                            "vector": "vector-service",
+                        }
+                        _src_dir = _src_rel.split("/")[0] if "/" in _src_rel else ""
+                        _candidate_md = _dir_map.get(_src_dir, _ts_name) + ".md"
+                        _md_path = os.path.join(_aidocs_dir, _candidate_md)
+
+                        if os.path.isfile(_md_path):
+                            # Check if this .md was already modified in this session
+                            _mod_paths = {m["path"] for m in state.get("modified_files", [])}
+                            if _md_path not in _mod_paths and _candidate_md not in {
+                                p.rsplit("/", 1)[-1] for p in _mod_paths
+                            }:
+                                state["_aidocs_drift_advisory"] = (
+                                    f"`{_src_rel}` 已修改，"
+                                    f"`_AIDocs/modules/{_candidate_md}` 可能需要同步更新。"
+                                )
+                                print(
+                                    f"[v2.25] DocDrift: {_src_rel} → modules/{_candidate_md}",
+                                    file=sys.stderr,
+                                )
+                        _drift_warned.add(normalized)
+                        state["_aidocs_drift_warned"] = list(_drift_warned)  # JSON serializable
+
     elif tool_name == "Read" and file_path:
         # V2.10: Read Tracking — deduplicate, keep first occurrence only
         accessed = state.setdefault("accessed_files", [])
@@ -1062,6 +1113,7 @@ def handle_post_tool_use(input_data: Dict[str, Any], config: Dict[str, Any]) -> 
         for key, prefix in [
             ("_path_enforcement_advisory", "[Guardian:PathEnforce]"),
             ("_aidocs_advisory", "[Guardian:AIDocs]"),
+            ("_aidocs_drift_advisory", "[Guardian:DocDrift]"),
             ("_staging_advisory", "[Guardian:StagingName]"),
         ]:
             val = state.get(key)
