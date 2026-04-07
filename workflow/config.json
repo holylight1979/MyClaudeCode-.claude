@@ -106,6 +106,12 @@
     "max_summary_tokens": 100,
     "deep_overwrite": true
   },
+  "docdrift": {
+    "enabled": true,
+    "gate_commit": true,
+    "resolve_on_read": true,
+    "src_extensions": [".ts", ".tsx", ".js", ".jsx", ".py", ".mjs", ".cjs", ".cs", ".lua", ".php", ".c", ".cpp", ".cc", ".h", ".hpp"]
+  },
   "response_capture": {
     "enabled": true,
     "session_end_max_chars": 20000,

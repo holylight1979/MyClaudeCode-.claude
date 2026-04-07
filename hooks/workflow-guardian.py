@@ -935,6 +935,42 @@ def handle_user_prompt_submit(
         output_nothing()
 
 
+def handle_pre_tool_use(input_data: Dict[str, Any], config: Dict[str, Any]) -> None:
+    """V2.26: PreToolUse — DocDrift commit gate."""
+    _docdrift_cfg = config.get("docdrift", {})
+    if not _docdrift_cfg.get("gate_commit", True):
+        output_nothing()
+        return
+
+    tool_name = input_data.get("tool_name", "")
+    if tool_name != "Bash":
+        output_nothing()
+        return
+
+    command = input_data.get("tool_input", {}).get("command", "")
+    if not re.search(r"\bgit\s+commit\b", command):
+        output_nothing()
+        return
+
+    session_id = input_data.get("session_id", "")
+    state = _ensure_state(session_id, input_data, config)
+    if not state:
+        output_nothing()
+        return
+
+    pending = state.get("_docdrift_pending", {})
+    if not pending:
+        output_nothing()
+        return
+
+    items = "\n".join(f"  - {src} → _AIDocs/modules/{doc}" for src, doc in pending.items())
+    output_block(
+        f"[Guardian:DocDrift] commit 前有 {len(pending)} 個未解決的 DocDrift：\n"
+        f"{items}\n"
+        f"請先 Read 或更新對應文件，確認不需更新後再 commit。"
+    )
+
+
 def handle_post_tool_use(input_data: Dict[str, Any], config: Dict[str, Any]) -> None:
     session_id = input_data.get("session_id", "")
     state = _ensure_state(session_id, input_data, config)
@@ -982,8 +1018,21 @@ def handle_post_tool_use(input_data: Dict[str, Any], config: Dict[str, Any]) -> 
 
         write_state(session_id, state)
 
-        # Trigger incremental vector index if an atom file was modified
+        # V2.26: DocDrift resolve — clear pending when _AIDocs/modules/*.md is modified
         normalized = file_path.replace("\\", "/")
+        if "/_AIDocs/modules/" in normalized and normalized.endswith(".md"):
+            _doc_name = normalized.rsplit("/", 1)[-1]
+            _drift_pending = state.get("_docdrift_pending", {})
+            _resolved = [s for s, d in _drift_pending.items() if d == _doc_name]
+            for s in _resolved:
+                del _drift_pending[s]
+            if _resolved:
+                if not _drift_pending:
+                    state.pop("_docdrift_pending", None)
+                write_state(session_id, state)
+                print(f"[v2.26] DocDrift resolved: {_doc_name} ({len(_resolved)} src)", file=sys.stderr)
+
+        # Trigger incremental vector index if an atom file was modified
         if "/memory/" in normalized and normalized.endswith(".md"):
             _trigger_incremental_index(config)
 
@@ -1042,7 +1091,9 @@ def handle_post_tool_use(input_data: Dict[str, Any], config: Dict[str, Any]) -> 
                 print(f"[v2.15] AIDocs gate triggered: {fname}", file=sys.stderr)
 
         # V2.25: _AIDocs Drift Detection — src changed but docs not updated
-        if normalized.endswith(".ts") and "/src/" in normalized:
+        _docdrift_cfg = config.get("docdrift", {})
+        _src_exts = tuple(_docdrift_cfg.get("src_extensions", [".ts", ".tsx", ".js", ".jsx", ".py", ".mjs", ".cjs", ".cs", ".lua", ".php", ".c", ".cpp", ".cc", ".h", ".hpp"]))
+        if _docdrift_cfg.get("enabled", True) and normalized.endswith(_src_exts) and "/src/" in normalized:
             _drift_warned = state.setdefault("_aidocs_drift_warned", set())
             # Convert set from JSON (lists) back if needed
             if isinstance(_drift_warned, list):
@@ -1085,8 +1136,11 @@ def handle_post_tool_use(input_data: Dict[str, Any], config: Dict[str, Any]) -> 
                                     f"`{_src_rel}` 已修改，"
                                     f"`_AIDocs/modules/{_candidate_md}` 可能需要同步更新。"
                                 )
+                                # V2.26: DocDrift commit gate — track pending drift
+                                _drift_pending = state.setdefault("_docdrift_pending", {})
+                                _drift_pending[_src_rel] = _candidate_md
                                 print(
-                                    f"[v2.25] DocDrift: {_src_rel} → modules/{_candidate_md}",
+                                    f"[v2.26] DocDrift: {_src_rel} → modules/{_candidate_md}",
                                     file=sys.stderr,
                                 )
                         _drift_warned.add(normalized)
@@ -1098,6 +1152,25 @@ def handle_post_tool_use(input_data: Dict[str, Any], config: Dict[str, Any]) -> 
         if not any(a["path"] == file_path for a in accessed):
             accessed.append({"path": file_path, "at": _now_iso()})
             write_state(session_id, state)
+
+        # V2.26: DocDrift resolve on Read — reading the doc counts as "confirmed"
+        _read_norm = file_path.replace("\\", "/")
+        _docdrift_cfg = config.get("docdrift", {})
+        if (
+            _docdrift_cfg.get("resolve_on_read", True)
+            and "/_AIDocs/modules/" in _read_norm
+            and _read_norm.endswith(".md")
+        ):
+            _doc_name = _read_norm.rsplit("/", 1)[-1]
+            _drift_pending = state.get("_docdrift_pending", {})
+            _resolved = [s for s, d in _drift_pending.items() if d == _doc_name]
+            for s in _resolved:
+                del _drift_pending[s]
+            if _resolved:
+                if not _drift_pending:
+                    state.pop("_docdrift_pending", None)
+                write_state(session_id, state)
+                print(f"[v2.26] DocDrift resolved via Read: {_doc_name}", file=sys.stderr)
 
     elif tool_name == "Bash":
         # V2.10: VCS query capture (git log/blame/show/diff, svn log/blame/diff)
@@ -1490,6 +1563,7 @@ def handle_session_end(input_data: Dict[str, Any], config: Dict[str, Any]) -> No
 HANDLERS = {
     "SessionStart": handle_session_start,
     "UserPromptSubmit": handle_user_prompt_submit,
+    "PreToolUse": handle_pre_tool_use,
     "PostToolUse": handle_post_tool_use,
     "PreCompact": handle_pre_compact,
     "Stop": handle_stop,
