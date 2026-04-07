@@ -666,10 +666,11 @@ function resolveMemDir(scope, projectCwd) {
   return MEMORY_DIR;
 }
 
-/** Find MEMORY.md path for a given scope */
+/** Find atom index path for a given scope (V3.2: prefer _ATOM_INDEX.md) */
 function resolveMemoryIndex(memDir) {
-  const indexPath = path.join(memDir, "MEMORY.md");
-  return indexPath;
+  const atomIdx = path.join(memDir, "_ATOM_INDEX.md");
+  if (fs.existsSync(atomIdx)) return atomIdx;
+  return path.join(memDir, "MEMORY.md");  // fallback
 }
 
 /** Run write-gate Python script for dedup check. Returns Promise<{action, reason}> */

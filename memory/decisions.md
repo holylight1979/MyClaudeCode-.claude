@@ -2,10 +2,10 @@
 
 - Scope: global
 - Confidence: [固]
-- Trigger: 決策, 記憶系統, 原子記憶, guardian, hooks, MCP
-- Last-used: 2026-04-02
-- Confirmations: 134
-- Related: decisions-architecture
+- Trigger: 決策, 記憶系統, 原子記憶, guardian, hooks, MCP, 架構細節, vector service, context budget
+- Last-used: 2026-04-07
+- Confirmations: 135
+- Related: toolchain, toolchain-ollama
 
 ## 知識
 
@@ -13,6 +13,7 @@
 - [固] 雙 LLM：Claude Code（雲端決策）+ Ollama（本地語意處理）
 - [固] 專案自治層：每專案 `{project_root}/.claude/memory/` + project_hooks.py delegate
 - [固] 管線概覽：Intent→Trigger→Vector→Section→Budget→注入（詳見 _reference/internal-pipeline.md）
+- [固] Project-Aliases：MEMORY.md `> Project-Aliases:` 行，跨專案掃描
 
 ### V3 三層即時管線
 - [觀] Stop async hook（quick-extract.py）→ qwen3:1.7b 快篩 5s → hot_cache.json → systemMessage

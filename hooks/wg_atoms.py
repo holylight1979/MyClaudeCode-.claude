@@ -12,7 +12,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from wg_paths import MEMORY_DIR, EPISODIC_DIR, MEMORY_INDEX, resolve_access_json
+from wg_paths import MEMORY_DIR, EPISODIC_DIR, MEMORY_INDEX, ATOM_INDEX, resolve_access_json
 from wg_core import CONTEXT_BUDGET_DEFAULT
 
 # ─── Memory Index Parsing ────────────────────────────────────────────────────
@@ -25,11 +25,24 @@ AtomEntry = Tuple[str, str, List[str]]
 
 
 def parse_memory_index(memory_dir: Path) -> List[AtomEntry]:
-    """Parse MEMORY.md atom index, return list of (name, path, triggers).
+    """Parse atom index, return list of (name, path, triggers).
 
+    V3.2: 優先讀 _ATOM_INDEX.md（不被 @import 的機器專用索引），
+    Fallback 到 MEMORY.md（向後相容）。
     V2.21: 如果 MEMORY.md 是指標型（Status: migrated-v2.21），
     自動重導向到 Root 指向的新路徑讀取。
     """
+    # V3.2: 優先讀 _ATOM_INDEX.md
+    atom_index_path = memory_dir / ATOM_INDEX
+    if atom_index_path.exists():
+        try:
+            text = atom_index_path.read_text(encoding="utf-8-sig")
+        except (OSError, UnicodeDecodeError):
+            text = None
+        if text:
+            return _parse_trigger_table(text)
+
+    # Fallback: MEMORY.md
     index_path = memory_dir / MEMORY_INDEX
     if not index_path.exists():
         return []
@@ -47,6 +60,11 @@ def parse_memory_index(memory_dir: Path) -> List[AtomEntry]:
                 return parse_memory_index(redirect_dir)
         return []
 
+    return _parse_trigger_table(text)
+
+
+def _parse_trigger_table(text: str) -> List[AtomEntry]:
+    """Parse markdown trigger table into atom entries."""
     atoms: List[AtomEntry] = []
     in_table = False
     for line in text.splitlines():

@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from wg_paths import (
-    CLAUDE_DIR, MEMORY_DIR, EPISODIC_DIR, MEMORY_INDEX, WORKFLOW_DIR,
+    CLAUDE_DIR, MEMORY_DIR, EPISODIC_DIR, MEMORY_INDEX, ATOM_INDEX, WORKFLOW_DIR,
     cwd_to_project_slug, get_project_memory_dir,
     resolve_episodic_dir, get_transcript_path,
 )
@@ -556,8 +556,10 @@ def _generate_triggers(state: Dict[str, Any], work_areas: list) -> list:
 
 
 def _update_memory_index(memory_dir: Path, atom_name: str, triggers: list) -> None:
-    """Append a row to MEMORY.md atom index table."""
-    index_path = memory_dir / MEMORY_INDEX
+    """Append a row to _ATOM_INDEX.md (V3.2) or MEMORY.md atom index table."""
+    # V3.2: prefer _ATOM_INDEX.md
+    atom_idx = memory_dir / ATOM_INDEX
+    index_path = atom_idx if atom_idx.exists() else memory_dir / MEMORY_INDEX
     if not index_path.exists():
         return
 

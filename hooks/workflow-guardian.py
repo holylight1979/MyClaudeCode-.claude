@@ -243,6 +243,9 @@ def handle_session_start(input_data: Dict[str, Any], config: Dict[str, Any]) -> 
         if aidocs_entries:
             fnames = [f for f, _d, _kw in aidocs_entries[:max_entries]]
             lines.append(f"[AIDocs] {len(aidocs_entries)} docs: {', '.join(fnames)}")
+            lines.append("[查閱知識庫] Read _AIDocs/_INDEX.md")
+        elif project_root and not (Path(project_root) / "_AIDocs").is_dir():
+            lines.append("[Guardian] No _AIDocs found. Run /init-project to create.")
 
         # ── V2.21: Project delegate hook — on_session_start ──────────────
         if project_root:
@@ -1186,10 +1189,11 @@ def handle_stop(input_data: Dict[str, Any], config: Dict[str, Any]) -> None:
     file_names = ", ".join(f.rsplit("/", 1)[-1] for f in unique_files[:8])
 
     reason = (
-        f"[Workflow Guardian] This session modified {len(unique_files)} file(s)"
-        + (f" and has {kq_count} pending knowledge item(s)" if kq_count > 0 else "")
+        f"[Workflow Guardian] {len(unique_files)} file(s) modified"
+        + (f", {kq_count} knowledge pending" if kq_count else "")
         + f". Files: {file_names}.\n"
-        "Please check CLAUDE.md sync rules and ask the user which sync steps apply."
+        "Sync: _AIDocs\u2192_CHANGELOG | knowledge\u2192atom | .git\u2192add+commit+push | .svn\u2192add+commit\n"
+        "Done \u2192 workflow_signal: sync_completed"
     )
 
     output_block(reason)

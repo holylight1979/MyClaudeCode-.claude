@@ -22,6 +22,7 @@ EPISODIC_DIR = MEMORY_DIR / "episodic"
 WORKFLOW_DIR = CLAUDE_DIR / "workflow"
 CONFIG_PATH = WORKFLOW_DIR / "config.json"
 MEMORY_INDEX = "MEMORY.md"
+ATOM_INDEX = "_ATOM_INDEX.md"  # V3.2: machine-only trigger table (not @imported)
 
 # ─── Project Registry (V2.21 預留) ───────────────────────────────────────────
 
