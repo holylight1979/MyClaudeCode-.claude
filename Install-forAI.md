@@ -1,4 +1,4 @@
-# Atomic Memory V3.1 — 安裝指南
+# Atomic Memory V3.4 — 安裝指南
 
 > **目標讀者**：使用 VS Code + Claude Code Extension，但完全不知道原子記憶是什麼的開發者。
 > 本指南會幫你把原子記憶系統**合併安裝**到你現有的 `~/.claude/` 目錄中。
@@ -294,7 +294,7 @@ cat > ~/.claude/memory/MEMORY.md << 'EOF'
 
 ## 高頻事實
 
-- 原子記憶 V3.1
+- 原子記憶 V3.4
 EOF
 ```
 
@@ -595,7 +595,7 @@ ls -la hooks/quick-extract.py hooks/wg_hot_cache.py hooks/wg_content_classify.py
 ## 常見問題
 
 ### Q: 安裝後 Claude Code 啟動變慢？
-**A**: 正常。V3.1 已大幅改善：SessionStart 去重 + 非阻塞 vector 啟動，延遲降至 50-200ms。每次 prompt 增加 ~300-600ms（語意搜尋）。
+**A**: 正常。V3 已大幅改善：SessionStart 去重 + 非阻塞 vector 啟動，延遲降至 50-200ms。每次 prompt 增加 ~300-600ms（語意搜尋）。
 
 ### Q: Vector Service 啟動失敗？
 **A**: 檢查 `pip install lancedb` 是否成功（需 AVX2 CPU）。檢查 port 3849 是否被佔用。無 AVX2 則改用 ChromaDB 並修改 `workflow/config.json` 的 `vector_search` 區塊。

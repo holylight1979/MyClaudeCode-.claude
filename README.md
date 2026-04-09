@@ -1,4 +1,4 @@
-# 原子記憶系統 Atomic Memory V3.1
+# 原子記憶系統 Atomic Memory V3.4
 
 > **Claude Code 跨 Session 知識管理引擎**
 > 三層即時管線 | Hot Cache | SessionStart 風暴修復 | Hybrid RECALL | Dual LLM | Workflow Guardian | Write Quality Gate | Wisdom Engine | Fix Escalation | Failures 自動化 | Token Diet | ACT-R Activation | Read Tracking | Rules 模組化 | 自我迭代自動化 | 覆轍偵測 | Section-Level 注入 | 路徑集中化（wg_paths）| Project Registry | 專案自治層 | DocDrift Detection
