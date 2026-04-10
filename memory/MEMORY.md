@@ -5,7 +5,8 @@
 | Atom | 說明 |
 |------|------|
 | preferences | 使用者偏好、縮寫指令 |
-| decisions | 全域核心決策 |
+| decisions | 全域核心決策（晉升/品質機制/Fix Escalation） |
+| decisions-architecture | 架構決策（hooks/pipeline/guardian/SessionStart） |
 | workflow-rules | 工作流程、大型任務 SOP |
 | workflow-icld | ICLD 閉環開發 |
 | workflow-svn | SVN 操作配方 |
