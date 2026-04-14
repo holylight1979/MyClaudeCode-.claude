@@ -4,7 +4,7 @@
 - Confidence: [固]
 - Trigger: 下 session, 續接, 交接, 下次繼續, next-phase, handoff, 下個 claude, resume prompt
 - Last-used: 2026-04-14
-- Confirmations: 1
+- Confirmations: 0
 - Related: workflow-rules
 
 ## 知識

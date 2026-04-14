@@ -19,16 +19,16 @@
 
 | 模組 | 行數 | 職責 |
 |------|------|------|
-| `workflow-guardian.py` | ~1480 | 瘦身 dispatcher：7 event handlers 編排 |
+| `workflow-guardian.py` | ~1540 | 瘦身 dispatcher：8 event handlers 編排（含 PreToolUse Format Gate + Handoff + Promotion Audit hint） |
 | `wg_paths.py` | ~314 | 路徑唯一真相來源：slug/root/staging/registry |
-| `wg_core.py` | ~344 | 共用常數/設定/state IO/output/debug |
+| `wg_core.py` | ~370 | 共用常數/設定/state IO/output/debug（含 `log_promotion_audit`） |
 | `wg_atoms.py` | ~559 | 索引解析/trigger 匹配/ACT-R/載入/budget/section-level 注入 |
 | `wg_intent.py` | ~387 | 意圖分類/session context/MCP/vector service |
 | `wg_extraction.py` | ~295 | per-turn 萃取/worker 管理/failure 偵測 |
 | `wg_hot_cache.py` | ~139 | Hot Cache 讀寫/注入 |
 | `wg_docdrift.py` | ~160 | DocDrift 偵測：src 改動→_AIDocs 映射→advisory 提醒 |
 | `wg_episodic.py` | ~860 | episodic 生成/衝突偵測/品質回饋 |
-| `wg_iteration.py` | ~431 | 自我迭代/震盪/衰減/晉升/覆轍偵測 |
+| `wg_iteration.py` | ~450 | 自我迭代/震盪/衰減/晉升/覆轍偵測（含 atom header 與內部條目一致性對齊） |
 | `extract-worker.py` | ~806 | SessionEnd/per-turn/failure 子程序：LLM 萃取 + dedup（rdchat: gemma4:e4b, local: qwen3:1.7b） |
 | `quick-extract.py` | ~155 | Stop async 快篩：local qwen3:1.7b → hot_cache |
 | `wisdom_engine.py` | ~177 | 反思引擎：硬規則 + 反思指標 |

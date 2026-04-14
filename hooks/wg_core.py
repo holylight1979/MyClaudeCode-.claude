@@ -332,6 +332,29 @@ def output_block(reason: str) -> None:
     output_json({"decision": "block", "reason": reason})
 
 
+# ─── Promotion Audit Log ─────────────────────────────────────────────────────
+
+def log_promotion_audit(action: str, atom: str, **fields: Any) -> None:
+    """Append one JSONL entry to memory/_promotion_audit.jsonl.
+
+    action ∈ {"hint", "auto_observe", "manual_promote"}
+      - hint: UserPromptSubmit 晉升提示注入
+      - auto_observe: wg_iteration [臨]→[觀] 自動晉升（內部條目或 header）
+      - manual_promote: atom_promote MCP 執行
+    fields 依 action 帶不同欄位（from/to/confirmations/session_id 等）。
+    失敗不 raise — audit 不該影響主流程。
+    """
+    try:
+        entry = {"ts": datetime.now().isoformat(timespec="seconds"),
+                 "action": action, "atom": atom}
+        entry.update(fields)
+        audit_path = MEMORY_DIR / "_promotion_audit.jsonl"
+        with open(audit_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+
+
 # ─── Atom Debug Log ──────────────────────────────────────────────────────────
 
 

@@ -43,6 +43,7 @@ from wg_core import (
     _find_active_sibling_state,  # V3/1.5A: SessionStart dedup
     output_json, output_nothing, output_block,
     _atom_debug_log, _atom_debug_error,
+    log_promotion_audit,
 )
 from wg_iteration import (
     _collect_iteration_metrics, _detect_oscillation,
@@ -830,6 +831,12 @@ def handle_user_prompt_submit(
                                         f"⚡ [{inj_name}] Confirmations={new_count}, "
                                         f"目前{cur}, 已達{target}門檻，"
                                         f"觸及相關行為時請主動確認是否晉升"
+                                    )
+                                    log_promotion_audit(
+                                        "hint", inj_name,
+                                        **{"from": cur, "to": target,
+                                           "confirmations": new_count,
+                                           "session_id": session_id}
                                     )
                     except (OSError, UnicodeDecodeError):
                         pass

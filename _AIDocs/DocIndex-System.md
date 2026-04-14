@@ -119,7 +119,7 @@ Session Ready
 
 ### 記憶品質
 - memory-audit.py — 格式驗證 + staleness（支援 `--project-dir`、Claude-native YAML frontmatter、2 欄 MEMORY.md、wildcard 索引項、orphan memory dir 容忍）
-- memory-write-gate.py — 寫入閘門（6 規則 + 0.80 dedup）
+- memory-write-gate.py — 寫入閘門（6 規則 + 0.80 dedup；[固] 不再 fast-path，一律過品質檢查）
 - memory-conflict-detector.py — 向量衝突 + LLM 分類（支援 `--project-dir`）
 - atom-health-check.py — 參照完整性（`_` 前綴檔案豁免、`decisions`/`decisions-architecture`/`spec` 為 central hub 反向參照豁免）
 

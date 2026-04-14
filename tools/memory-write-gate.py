@@ -287,12 +287,13 @@ def evaluate(
         config = load_config()
 
     # Fast path: explicit user trigger → always add
-    if explicit_user or classification == "[固]":
+    # Note: [固] no longer fast-paths here — 移除反向激勵，[固] 也需過 dedup/quality
+    if explicit_user:
         write_audit_log("add", content, 1.0, classification=classification, reason="explicit_user")
         return {
             "action": "add",
             "quality_score": 1.0,
-            "reason": "explicit user trigger or [固] classification",
+            "reason": "explicit user trigger",
         }
 
     # Pitfall/trap detection → add with [觀]

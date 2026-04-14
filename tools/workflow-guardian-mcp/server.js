@@ -814,8 +814,20 @@ async function toolAtomWrite(id, args) {
       return sendToolResult(id, `Atom already exists: ${slug}.md — use mode=append or mode=replace`, true);
     }
 
+    // 原子記憶語意契約：新 atom 必須 [臨]
+    // [觀]/[固] 反映跨 session 穩定性，初次寫入無資格主張
+    // 路徑：trigger 命中累積 Confirmations → ≥20 升 [觀] → ≥40 使用者同意升 [固]
+    if (confidence !== "[臨]") {
+      return sendToolResult(id,
+        `New atom must start at [臨] (confidence=${confidence} rejected).\n` +
+        `Reason: [觀]/[固] reflect cross-session stability; first-write cannot assert that.\n` +
+        `Knowledge items inside should also use [臨] prefix.\n` +
+        `Promotion: trigger hits auto-accumulate Confirmations → ≥20 auto-promote to [觀] → ≥40 user-approve [固]`,
+        true);
+    }
+
     // Write-gate check (unless skipped)
-    if (!skip_gate && confidence !== "[固]") {
+    if (!skip_gate) {
       const gateResult = await execWriteGate(knowledge.join("\n"), confidence);
       if (gateResult.action === "skip") {
         return sendToolResult(id, `Write-gate rejected: ${gateResult.reason}`, true);
@@ -1011,6 +1023,21 @@ function toolAtomPromote(id, args) {
   fs.renameSync(tmp, filePath);
 
   triggerVectorReindex();
+
+  // Promotion audit log
+  try {
+    const auditPath = path.join(MEMORY_DIR, "_promotion_audit.jsonl");
+    const entry = {
+      ts: new Date().toISOString().slice(0, 19),
+      action: "manual_promote",
+      atom: atom_name,
+      from: meta.confidence,
+      to: next,
+      confirmations,
+      scope,
+    };
+    fs.appendFileSync(auditPath, JSON.stringify(entry) + "\n");
+  } catch {}
 
   return sendToolResult(id,
     `Promoted ${atom_name}: ${meta.confidence} → ${next}\n` +

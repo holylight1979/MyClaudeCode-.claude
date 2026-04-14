@@ -16,7 +16,7 @@ from wg_paths import (
     get_project_memory_dir, resolve_staging_dir,
     discover_all_project_memory_dirs,
 )
-from wg_core import _now_iso
+from wg_core import _now_iso, log_promotion_audit
 
 
 # ─── Metrics Collection ─────────────────────────────────────────────────────
@@ -275,6 +275,23 @@ def _self_iterate_atoms(
                         changed = True
 
                 if changed:
+                    # V3.5: 同步 atom header Confidence 與內部條目對齊
+                    # 規則：內部條目全 [觀]（無 [臨]/[固]）且 header 仍 [臨] → 升 header 到 [觀]
+                    # [固] 不自動升 header（須使用者同意 atom_promote）；只升不降
+                    prefixes = set()
+                    for L in lines:
+                        pm = re.match(r"^- \[([臨觀固])\]", L)
+                        if pm:
+                            prefixes.add(pm.group(1))
+                    header_promoted = False
+                    if prefixes == {"觀"}:
+                        for i, line in enumerate(lines):
+                            hm = re.match(r"^(- Confidence:\s*)\[臨\]\s*$", line)
+                            if hm:
+                                lines[i] = f"{hm.group(1)}[觀]"
+                                header_promoted = True
+                                break
+
                     # W12: atomic write — prevent partial reads during promotion
                     tmp = md_file.with_suffix(".tmp")
                     try:
@@ -290,6 +307,12 @@ def _self_iterate_atoms(
                         "items": promoted_in_file,
                         "confirmations": confirmations,
                     })
+                    log_promotion_audit(
+                        "auto_observe", md_file.stem,
+                        items=len(promoted_in_file),
+                        confirmations=confirmations,
+                        header_promoted=header_promoted,
+                    )
 
     # Write archive candidates to staging
     if results["archive_candidates"]:
