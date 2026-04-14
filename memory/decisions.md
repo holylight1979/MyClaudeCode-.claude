@@ -3,8 +3,8 @@
 - Scope: global
 - Confidence: [固]
 - Trigger: 決策, 記憶系統, 原子記憶, MCP, context budget, 晉升, 品質機制, fix escalation
-- Last-used: 2026-04-10
-- Confirmations: 138
+- Last-used: 2026-04-14
+- Confirmations: 143
 - Related: decisions-architecture, toolchain, toolchain-ollama
 
 ## 知識

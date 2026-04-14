@@ -3,8 +3,8 @@
 - Scope: global
 - Confidence: [固]
 - Trigger: 試錯, trial-and-error, 不熟悉, API試錯, 框架不熟, 搜尋策略, research
-- Last-used: 2026-04-08
-- Confirmations: 21
+- Last-used: 2026-04-10
+- Confirmations: 22
 
 ## 知識
 

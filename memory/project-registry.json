@@ -2,11 +2,11 @@
   "projects": {
     "c--users-holylight--claude": {
       "root": "c:\\Users\\holylight\\.claude",
-      "last_seen": "2026-04-08"
+      "last_seen": "2026-04-14"
     },
     "c--projects": {
       "root": "c:\\Projects",
-      "last_seen": "2026-04-07",
+      "last_seen": "2026-04-14",
       "aliases": [
         "sgi",
         "sgi_server",
@@ -35,6 +35,14 @@
         "辦公",
         "MyOfficeAI"
       ]
+    },
+    "c--tmp-docs-progg-wiki": {
+      "root": "c:\\tmp\\docs-progg-wiki",
+      "last_seen": "2026-04-10"
+    },
+    "c--tmp-docs-progg": {
+      "root": "c:\\tmp\\docs-progg",
+      "last_seen": "2026-04-13"
     }
   }
 }
