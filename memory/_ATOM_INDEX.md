@@ -20,3 +20,4 @@
 | gdoc-harvester | memory/gdoc-harvester.md | harvester, Google Docs, Sheets, 收割, Playwright, cookie, export |
 | feedback-decision-no-tech-menu | memory/feedback-decision-no-tech-menu.md | 決策, 選項, 選擇, 工具選型, 技術選單, 要不要, 建議優選, 白話, 給使用者選 |
 | feedback-handoff | memory/feedback_handoff_self_sufficient.md | 下 session, 續接, 交接, 下次繼續, next-phase, handoff, 下個 claude, resume prompt |
+| feedback-no-outsource-rigor | memory/feedback-no-outsource-rigor.md | 縝密, 規範, 角度, 漏掉, 沒看到, max thinking, high thinking, 外包思考, 自主, 角色縝密, 我有沒有漏, 還有什麼, rigor |
