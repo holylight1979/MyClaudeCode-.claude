@@ -444,6 +444,10 @@ const TOOL_DEFINITIONS = [
           type: "boolean",
           description: "Skip write-gate quality check (for [固] or explicit user request)",
         },
+        skip_conflict_check: {
+          type: "boolean",
+          description: "Skip V4 Phase 5 write-time conflict detection (shared scope only). Use only for controlled migrations / tests.",
+        },
       },
       required: ["title", "confidence", "triggers", "knowledge", "mode"],
     },
@@ -796,6 +800,101 @@ function resolveMemoryIndex(memDir) {
   return path.join(memDir, "MEMORY.md");  // fallback
 }
 
+/** V4 Phase 5: Run conflict-detector --mode=write-check.
+ *  Returns Promise<{verdict, matches, detector_model, skipped, skip_reason, scope}>.
+ *  Fail-open: on script error resolves to verdict=ok+skipped=true (do not block writes
+ *  when detector infra is down). Longer timeout than write-gate (LLM is slower). */
+function execConflictDetector(content, scope, projectCwd) {
+  return new Promise((resolve) => {
+    const scriptPath = path.join(TOOLS_DIR, "memory-conflict-detector.py");
+    if (!fs.existsSync(scriptPath)) {
+      return resolve({ verdict: "ok", matches: [], detector_model: "n/a",
+                       skipped: true, skip_reason: "detector script missing", scope });
+    }
+    const args = ["--mode=write-check",
+                  "--scope", scope,
+                  "--content", content];
+    if (projectCwd) {
+      args.push("--project-cwd", projectCwd);
+    }
+    const cp = require("child_process").spawn("python", [scriptPath, ...args], {
+      windowsHide: true,
+    });
+    let out = "", err = "";
+    const timer = setTimeout(() => {
+      try { cp.kill(); } catch {}
+    }, 60000);  // 60s — vector + 3 LLM calls
+    cp.stdout.on("data", d => { out += d.toString(); });
+    cp.stderr.on("data", d => { err += d.toString(); });
+    cp.on("close", () => {
+      clearTimeout(timer);
+      try {
+        const parsed = JSON.parse(out.trim().split("\n").pop());
+        resolve(parsed);
+      } catch (e) {
+        try { process.stderr.write(`[conflict-detector] parse error: ${e.message} stderr=${err.slice(0, 200)}\n`); } catch {}
+        resolve({ verdict: "ok", matches: [], detector_model: "n/a",
+                  skipped: true, skip_reason: "detector parse/exec error", scope });
+      }
+    });
+    cp.on("error", (e) => {
+      clearTimeout(timer);
+      try { process.stderr.write(`[conflict-detector] spawn error: ${e.message}\n`); } catch {}
+      resolve({ verdict: "ok", matches: [], detector_model: "n/a",
+                skipped: true, skip_reason: "detector spawn error", scope });
+    });
+  });
+}
+
+/** V4 Phase 5: TSV append to {baseDir}/_merge_history.log. SPEC §10.
+ *  baseDir is {proj}/.claude/memory/ (so log sits alongside shared/ roles/ personal/). */
+function appendMergeHistory(baseDir, action, atom, scope, by, detail) {
+  try {
+    const safe = s => String(s || "-").replace(/[\t\n\r]/g, " ").trim() || "-";
+    const line = [new Date().toISOString(), action, atom, scope, by, detail]
+      .map(safe).join("\t") + "\n";
+    fs.appendFileSync(path.join(baseDir, "_merge_history.log"), line, "utf-8");
+  } catch (e) {
+    try { process.stderr.write(`[merge_history] ${e.message}\n`); } catch {}
+  }
+}
+
+/** V4 Phase 5: render CONTRADICT report (non-atom) for _pending_review/{slug}.conflict.md. */
+function buildConflictReport({ slug, incomingTitle, incomingContent, matches, detectorModel, author }) {
+  const lines = [
+    `# Write-time conflict: ${incomingTitle || slug}`,
+    "",
+    `- Detected-at: ${new Date().toISOString()}`,
+    `- Incoming-author: ${author || "-"}`,
+    `- Detector: ${detectorModel || "n/a"}`,
+    `- Pending-review-by: management`,
+    "",
+    "## Incoming knowledge",
+    "",
+    "```",
+    (incomingContent || "").slice(0, 4000),
+    "```",
+    "",
+    "## Conflicting existing atoms",
+    "",
+  ];
+  for (const m of matches || []) {
+    lines.push(`- **${m.atom_name}** (layer=\`${m.layer}\`, similarity=${(m.similarity || 0).toFixed(3)}, class=${m.classification})`);
+    if (m.fact_preview) lines.push(`  preview: ${m.fact_preview.replace(/\n/g, " ")}`);
+  }
+  lines.push(
+    "",
+    "## Resolution",
+    "",
+    "管理職 `/conflict-review`：",
+    "1. 編輯既有 atom 或 incoming — 以消解事實衝突",
+    "2. 若 incoming 有獨立價值 → approve（搬草稿到 `shared/`）",
+    "3. 若 incoming 錯誤 → reject（僅刪本報告，既有 atom 不動）",
+    "",
+  );
+  return lines.join("\n");
+}
+
 /** Run write-gate Python script for dedup check. Returns Promise<{action, reason}> */
 function execWriteGate(content, classification) {
   return new Promise((resolve) => {
@@ -921,7 +1020,7 @@ function parseAtomMeta(content) {
 async function toolAtomWrite(id, args) {
   let {
     title, scope, confidence, triggers, knowledge, actions, related, mode,
-    project_cwd, skip_gate,
+    project_cwd, skip_gate, skip_conflict_check,
     role, user, audience, pending_review_by, merge_strategy,
   } = args;
 
@@ -962,10 +1061,10 @@ async function toolAtomWrite(id, args) {
   else if (scope === "personal") scopeLabel = `personal:${user}`;
 
   const slug = slugify(title);
-  const filePath = path.join(memDir, slug + ".md");
-  // relPath = "memory/" + (path from base to file)
-  const relFromBase = path.relative(baseDir, filePath).replace(/\\/g, "/");
-  const relPath = "memory/" + relFromBase;
+  // V4 Phase 5: filePath/relPath may be recomputed after conflict-detector reroute
+  let filePath = path.join(memDir, slug + ".md");
+  let relFromBase = path.relative(baseDir, filePath).replace(/\\/g, "/");
+  let relPath = "memory/" + relFromBase;
 
   const author = getCurrentUser();
   const today = new Date().toISOString().slice(0, 10);
@@ -995,6 +1094,42 @@ async function toolAtomWrite(id, args) {
         return sendToolResult(id,
           `Write-gate: similar to existing atom "${gateResult.dedup_match.atom_name}" ` +
           `(score=${gateResult.dedup_match.score}). Use mode=append on that atom instead.`, true);
+      }
+    }
+
+    // ─── V4 Phase 5: write-time conflict detection (SPEC §7.1) ───
+    // Only shared scope. skip_conflict_check honored for migrations/tests.
+    if (scope === "shared" && !skip_conflict_check) {
+      const cr = await execConflictDetector(knowledge.join("\n"), "shared", project_cwd);
+      if (cr.verdict === "contradict") {
+        const pendingDir = path.join(baseDir, "shared", "_pending_review");
+        fs.mkdirSync(pendingDir, { recursive: true });
+        const reportPath = path.join(pendingDir, slug + ".conflict.md");
+        const report = buildConflictReport({
+          slug, incomingTitle: title, incomingContent: knowledge.join("\n"),
+          matches: cr.matches, detectorModel: cr.detector_model, author,
+        });
+        fs.writeFileSync(reportPath + ".tmp", report, "utf-8");
+        fs.renameSync(reportPath + ".tmp", reportPath);
+        appendMergeHistory(baseDir, "pending-create", slug, scopeLabel, author,
+          `contradict vs ${(cr.matches[0] || {}).atom_name || "?"} sim=${((cr.matches[0] || {}).similarity || 0).toFixed(3)}`);
+        return sendToolResult(id,
+          `BLOCKED by conflict detector — CONTRADICT vs "${(cr.matches[0] || {}).atom_name || "?"}".\n` +
+          `Report written: ${reportPath}\n` +
+          `Atom NOT written to shared/. Awaiting management review (/conflict-review).`,
+          false  // not isError — pending is normal flow
+        );
+      }
+      if (cr.verdict === "extend_overlap") {
+        // Reroute to _pending_review/ as atom draft (still full atom format)
+        memDir = path.join(baseDir, "shared", "_pending_review");
+        fs.mkdirSync(memDir, { recursive: true });
+        if (!pendingReviewBy) pendingReviewBy = "management";
+        filePath = path.join(memDir, slug + ".md");
+        relFromBase = path.relative(baseDir, filePath).replace(/\\/g, "/");
+        relPath = "memory/" + relFromBase;
+        appendMergeHistory(baseDir, "pending-create", slug, scopeLabel, author,
+          `extend_overlap vs ${(cr.matches[0] || {}).atom_name || "?"} sim=${((cr.matches[0] || {}).similarity || 0).toFixed(3)}`);
       }
     }
 

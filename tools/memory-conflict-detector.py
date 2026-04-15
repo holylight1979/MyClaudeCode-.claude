@@ -18,8 +18,11 @@ import argparse
 import json
 import os
 import re
+import subprocess
 import sys
-from datetime import date, datetime
+import urllib.parse
+import urllib.request
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -28,6 +31,12 @@ from ollama_client import get_client
 
 CLAUDE_DIR = Path.home() / ".claude"
 AUDIT_LOG = CLAUDE_DIR / "memory" / "_vectordb" / "audit.log"
+
+# V4 Phase 5 conflict detection
+WRITE_CHECK_THRESHOLD = 0.85       # SPEC §7.3
+WRITE_CHECK_VECTOR_MIN = 0.60      # vector pre-filter (cheaper than LLM)
+WRITE_CHECK_DUP_THRESHOLD = 0.95   # duplicate cutoff (handled by write-gate)
+DETECTOR_MODEL_LABEL = "gemma4:e4b"  # SPEC §9 (info only — actual model from ollama_client)
 
 # Confidence ranking for arbitration
 CONF_RANK = {"[固]": 3, "[觀]": 2, "[臨]": 1}
@@ -386,17 +395,400 @@ def print_report(results: List[Dict], dry_run: bool = False) -> None:
             print()
 
 
+# ─── V4 Phase 5: write-check / pull-audit shared helpers ─────────────────────
+
+MERGE_HISTORY_NAME = "_merge_history.log"
+LAST_AUDIT_TS_NAME = ".last_pull_audit_ts"
+GIT_ONLY_RE = re.compile(r"^-\s+Merge-strategy:\s*git-only", re.IGNORECASE | re.MULTILINE)
+
+
+def _utcnow_iso() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _append_merge_history(proj_root: Path, action: str, atom: str,
+                          scope: str, by: str, detail: str) -> None:
+    """TSV append-only audit log under {proj}/.claude/memory/."""
+    log_path = proj_root / ".claude" / "memory" / MERGE_HISTORY_NAME
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    safe = lambda s: str(s).replace("\t", " ").replace("\n", " ").strip() or "-"
+    line = "\t".join([_utcnow_iso(), safe(action), safe(atom),
+                      safe(scope), safe(by), safe(detail)]) + "\n"
+    try:
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(line)
+    except OSError as e:
+        print(f"[merge_history] write failed: {e}", file=sys.stderr)
+
+
+def _is_git_only_atom(text: str) -> bool:
+    return bool(GIT_ONLY_RE.search(text))
+
+
+def _classify_match(content: str, match: Dict[str, Any]) -> str:
+    """Wrap ollama_classify for write-time/pull-time pairs.
+
+    On any LLM error returns "ERROR" — caller treats as conservative pending.
+    """
+    return ollama_classify(
+        fact_a=content[:1500],
+        atom_a="<incoming>",
+        conf_a="[臨]",
+        fact_b=match.get("text", "")[:1500],
+        atom_b=match.get("atom_name", ""),
+        conf_b=match.get("confidence", ""),
+    )
+
+
+def _decide_verdict(matches: List[Dict[str, Any]],
+                    threshold: float) -> Tuple[str, Optional[Dict[str, Any]]]:
+    """Apply SPEC §7.2 ordering: contradict > duplicate > extend_overlap > ok.
+
+    Returns (verdict, primary_match_or_None).
+    """
+    contradict = next((m for m in matches if m.get("classification") == "CONTRADICT"), None)
+    if contradict:
+        return "contradict", contradict
+    dup = next((m for m in matches
+                if m.get("classification") == "AGREE" and m.get("similarity", 0) >= WRITE_CHECK_DUP_THRESHOLD),
+               None)
+    if dup:
+        return "duplicate", dup
+    ext = next((m for m in matches
+                if m.get("classification") == "EXTEND" and m.get("similarity", 0) >= threshold),
+               None)
+    if ext:
+        return "extend_overlap", ext
+    # Conservative: any ERROR with high similarity → contradict (pending fallback)
+    err_high = next((m for m in matches
+                     if m.get("classification") == "ERROR" and m.get("similarity", 0) >= threshold),
+                    None)
+    if err_high:
+        return "contradict", err_high
+    return "ok", None
+
+
+def run_write_check(content: str, project_cwd: Optional[str], scope: str,
+                    threshold: float = WRITE_CHECK_THRESHOLD) -> Dict[str, Any]:
+    """Pre-write semantic conflict check (SPEC §7.1 write-time).
+
+    Returns:
+      {verdict, matches: [...], detector_model, skipped, skip_reason}
+    Verdict ∈ {ok, extend_overlap, contradict, duplicate}.
+
+    On any vector/LLM unavailability: verdict=ok + skipped=True (fail-open at
+    write-time so dead infrastructure does not block all writes).
+    """
+    out = {
+        "verdict": "ok",
+        "matches": [],
+        "detector_model": DETECTOR_MODEL_LABEL,
+        "skipped": False,
+        "skip_reason": None,
+        "scope": scope,
+    }
+    if not content or not content.strip():
+        out["skipped"] = True
+        out["skip_reason"] = "empty content"
+        return out
+
+    try:
+        hits = vector_search(content, top_k=3, min_score=WRITE_CHECK_VECTOR_MIN)
+    except Exception as e:
+        out["skipped"] = True
+        out["skip_reason"] = f"vector_search failed: {e}"
+        return out
+
+    if not hits:
+        return out
+
+    matches: List[Dict[str, Any]] = []
+    llm_errors = 0
+    for h in hits:
+        sim = float(h.get("score", 0))
+        if sim < WRITE_CHECK_VECTOR_MIN:
+            continue
+        # Skip git-only atoms (SPEC §7.3)
+        try:
+            atom_path = Path(h.get("file_path", ""))
+            if atom_path.is_file() and _is_git_only_atom(atom_path.read_text(encoding="utf-8-sig")):
+                continue
+        except OSError:
+            pass
+
+        label = _classify_match(content, h)
+        if label == "ERROR":
+            llm_errors += 1
+        matches.append({
+            "atom_name": h.get("atom_name", ""),
+            "layer": h.get("layer", ""),
+            "similarity": round(sim, 4),
+            "classification": label,
+            "fact_preview": h.get("text", "")[:120],
+            "file_path": h.get("file_path", ""),
+            "confidence": h.get("confidence", ""),
+        })
+
+    out["matches"] = matches
+    if llm_errors and llm_errors == len(matches):
+        out["skipped"] = True
+        out["skip_reason"] = "all LLM classifications failed"
+        return out
+
+    verdict, _primary = _decide_verdict(matches, threshold)
+    out["verdict"] = verdict
+    return out
+
+
+# ─── pull-audit ──────────────────────────────────────────────────────────────
+
+
+def _get_last_audit_ts(proj_root: Path) -> str:
+    """Return ISO ts of last audit, or unix epoch start if first run."""
+    f = proj_root / ".claude" / "memory" / "shared" / LAST_AUDIT_TS_NAME
+    if f.is_file():
+        try:
+            return f.read_text(encoding="utf-8").strip() or "1970-01-01T00:00:00Z"
+        except OSError:
+            pass
+    return "1970-01-01T00:00:00Z"
+
+
+def _set_last_audit_ts(proj_root: Path, ts: str) -> None:
+    f = proj_root / ".claude" / "memory" / "shared" / LAST_AUDIT_TS_NAME
+    f.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        f.write_text(ts, encoding="utf-8")
+    except OSError as e:
+        print(f"[pull-audit] cannot persist ts: {e}", file=sys.stderr)
+
+
+def _git(args: List[str], cwd: Path) -> Tuple[int, str, str]:
+    """Run git command. Returns (returncode, stdout, stderr)."""
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(cwd)] + args,
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=30,
+        )
+        return proc.returncode, proc.stdout or "", proc.stderr or ""
+    except (FileNotFoundError, subprocess.TimeoutExpired) as e:
+        return 1, "", str(e)
+
+
+def _collect_changed_atoms(proj_root: Path, since_ts: str) -> List[Dict[str, Any]]:
+    """Use git log to find atoms in shared/ changed since `since_ts`.
+
+    Returns list of {commit, path, atom_name, content (from HEAD)}.
+    Only includes files currently present in working tree (deleted ones skipped).
+    """
+    rel = ".claude/memory/shared"
+    rc, out, err = _git(["log", f"--since={since_ts}", "--name-only",
+                         "--pretty=format:COMMIT %H", "--", rel], proj_root)
+    if rc != 0:
+        print(f"[pull-audit] git log failed: {err}", file=sys.stderr)
+        return []
+
+    seen: Dict[str, str] = {}  # path -> latest commit hash
+    current_commit = ""
+    for line in out.splitlines():
+        if line.startswith("COMMIT "):
+            current_commit = line[7:].strip()
+            continue
+        line = line.strip()
+        if not line or not line.endswith(".md"):
+            continue
+        if not line.startswith(rel + "/"):
+            continue
+        # Skip pending review and system files
+        rest = line[len(rel) + 1:]
+        if rest.startswith("_") or rest.startswith("SPEC_"):
+            continue
+        if rest in ("MEMORY.md", "_ATOM_INDEX.md"):
+            continue
+        if line not in seen:
+            seen[line] = current_commit
+
+    out_list: List[Dict[str, Any]] = []
+    for path_rel, commit in seen.items():
+        abs_path = proj_root / path_rel
+        if not abs_path.is_file():
+            continue
+        try:
+            text = abs_path.read_text(encoding="utf-8-sig")
+        except OSError:
+            continue
+        atom_name = abs_path.stem
+        out_list.append({
+            "commit": commit,
+            "path": str(abs_path),
+            "rel_path": path_rel,
+            "atom_name": atom_name,
+            "content": text,
+        })
+    return out_list
+
+
+def _write_pull_conflict_report(proj_root: Path, atom_name: str,
+                                incoming: Dict[str, Any],
+                                match: Dict[str, Any],
+                                verdict: str) -> Path:
+    """Create _pending_review/{atom}.pull-conflict.md report (non-atom format)."""
+    pending_dir = proj_root / ".claude" / "memory" / "shared" / "_pending_review"
+    pending_dir.mkdir(parents=True, exist_ok=True)
+    report_path = pending_dir / f"{atom_name}.pull-conflict.md"
+    body = (
+        f"# Pull-time conflict: {atom_name}\n\n"
+        f"- Detected-at: {_utcnow_iso()}\n"
+        f"- Verdict: {verdict}\n"
+        f"- Detector: {DETECTOR_MODEL_LABEL}\n"
+        f"- Pending-review-by: management\n\n"
+        f"## Incoming (commit `{incoming.get('commit', '?')[:8]}`)\n\n"
+        f"Path: `{incoming.get('rel_path', '')}`\n\n"
+        "```\n" + incoming.get("content", "")[:4000] + "\n```\n\n"
+        f"## Conflicting existing atom\n\n"
+        f"- atom: `{match.get('atom_name', '')}` (layer={match.get('layer', '')})\n"
+        f"- similarity: {match.get('similarity', 0):.3f}\n"
+        f"- classification: {match.get('classification', '')}\n"
+        f"- preview: {match.get('fact_preview', '')}\n\n"
+        "## Resolution\n\n"
+        "管理職 `/conflict-review`：\n"
+        "1. 編輯 incoming atom 或 conflicting atom 解決矛盾\n"
+        "2. approve（搬到 shared/）或 reject（刪 pending 報告）\n"
+    )
+    report_path.write_text(body, encoding="utf-8")
+    return report_path
+
+
+def run_pull_audit(project_cwd: str, since: str = "last") -> Dict[str, Any]:
+    """Audit incoming git changes for semantic conflicts (SPEC §7.1 pull-time).
+
+    Strategy:
+      1. Resolve since_ts (read .last_pull_audit_ts if "last")
+      2. git log → list shared/*.md changed since
+      3. For each changed atom: vector_search its content (excluding self) → classify
+      4. CONTRADICT/extend_overlap → write _pending_review/{atom}.pull-conflict.md
+      5. Append _merge_history.log lines
+      6. Update .last_pull_audit_ts
+    Fail-open: returns {error: ...} on git failure but never crashes the hook.
+    """
+    proj_root = Path(project_cwd).resolve()
+    if not (proj_root / ".git").exists():
+        return {"error": "not a git repo", "project_cwd": str(proj_root)}
+
+    since_ts = _get_last_audit_ts(proj_root) if since == "last" else since
+    started_at = _utcnow_iso()
+    changed = _collect_changed_atoms(proj_root, since_ts)
+
+    flagged: List[Dict[str, Any]] = []
+    for atom in changed:
+        if _is_git_only_atom(atom["content"]):
+            continue
+        # Use the atom's main knowledge body (after `## 知識`) for embedding
+        content_for_check = atom["content"]
+        m = re.search(r"##\s*知識\s*\n+(.+?)(?=\n##\s|\Z)", content_for_check, re.DOTALL)
+        body = (m.group(1).strip() if m else content_for_check)[:1500]
+        if not body:
+            continue
+
+        try:
+            hits = vector_search(body, top_k=3, min_score=WRITE_CHECK_VECTOR_MIN)
+        except Exception as e:
+            print(f"[pull-audit] vector failed for {atom['atom_name']}: {e}", file=sys.stderr)
+            continue
+
+        # Filter out self-matches
+        self_path = atom["path"].replace("\\", "/").lower()
+        candidates = [h for h in hits
+                      if h.get("file_path", "").replace("\\", "/").lower() != self_path]
+        if not candidates:
+            continue
+
+        for h in candidates:
+            label = _classify_match(body, h)
+            sim = float(h.get("score", 0))
+            if label == "CONTRADICT" or (label == "ERROR" and sim >= WRITE_CHECK_THRESHOLD):
+                match = {
+                    "atom_name": h.get("atom_name", ""),
+                    "layer": h.get("layer", ""),
+                    "similarity": round(sim, 4),
+                    "classification": label,
+                    "fact_preview": h.get("text", "")[:120],
+                }
+                report = _write_pull_conflict_report(proj_root, atom["atom_name"],
+                                                    atom, match, "contradict")
+                _append_merge_history(proj_root, "pull-audit-flag", atom["atom_name"],
+                                      "shared", "<git>",
+                                      f"contradict vs {match['atom_name']} sim={sim:.3f} report={report.name}")
+                flagged.append({"atom": atom["atom_name"], "report": str(report),
+                                "match": match["atom_name"], "similarity": sim})
+                break  # one report per incoming atom
+
+    _set_last_audit_ts(proj_root, started_at)
+    return {
+        "since": since_ts,
+        "until": started_at,
+        "atoms_scanned": len(changed),
+        "flagged_count": len(flagged),
+        "flagged": flagged,
+    }
+
+
 # ─── CLI ──────────────────────────────────────────────────────────────────────
 
 def main():
-    parser = argparse.ArgumentParser(description="Atomic Memory Conflict Detector (v2.1)")
-    parser.add_argument("--atom", help="Only scan conflicts for this atom")
+    parser = argparse.ArgumentParser(description="Atomic Memory Conflict Detector (v2.1 / V4 Phase 5)")
+    parser.add_argument("--atom", help="Only scan conflicts for this atom (full-scan mode)")
     parser.add_argument("--dry-run", action="store_true", help="List candidates without LLM classification")
     parser.add_argument("--json", action="store_true", help="Output as JSON")
     parser.add_argument("--project-dir", type=str, default=None,
                         help="V2.21 專案記憶目錄（{project_root}/.claude/memory/），優先掃描")
+    # V4 Phase 5 new modes
+    parser.add_argument("--mode", choices=["full-scan", "write-check", "pull-audit"],
+                        default="full-scan",
+                        help="full-scan (legacy) | write-check | pull-audit")
+    parser.add_argument("--content", type=str, default=None,
+                        help="(write-check) incoming knowledge text")
+    parser.add_argument("--scope", type=str, default="shared",
+                        help="(write-check) target scope")
+    parser.add_argument("--project-cwd", type=str, default=None,
+                        help="(write-check / pull-audit) project root")
+    parser.add_argument("--threshold", type=float, default=WRITE_CHECK_THRESHOLD,
+                        help="(write-check) cosine threshold for extend_overlap (default 0.85)")
+    parser.add_argument("--since", type=str, default="last",
+                        help="(pull-audit) ISO ts or 'last' (read .last_pull_audit_ts)")
     args = parser.parse_args()
 
+    # ─ V4 Phase 5: write-check ─
+    if args.mode == "write-check":
+        if not args.content:
+            print(json.dumps({"error": "--content is required for write-check"}))
+            sys.exit(2)
+        result = run_write_check(args.content, args.project_cwd, args.scope, args.threshold)
+        print(json.dumps(result, ensure_ascii=False))
+        return
+
+    # ─ V4 Phase 5: pull-audit ─
+    if args.mode == "pull-audit":
+        if not args.project_cwd:
+            print(json.dumps({"error": "--project-cwd is required for pull-audit"}))
+            sys.exit(2)
+        result = run_pull_audit(args.project_cwd, args.since)
+        if args.json:
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+        else:
+            if "error" in result:
+                print(f"pull-audit error: {result['error']}", file=sys.stderr)
+                sys.exit(1)
+            print(f"[pull-audit] scanned {result['atoms_scanned']} atoms, "
+                  f"flagged {result['flagged_count']} "
+                  f"(since {result['since']} → {result['until']})")
+            for f in result.get("flagged", []):
+                print(f"  ! {f['atom']} CONTRADICT vs {f['match']} "
+                      f"(sim={f['similarity']:.3f}) → {f['report']}")
+        return
+
+    # ─ legacy: full-scan ─
     project_dir = Path(args.project_dir) if args.project_dir else None
     results = scan_conflicts(target_atom=args.atom, dry_run=args.dry_run, project_dir=project_dir)
 

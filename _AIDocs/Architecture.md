@@ -56,6 +56,7 @@
 | `/fix-escalation` | `commands/fix-escalation.md` | 精確修正升級（6 Agent 會議：蒐集→辯論 2 輪→決策→驗證） |
 | `/extract` | `commands/extract.md` | 手動知識萃取（不等 SessionEnd） |
 | `/conflict` | `commands/conflict.md` | 記憶衝突偵測（向量比對 + LLM 判定） |
+| `/conflict-review` | `commands/conflict-review.md` | V4 管理職裁決 Pending Queue（雙向認證） |
 | `/memory-health` | `commands/memory-health.md` | 記憶品質診斷（audit + health-check） |
 | `/memory-review` | `commands/memory-review.md` | 自我迭代檢閱（衰減/晉升/震盪/覆轍） |
 | `/atom-debug` | `commands/atom-debug.md` | Debug log 開關 |
@@ -167,6 +168,25 @@ Deep extract   → [detached] extract-worker.py (rdchat: gemma4:e4b) → 覆寫 
 - **Vector layer schema**：indexer 把 project 拆 `shared:{slug}` / `role:{slug}:{r}` / `personal:{slug}:{user}` 三類；`flat-legacy` kind 處理 mem_dir 直下舊 atom（視為 shared）；chunk metadata 新增 `Scope`/`Audience`/`Author` 三欄
 - **管理職額外**：`_count_pending_review` 計 `shared/_pending_review/*.md` → context line `[Pending Review] N 件`
 
+### V4 三時段衝突偵測（Phase 5，SPEC §7）
+
+shared 寫入的事實衝突防線，由 `memory-conflict-detector.py` 承擔 LLM 分類（gemma4:e4b），`server.js`/git hook/skill 分別對接三個時段：
+
+| 時段 | 觸發點 | 落點 | 關鍵行為 |
+|------|--------|------|---------|
+| Write-time | `atom_write scope=shared` create 分支 | MCP server.js | vector top-3 ≥ 0.60 → ollama_classify → CONTRADICT 寫 `_pending_review/{slug}.conflict.md`（非 atom、阻擋寫入）；EXTEND + sim ≥ 0.85 reroute 為 `_pending_review/{slug}.md` 草稿 |
+| Pull-time | `git pull` 後 `.git/hooks/post-merge` | `hooks/post-git-pull.sh` → detector `--mode=pull-audit` | 讀 `.last_pull_audit_ts` → `git log --since` 抓 shared/*.md 變動 → classify → CONTRADICT 寫 `_pending_review/{slug}.pull-conflict.md` |
+| Git-conflict-time | 硬碰硬 merge conflict | `git mergetool` | 純文件約定：Claude 只給合併建議，**不動檔**；整份走 git tool |
+
+- **Fail-open**：vector/LLM 服務 down → verdict=ok + skipped=true（不阻塞所有寫入）
+- **Conservative pending**：LLM 分類失敗但 sim ≥ 0.85 → 當作 CONTRADICT 進 pending（漏判好過誤判）
+- **`Merge-strategy: git-only`**：標此欄位的 atom 跳過所有 AI 合併（write-check + pull-audit 雙方都跳）
+- **敏感類別自動 pending**（Phase 3 既有）：Audience 含 `architecture`/`decision` 強制進 `_pending_review/`（與衝突偵測獨立，互為 AND）
+- **管理職 `/conflict-review`**：`commands/conflict-review.md` + `tools/conflict-review.py` 後端，list/approve/reject 三動作；`is_management(cwd, user)` 雙向認證（personal role.md + shared _roles.md 白名單）未通過一律拒絕
+- **_merge_history.log**：per-project `{proj}/.claude/memory/_merge_history.log`，TSV append-only 6 欄 `ts, action, atom, scope, by, detail`；action ∈ {auto-merge, pending-create, approve, reject, pull-audit-flag}
+- **Approve 流程**：搬 `_pending_review/{slug}.md` → `shared/{slug}.md`、移除 `Pending-review-by:` 行、加 `Decided-by:` + 更新 `Last-used`、刪同名 .conflict.md、POST `/index/incremental` 重索引
+- **阻擋寫入但不 isError**：CONTRADICT 回傳 sendToolResult(false)，讓使用者知道 pending 是正常流程
+
 ### 跨 Session 鞏固
 
 - 廢除自動晉升，改為 Confirmations +1 簡單計數
@@ -188,7 +208,8 @@ Deep extract   → [detached] extract-worker.py (rdchat: gemma4:e4b) → 覆寫 
 | rag-engine.py | `tools/rag-engine.py` | CLI: search/index/status/health |
 | memory-write-gate.py | `tools/memory-write-gate.py` | 寫入品質閘門 + 去重 |
 | memory-audit.py | `tools/memory-audit.py` | 格式驗證、過期、晉升建議（支援 `--project-dir`） |
-| memory-conflict-detector.py | `tools/memory-conflict-detector.py` | 矛盾偵測（支援 `--project-dir`） |
+| memory-conflict-detector.py | `tools/memory-conflict-detector.py` | 矛盾偵測（full-scan / write-check / pull-audit 三 mode） |
+| conflict-review.py | `tools/conflict-review.py` | V4 Pending Queue 後端（list/approve/reject，管理職雙向認證 guard） |
 | atom-health-check.py | `tools/atom-health-check.py` | Atom 健康度（Related 完整性） |
 | migrate-v221.py | `tools/migrate-v221.py` | V2.21 遷移（_AIAtoms + 個人記憶 → .claude/memory/） |
 | cleanup-old-files.py | `tools/cleanup-old-files.py` | 環境清理 |

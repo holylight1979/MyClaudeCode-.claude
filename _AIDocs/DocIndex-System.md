@@ -85,6 +85,7 @@ Session Ready
 |------|------|------|
 | /atom-debug | Debug log 開關 | 無 |
 | /conflict | 記憶衝突偵測（向量比對 + LLM 判定） | Vector Service + Ollama |
+| /conflict-review | V4 管理職裁決 Pending Queue（雙向認證） | wg_roles + Vector Service |
 | /consciousness-stream | 高風險跨系統（唯識八識） | 無 |
 | /continue | 讀 _staging/next-phase.md 續接 | 無 |
 | /extract | 手動知識萃取（不等 SessionEnd） | Ollama |
@@ -120,7 +121,8 @@ Session Ready
 ### 記憶品質
 - memory-audit.py — 格式驗證 + staleness（支援 `--project-dir`、Claude-native YAML frontmatter、2 欄 MEMORY.md、wildcard 索引項、orphan memory dir 容忍）
 - memory-write-gate.py — 寫入閘門（6 規則 + 0.80 dedup；[固] 不再 fast-path，一律過品質檢查）
-- memory-conflict-detector.py — 向量衝突 + LLM 分類（支援 `--project-dir`）
+- memory-conflict-detector.py — 向量衝突 + LLM 分類；mode ∈ {full-scan / write-check / pull-audit}（V4 Phase 5 三時段衝突偵測核心）
+- conflict-review.py — V4 Pending Queue 後端：list/approve/reject 三動作，is_management 雙向認證 guard，approve 寫 Decided-by + merge_history + 觸發 `/index/incremental`
 - atom-health-check.py — 參照完整性（`_` 前綴檔案豁免、`decisions`/`decisions-architecture`/`spec` 為 central hub 反向參照豁免）
 
 ### 遷移/測試
