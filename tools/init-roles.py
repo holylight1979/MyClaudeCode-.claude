@@ -291,6 +291,88 @@ def action_promote_mgmt(root: Path, user: str) -> Dict[str, Any]:
     return result
 
 
+# ─── V4.1: Privacy check [F21] ────────────────────────────────────────────
+
+
+_CLOUD_SYNC_PATTERNS = [
+    # (label, path fragments to check)
+    ("Dropbox", ["Dropbox"]),
+    ("iCloud", ["iCloud", "iCloudDrive", "com~apple~CloudDocs"]),
+    ("OneDrive", ["OneDrive"]),
+    ("Google Drive", ["Google Drive", "My Drive", "GoogleDrive"]),
+]
+
+
+def action_privacy_check(root: Path, user: str) -> Dict[str, Any]:
+    """[F21] Scan if personal/ dir sits under a cloud-sync path. Warn only."""
+    mem = _proj_memory_base(root)
+    personal_dir = mem / "personal"
+    auto_dir = mem / "personal" / "auto" / user
+
+    warnings: List[str] = []
+    personal_abs = str(personal_dir.resolve()).replace("\\", "/")
+
+    # Check cloud sync paths
+    for label, fragments in _CLOUD_SYNC_PATTERNS:
+        for frag in fragments:
+            if frag.lower() in personal_abs.lower():
+                warnings.append(
+                    f"personal/ 位於 {label} 同步路徑下，自動萃取的個人決策可能被雲端同步。"
+                    f"建議將 personal/ 加入 {label} 排除清單。"
+                )
+                break
+
+    # Check .gitignore for personal/
+    gitignore = root / ".gitignore"
+    gitignore_ok = False
+    if gitignore.is_file():
+        try:
+            gi_text = gitignore.read_text(encoding="utf-8")
+            for line in gi_text.splitlines():
+                stripped = line.strip()
+                if stripped in (
+                    ".claude/memory/personal/",
+                    ".claude/memory/personal",
+                    "personal/",
+                ):
+                    gitignore_ok = True
+                    break
+        except (OSError, UnicodeDecodeError):
+            pass
+    if not gitignore_ok:
+        warnings.append(
+            ".gitignore 尚未包含 .claude/memory/personal/，"
+            "個人 atom 可能被 git 追蹤。建議加入排除。"
+        )
+
+    # Check SVN svn:ignore (if SVN repo)
+    svn_dir = root / ".svn"
+    if svn_dir.is_dir():
+        try:
+            import subprocess
+            result = subprocess.run(
+                ["svn", "propget", "svn:ignore", str(mem), "--non-interactive"],
+                capture_output=True, text=True, timeout=5,
+            )
+            if result.returncode == 0:
+                svn_ignores = result.stdout.strip().splitlines()
+                if not any("personal" in line for line in svn_ignores):
+                    warnings.append(
+                        "SVN svn:ignore 尚未排除 personal/，個人 atom 可能被 SVN 追蹤。"
+                    )
+        except Exception:
+            pass  # svn not available or timeout
+
+    return {
+        "action": "privacy-check",
+        "ok": True,
+        "personal_path": str(personal_dir),
+        "warnings": warnings,
+        "warning_count": len(warnings),
+        "gitignore_has_personal": gitignore_ok,
+    }
+
+
 def action_install_hook(root: Path) -> Dict[str, Any]:
     if not HOOK_SOURCE.is_file():
         return {"action": "install-hook", "ok": False,
@@ -337,6 +419,8 @@ def main() -> None:
                     help="逗號分隔 roles，例 alice:art 或 bob:programmer,management")
     ap.add_argument("--promote-mgmt", metavar="USER", default=None)
     ap.add_argument("--install-hook", action="store_true")
+    ap.add_argument("--privacy-check", action="store_true",
+                    help="[V4.1 F21] Scan cloud-sync paths, .gitignore, SVN ignore for personal/")
     ap.add_argument("--status", action="store_true")
     args = ap.parse_args()
 
@@ -369,6 +453,12 @@ def main() -> None:
         results.append(action_promote_mgmt(root, args.promote_mgmt.strip()))
     if args.install_hook:
         results.append(action_install_hook(root))
+    if args.privacy_check:
+        results.append(action_privacy_check(root, user))
+
+    # V4.1: auto-run privacy check when bootstrapping (last step of init flow)
+    if args.bootstrap_personal and not args.privacy_check:
+        results.append(action_privacy_check(root, user))
 
     if not results:
         results.append({"error": "no action specified; try --status or --help"})

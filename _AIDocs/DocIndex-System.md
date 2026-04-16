@@ -79,7 +79,7 @@ Session Ready
 
 合計：~5308 行
 
-## 5. Skills（commands/，16 個）
+## 5. Skills（commands/，18 個）
 
 | 指令 | 用途 | 依賴 |
 |------|------|------|
@@ -93,9 +93,11 @@ Session Ready
 | /handoff | 跨 Session Handoff Prompt Builder（6 區塊強制模板） | 無 |
 | /harvest | Playwright 網頁收割→Markdown | Playwright |
 | /init-project | 專案 _AIDocs + 自治層初始化 | 無 |
-| /init-roles | V4 多職務模式啟用引導（建 personal/role.md + shared/_roles.md + 可選裝 post-merge hook） | wg_roles + 可選 git |
+| /init-roles | V4 多職務模式啟用引導（建 personal/role.md + shared/_roles.md + 可選裝 post-merge hook + V4.1 隱私體檢 [F21]） | wg_roles + 可選 git |
 | /memory-health | 記憶品質診斷（audit + health-check） | 無 |
+| /memory-peek | V4.1 列最近 24h 自動萃取 atom + pending + trigger 原因 [F7] | 無 |
 | /memory-review | 自我迭代檢閱（衰減/晉升/震盪/覆轍） | 無 |
+| /memory-undo | V4.1 撤銷自動萃取（_rejected/ + reason 分類 + reflection_metrics）[F20][F23] | 無 |
 | /read-project | 系統性閱讀→doc-index atom | 無 |
 | /resume | 續接 prompt + 自動開新 session | MCPControl |
 | /svn-update | SVN 更新 + 衝突處理 | TortoiseSVN |
@@ -129,7 +131,9 @@ Session Ready
 ### 遷移/測試
 - migrate-v221.py — V2.21 遷移（_AIAtoms + 個人記憶 → .claude/memory/）
 - migrate-v3-to-v4.py — V3 → V4 遷移（補 Scope/Author/Created-at metadata；不搬檔，漸進分層；dry-run 預設）
-- init-roles.py — /init-roles 後端（bootstrap-personal / scaffold-roles / add-member / promote-mgmt / install-hook，全冪等）
+- init-roles.py — /init-roles 後端（bootstrap-personal / scaffold-roles / add-member / promote-mgmt / install-hook / privacy-check [F21]，全冪等）
+- memory-peek.py — V4.1 /memory-peek 後端：掃 personal/auto/{user}/ 列最近 atom + _pending.candidates
+- memory-undo.py — V4.1 /memory-undo 後端：撤銷到 _rejected/ + reason 分類 + 寫 reflection_metrics
 - test-memory-v21.py — E2E 測試
 - eval-ranked-search.py — 50 query benchmark
 - cleanup-old-files.py — 環境清理

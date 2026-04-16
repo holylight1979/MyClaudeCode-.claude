@@ -311,6 +311,8 @@ JIT 保護：_collect_v4_role_atoms 以 rel_parts[:-1] startswith("_") 過濾
 | memory-audit.py | `tools/memory-audit.py` | 格式驗證、過期、晉升建議（支援 `--project-dir`） |
 | memory-conflict-detector.py | `tools/memory-conflict-detector.py` | 矛盾偵測（full-scan / write-check / pull-audit 三 mode） |
 | conflict-review.py | `tools/conflict-review.py` | V4 Pending Queue 後端（list/approve/reject，管理職雙向認證 guard） |
+| memory-peek.py | `tools/memory-peek.py` | V4.1 列最近 24h 自動萃取 atom + pending + trigger 原因 [F7] |
+| memory-undo.py | `tools/memory-undo.py` | V4.1 撤銷自動萃取（_rejected/ + reason 分類 + reflection_metrics）[F20][F23] |
 | atom-health-check.py | `tools/atom-health-check.py` | Atom 健康度（Related 完整性） |
 | migrate-v221.py | `tools/migrate-v221.py` | V2.21 遷移（_AIAtoms + 個人記憶 → .claude/memory/） |
 | cleanup-old-files.py | `tools/cleanup-old-files.py` | 環境清理 |

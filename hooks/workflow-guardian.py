@@ -283,6 +283,50 @@ def _count_pending_review(project_mem_dir: Optional[Path]) -> int:
         return 0
 
 
+def _count_recent_auto_atoms(user: str, cwd: str, hours: int = 24) -> int:
+    """[F18] Count auto-extracted-v4.1 atoms created within last N hours."""
+    from datetime import timedelta as _td
+    import re as _re
+    count = 0
+    cutoff = datetime.now() - _td(hours=hours)
+    cutoff_str = cutoff.strftime("%Y-%m-%d")
+
+    dirs_to_scan: List[Path] = []
+    project_root = find_project_root(cwd)
+    if project_root:
+        d = Path(project_root) / ".claude" / "memory" / "personal" / "auto" / user
+        if d.is_dir():
+            dirs_to_scan.append(d)
+    d = CLAUDE_DIR / "memory" / "personal" / "auto" / user
+    if d.is_dir() and d not in dirs_to_scan:
+        dirs_to_scan.append(d)
+
+    for auto_dir in dirs_to_scan:
+        for md_file in auto_dir.glob("*.md"):
+            if md_file.name.startswith("_"):
+                continue
+            try:
+                text = md_file.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError):
+                continue
+            if "auto-extracted-v4.1" not in text:
+                continue
+            # Check Created date in metadata
+            m = _re.search(r'^-\s*Created:\s*(\S+)', text, _re.MULTILINE)
+            if m:
+                if m.group(1) >= cutoff_str:
+                    count += 1
+            else:
+                # Fallback: file mtime
+                try:
+                    mtime = md_file.stat().st_mtime
+                    if mtime >= cutoff.timestamp():
+                        count += 1
+                except OSError:
+                    pass
+    return count
+
+
 # ─── Event Handlers ──────────────────────────────────────────────────────────
 
 
@@ -431,6 +475,17 @@ def handle_session_start(input_data: Dict[str, Any], config: Dict[str, Any]) -> 
                 pending = _count_pending_review(project_mem_dir)
                 if pending > 0:
                     lines.append(f"[Pending Review] {pending} 件待裁決（shared/_pending_review/）")
+
+        # ── V4.1: 每日推送 — 列最近 24h 自動萃取 atom 數 [F18] ──────────
+        if v4_user and config.get("userExtraction", {}).get("enabled", False):
+            try:
+                v41_count = _count_recent_auto_atoms(v4_user, cwd, hours=24)
+                if v41_count > 0:
+                    lines.append(
+                        f"[V4.1] 昨日新增 {v41_count} 條自動萃取 atom，/memory-peek 檢視"
+                    )
+            except Exception as e:
+                _atom_debug_error("V4.1:daily_push", e)
 
         # Inject compact _AIDocs index (v2.10, v2.18 trimmed)
         max_entries = config.get("aidocs", {}).get("max_session_start_entries", 15)

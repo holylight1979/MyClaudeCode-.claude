@@ -3,8 +3,8 @@
   "metrics": {
     "first_approach_accuracy": {
       "single_file": {
-        "correct": 317,
-        "total": 329
+        "correct": 318,
+        "total": 332
       },
       "multi_file": {
         "correct": 3,
@@ -12,16 +12,16 @@
       },
       "architecture": {
         "correct": 0,
-        "total": 7
+        "total": 9
       }
     },
     "over_engineering_rate": {
       "user_reverted_or_simplified": 0,
-      "total_suggestions": 376
+      "total_suggestions": 381
     },
     "silence_accuracy": {
-      "held_back_ok": 320,
-      "held_back_missed": 20
+      "held_back_ok": 321,
+      "held_back_missed": 22
     }
   },
   "blind_spots": [
@@ -29,5 +29,17 @@
     "architecture 首次正確率 0%"
   ],
   "arch_sensitivity_elevated": true,
-  "last_reflection": "2026-04-15T13:52:15.162776+00:00"
+  "last_reflection": "2026-04-16T03:39:38.811804+00:00",
+  "v41_extraction": {
+    "total_written": 0,
+    "total_rejected": 0,
+    "reject_reasons": {
+      "emotion": 0,
+      "ambiguous": 0,
+      "privacy": 0,
+      "scope": 0,
+      "other": 0
+    },
+    "precision_observed": 1.0
+  }
 }
