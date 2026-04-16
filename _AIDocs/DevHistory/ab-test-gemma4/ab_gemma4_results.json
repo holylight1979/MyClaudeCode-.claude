@@ -1,0 +1,351 @@
+{
+  "timestamp": "2026-04-09 10:49:51",
+  "rounds": 1,
+  "models": [
+    {
+      "model": "qwen3.5:latest",
+      "think": true,
+      "label": "qwen3.5 T"
+    },
+    {
+      "model": "gemma4:e4b",
+      "think": true,
+      "label": "g4:e4b T"
+    },
+    {
+      "model": "gemma4:e4b",
+      "think": false,
+      "label": "g4:e4b F"
+    },
+    {
+      "model": "gemma4:e4b-it-bf16",
+      "think": true,
+      "label": "g4:e4b-bf16 T"
+    },
+    {
+      "model": "gemma4:26b",
+      "think": true,
+      "label": "g4:26b T"
+    }
+  ],
+  "phase1_standard": {
+    "qwen3.5 T": [
+      {
+        "error": "empty response",
+        "elapsed": 46.81804013252258,
+        "raw_preview": ""
+      }
+    ],
+    "g4:e4b T": [
+      {
+        "count": 3,
+        "avg_length": 144.0,
+        "type_dist": {
+          "factual": 1,
+          "decision": 1,
+          "pitfall": 1
+        },
+        "specificity": "3/3",
+        "type_compliance": "3/3",
+        "schema_valid": "3/3",
+        "grounded": "3/3",
+        "elapsed": 13.6,
+        "items": [
+          {
+            "content": "目前在 rdchat 上已安裝 Gemma 4 的四個 variant：gemma4:e2b (5.1B, 6.7GB), gemma4:e4b (8.0B, 8.9GB), gemma4:e4b-it-bf16 (8.0B, 14.9GB), gemma4:26b (25.8B MoE, 16.7GB)。RTX 3090 (24GB) 可穩定運行 26B MoE，推理時僅激活約 3.8B 參數，效能約 35-40 tok/s。",
+            "type": "factual"
+          },
+          {
+            "content": "在 Qwen3.5 vs Gemma 4 的 A/B 測試中，gemma4:e4b no-think 表現最佳：速度最快 (19.5s)，原文依據 100%，一致性 87.5%，且能正確處理空輸入。若追求最高品質，gemma4:e4b-it-bf16 具體性與原文依據皆為 100%。",
+            "type": "decision"
+          },
+          {
+            "content": "Ollama 平台已知 Bug：當設定 `think=false` 時，會破壞 Gemma 4 模型在 JSON 結構化輸出時的穩定性，需特別注意。",
+            "type": "pitfall"
+          }
+        ]
+      }
+    ],
+    "g4:e4b F": [
+      {
+        "count": 4,
+        "avg_length": 81.0,
+        "type_dist": {
+          "decision": 2,
+          "pitfall": 2
+        },
+        "specificity": "4/4",
+        "type_compliance": "4/4",
+        "schema_valid": "4/4",
+        "grounded": "4/4",
+        "elapsed": 2.6,
+        "items": [
+          {
+            "content": "gemma4:e4b no-think (think=false) 在 A/B 測試中表現最佳：速度最快 (19.5s)，原文依據 100%，一致性最高 (87.5%)，且能正確處理空輸入。建議作為首選替換方案。",
+            "type": "decision"
+          },
+          {
+            "content": "gemma4:e4b-it-bf16 雖然耗時 (59.7s)，但在具體性、原文依據和項目數上表現最佳 (100% / 100% / 5.0)，可作為追求最高品質的備選方案。",
+            "type": "decision"
+          },
+          {
+            "content": "gemma4:26b MoE 的一致性測試結果 (45.5% Jaccard) 顯示其穩定性較差，不適合用於需要高穩定性的自動化管線。",
+            "type": "pitfall"
+          },
+          {
+            "content": "Ollama 存在一個已知 Bug：當使用 `think=false` 時，可能會破壞 Gemma 4 的 JSON 輸出結構。",
+            "type": "pitfall"
+          }
+        ]
+      }
+    ],
+    "g4:e4b-bf16 T": [
+      {
+        "count": 6,
+        "avg_length": 74.0,
+        "type_dist": {
+          "factual": 3,
+          "architectural": 1,
+          "decision": 1,
+          "pitfall": 1
+        },
+        "specificity": "6/6",
+        "type_compliance": "6/6",
+        "schema_valid": "6/6",
+        "grounded": "6/6",
+        "elapsed": 70.0,
+        "items": [
+          {
+            "content": "rdchat 服務透過 Ollama 運行，API 端點為 http://192.168.199.130:11434。已安裝 gemma4:e2b, gemma4:e4b, gemma4:e4b-it-bf16, gemma4:26b。",
+            "type": "factual"
+          },
+          {
+            "content": "在 RTX 3090 (24GB) 上，gemma4:26b Q4_K_M 推理時只激活 3.8B 參數，效能約 35-40 tok/s。",
+            "type": "factual"
+          },
+          {
+            "content": "記憶系統的 Embedding 模型（qwen3-embedding:latest）無法替換，因為 Gemma 4 沒有提供 embedding 變體。",
+            "type": "architectural"
+          },
+          {
+            "content": "A/B 測試結果顯示，gemma4:e4b no-think 是最佳性價比候選，平均耗時 19.5s，原文依據 100%，一致性 87.5%。",
+            "type": "decision"
+          },
+          {
+            "content": "若追求最高品質，gemma4:e4b-it-bf16 具體性與原文依據皆為 100%，但耗時 59.7s。",
+            "type": "factual"
+          },
+          {
+            "content": "Ollama 已知 bug：當使用 gemma4 時，設定 think=false 會破壞其 JSON 輸出格式。",
+            "type": "pitfall"
+          }
+        ]
+      }
+    ],
+    "g4:26b T": [
+      {
+        "count": 5,
+        "avg_length": 80.0,
+        "type_dist": {
+          "factual": 3,
+          "decision": 1,
+          "pitfall": 1
+        },
+        "specificity": "5/5",
+        "type_compliance": "5/5",
+        "schema_valid": "5/5",
+        "grounded": "5/5",
+        "elapsed": 62.5,
+        "items": [
+          {
+            "content": "rdchat 服務端點為 http://192.168.199.130:11434，目前已安裝 gemma4:e2b, gemma4:e4b, gemma4:e4b-it-bf16, gemma4:26b",
+            "type": "factual"
+          },
+          {
+            "content": "RTX 3090 (24GB) 執行 gemma4:26b MoE 時，推理速度約 35-40 tok/s",
+            "type": "factual"
+          },
+          {
+            "content": "記憶系統 Embedding 使用 qwen3-embedding:latest (7.6B)，Gemma 4 無可用 embedding 變體；GTX 1050 Ti 4GB 無法執行 Gemma 4 模型",
+            "type": "factual"
+          },
+          {
+            "content": "模型評測建議：gemma4:e4b (no-think) 為最佳性價比方案（速度快、零幻覺、高一致性）；gemma4:e4b-it-bf16 品質最高但較慢；gemma4:26b 一致性差",
+            "type": "decision"
+          },
+          {
+            "content": "Ollama 中 Gemma 4 若設定 think=false 可能會導致輸出異常（如中斷）",
+            "type": "pitfall"
+          }
+        ]
+      }
+    ]
+  },
+  "phase2_short": {
+    "qwen3.5 T": [
+      {
+        "error": "empty response",
+        "elapsed": 46.766714572906494
+      }
+    ],
+    "g4:e4b T": [
+      {
+        "count": 4,
+        "avg_length": 86.0,
+        "type_dist": {
+          "factual": 4
+        },
+        "specificity": "4/4",
+        "type_compliance": "4/4",
+        "schema_valid": "4/4",
+        "grounded": "4/4",
+        "elapsed": 12.5,
+        "items": [
+          {
+            "content": "目前可透過 http://192.168.199.130:11434 呼叫 rdchat 上的 Gemma 4 模型。",
+            "type": "factual"
+          },
+          {
+            "content": "已安裝的 Gemma 4 模型包括：gemma4:e2b (5.1B, 6.7GB)、gemma4:e4b (8.0B, 8.9GB)、gemma4:e4b-it-bf16 (8.0B, 14.9GB) 和 gemma4:26b (25.8B MoE, 16.7GB)。",
+            "type": "factual"
+          },
+          {
+            "content": "在 RTX 3090 (24GB) 上，gemma4:26b MoE (Q4_K_M) 效能穩定，推理時僅激活 3.8B 參數，速度約 35-40 tok/s。",
+            "type": "factual"
+          },
+          {
+            "content": "31B Dense (Q4_K_M) 模型預估需約 19-20GB VRAM，可裝載於 RTX 3090，但可能導致 context 較短。",
+            "type": "factual"
+          }
+        ]
+      }
+    ],
+    "g4:e4b F": [
+      {
+        "count": 5,
+        "avg_length": 82.8,
+        "type_dist": {
+          "factual": 5
+        },
+        "specificity": "5/5",
+        "type_compliance": "5/5",
+        "schema_valid": "5/5",
+        "grounded": "5/5",
+        "elapsed": 3.0,
+        "items": [
+          {
+            "content": "Gemma 4 已在 Ollama 上架，於 4/3 發布，Ollama v0.20.0 同日支援。",
+            "type": "factual"
+          },
+          {
+            "content": "rdchat 目前已安裝 Gemma 4 的以下模型：`gemma4:e2b` (5.1B, Q4_K_M, 6.7 GB), `gemma4:e4b` (8.0B, Q4_K_M, 8.9 GB), 和 `gemma4:26b` (25.8B MoE, Q4_K_M, 16.7 GB)。",
+            "type": "factual"
+          },
+          {
+            "content": "rdchat 尚未安裝 Gemma 4 的 31B Dense 模型。該模型 Q4_K_M 約需 19-20GB VRAM，RTX 3090 可載入但 context 可能較短。",
+            "type": "factual"
+          },
+          {
+            "content": "在 RTX 3090 (24GB) 上，運行 26B MoE (Q4_K_M) 時，推理時僅激活 3.8B 參數，效能約為 35-40 tok/s。",
+            "type": "factual"
+          },
+          {
+            "content": "rdchat 的 Ollama 端點可透過 `http://192.168.199.130:11434` 呼叫。",
+            "type": "factual"
+          }
+        ]
+      }
+    ],
+    "g4:e4b-bf16 T": [
+      {
+        "count": 2,
+        "avg_length": 166.0,
+        "type_dist": {
+          "factual": 2
+        },
+        "specificity": "2/2",
+        "type_compliance": "2/2",
+        "schema_valid": "2/2",
+        "grounded": "2/2",
+        "elapsed": 51.0,
+        "items": [
+          {
+            "content": "rdchat 服務的 Ollama API 端點為 http://192.168.199.130:11434。目前已安裝 Gemma 4 的四個 variant，包括 gemma4:e2b (5.1B, 6.7GB)、gemma4:e4b (8.0B, 8.9GB)、gemma4:e4b-it-bf16 (8.0B, 14.9GB) 和 gemma4:26b (25.8B MoE, 16.7GB)。",
+            "type": "factual"
+          },
+          {
+            "content": "在 RTX 3090 (24GB) 上運行 26B MoE (Q4_K_M) 時，推理時僅激活 3.8B 參數，效能約為 35-40 tok/s。31B Dense Q4_K_M 模型約需 19-20GB VRAM，可塞入 3090 但 context 會較短。",
+            "type": "factual"
+          }
+        ]
+      }
+    ],
+    "g4:26b T": [
+      {
+        "count": 4,
+        "avg_length": 57.2,
+        "type_dist": {
+          "factual": 3,
+          "pitfall": 1
+        },
+        "specificity": "4/4",
+        "type_compliance": "4/4",
+        "schema_valid": "4/4",
+        "grounded": "4/4",
+        "elapsed": 63.2,
+        "items": [
+          {
+            "content": "rdchat Ollama API 端點為 http://192.168.199.130:11434",
+            "type": "factual"
+          },
+          {
+            "content": "rdchat 已安裝 Gemma 4 模型：e2b (6.7GB), e4b (8.9GB), e4b-it-bf16 (14.9GB), 26b (16.7GB)",
+            "type": "factual"
+          },
+          {
+            "content": "RTX 3090 執行 gemma4:26b (Q4_K_M) 效能約 35-40 tok/s",
+            "type": "factual"
+          },
+          {
+            "content": "RTX 3090 執行 gemma4:31b (Q4_K_M) 可運行但 context 長度會受限",
+            "type": "pitfall"
+          }
+        ]
+      }
+    ]
+  },
+  "phase3_consistency": {
+    "qwen3.5 T": null,
+    "g4:e4b T": 0.548,
+    "g4:e4b F": 1.0,
+    "g4:e4b-bf16 T": 0.617,
+    "g4:26b T": 0.6
+  },
+  "phase4_empty": {
+    "qwen3.5 T": {
+      "pass": true,
+      "count": 0,
+      "elapsed": 15.8
+    },
+    "g4:e4b T": {
+      "pass": true,
+      "count": 0,
+      "elapsed": 4.9
+    },
+    "g4:e4b F": {
+      "pass": true,
+      "count": 0,
+      "elapsed": 0.2
+    },
+    "g4:e4b-bf16 T": {
+      "pass": true,
+      "count": 0,
+      "elapsed": 13.6
+    },
+    "g4:26b T": {
+      "pass": true,
+      "count": 0,
+      "elapsed": 16.0
+    }
+  }
+}

@@ -1,0 +1,305 @@
+{
+  "timestamp": "2026-04-09 10:10:09",
+  "topics": [
+    "C: eHRM加班自動化",
+    "D: 記憶系統架構",
+    "F: 高密度數據"
+  ],
+  "models": [
+    {
+      "model": "qwen3.5:latest",
+      "think": true,
+      "temp": 0.0,
+      "label": "qwen3.5"
+    },
+    {
+      "model": "gemma4:e4b",
+      "think": true,
+      "temp": 0.0,
+      "label": "g4:e4b T"
+    },
+    {
+      "model": "gemma4:e4b",
+      "think": false,
+      "temp": 0.0,
+      "label": "g4:e4b F"
+    },
+    {
+      "model": "gemma4:e4b-it-bf16",
+      "think": true,
+      "temp": 0.0,
+      "label": "g4:bf16"
+    },
+    {
+      "model": "gemma4:26b",
+      "think": true,
+      "temp": 0.0,
+      "label": "g4:26b"
+    }
+  ],
+  "results": {
+    "C: eHRM加班自動化": {
+      "qwen3.5": {
+        "count": 7,
+        "avg_length": 48.9,
+        "type_dist": {
+          "architectural": 2,
+          "pitfall": 2,
+          "procedural": 1,
+          "factual": 2
+        },
+        "specificity": "6/7",
+        "type_compliance": "7/7",
+        "schema_valid": "7/7",
+        "grounded": "7/7",
+        "hallucinated": 0,
+        "over_150": 0,
+        "elapsed": 39.1,
+        "recall": "3/5",
+        "recall_pct": 60.0
+      },
+      "g4:e4b T": {
+        "count": 5,
+        "avg_length": 116.8,
+        "type_dist": {
+          "architectural": 1,
+          "pitfall": 1,
+          "factual": 1,
+          "procedural": 2
+        },
+        "specificity": "5/5",
+        "type_compliance": "5/5",
+        "schema_valid": "5/5",
+        "grounded": "5/5",
+        "hallucinated": 0,
+        "over_150": 1,
+        "elapsed": 14.6,
+        "recall": "2/5",
+        "recall_pct": 40.0
+      },
+      "g4:e4b F": {
+        "count": 5,
+        "avg_length": 96.4,
+        "type_dist": {
+          "architectural": 1,
+          "procedural": 2,
+          "pitfall": 1,
+          "factual": 1
+        },
+        "specificity": "5/5",
+        "type_compliance": "5/5",
+        "schema_valid": "5/5",
+        "grounded": "5/5",
+        "hallucinated": 0,
+        "over_150": 2,
+        "elapsed": 3.0,
+        "recall": "0/5",
+        "recall_pct": 0.0
+      },
+      "g4:bf16": {
+        "count": 6,
+        "avg_length": 106.5,
+        "type_dist": {
+          "architectural": 1,
+          "pitfall": 1,
+          "procedural": 2,
+          "factual": 2
+        },
+        "specificity": "6/6",
+        "type_compliance": "6/6",
+        "schema_valid": "6/6",
+        "grounded": "6/6",
+        "hallucinated": 0,
+        "over_150": 0,
+        "elapsed": 66.8,
+        "recall": "3/5",
+        "recall_pct": 60.0
+      },
+      "g4:26b": {
+        "count": 10,
+        "avg_length": 49.2,
+        "type_dist": {
+          "procedural": 2,
+          "pitfall": 2,
+          "factual": 4,
+          "decision": 2
+        },
+        "specificity": "9/10",
+        "type_compliance": "10/10",
+        "schema_valid": "10/10",
+        "grounded": "10/10",
+        "hallucinated": 0,
+        "over_150": 0,
+        "elapsed": 64.9,
+        "recall": "3/5",
+        "recall_pct": 60.0
+      }
+    },
+    "D: 記憶系統架構": {
+      "qwen3.5": {
+        "count": 6,
+        "avg_length": 89.2,
+        "type_dist": {
+          "architectural": 3,
+          "factual": 1,
+          "procedural": 2
+        },
+        "specificity": "4/6",
+        "type_compliance": "6/6",
+        "schema_valid": "6/6",
+        "grounded": "5/6",
+        "hallucinated": 1,
+        "over_150": 0,
+        "elapsed": 45.2,
+        "recall": "1/6",
+        "recall_pct": 16.7
+      },
+      "g4:e4b T": {
+        "count": 5,
+        "avg_length": 161.6,
+        "type_dist": {
+          "architectural": 3,
+          "procedural": 2
+        },
+        "specificity": "5/5",
+        "type_compliance": "5/5",
+        "schema_valid": "5/5",
+        "grounded": "5/5",
+        "hallucinated": 0,
+        "over_150": 3,
+        "elapsed": 13.6,
+        "recall": "2/6",
+        "recall_pct": 33.3
+      },
+      "g4:e4b F": {
+        "count": 6,
+        "avg_length": 136.2,
+        "type_dist": {
+          "architectural": 4,
+          "procedural": 1,
+          "pitfall": 1
+        },
+        "specificity": "6/6",
+        "type_compliance": "6/6",
+        "schema_valid": "6/6",
+        "grounded": "6/6",
+        "hallucinated": 0,
+        "over_150": 3,
+        "elapsed": 4.3,
+        "recall": "1/6",
+        "recall_pct": 16.7
+      },
+      "g4:bf16": {
+        "count": 5,
+        "avg_length": 108.8,
+        "type_dist": {
+          "architectural": 1,
+          "procedural": 2,
+          "factual": 2
+        },
+        "specificity": "5/5",
+        "type_compliance": "5/5",
+        "schema_valid": "5/5",
+        "grounded": "5/5",
+        "hallucinated": 0,
+        "over_150": 0,
+        "elapsed": 58.6,
+        "recall": "1/6",
+        "recall_pct": 16.7
+      },
+      "g4:26b": {
+        "count": 6,
+        "avg_length": 67.0,
+        "type_dist": {
+          "architectural": 4,
+          "procedural": 2
+        },
+        "specificity": "4/6",
+        "type_compliance": "6/6",
+        "schema_valid": "6/6",
+        "grounded": "6/6",
+        "hallucinated": 0,
+        "over_150": 0,
+        "elapsed": 75.4,
+        "recall": "3/6",
+        "recall_pct": 50.0
+      }
+    },
+    "F: 高密度數據": {
+      "qwen3.5": {
+        "error": "no JSON array found",
+        "elapsed": 46.80383563041687
+      },
+      "g4:e4b T": {
+        "count": 5,
+        "avg_length": 133.2,
+        "type_dist": {
+          "architectural": 2,
+          "procedural": 3
+        },
+        "specificity": "5/5",
+        "type_compliance": "5/5",
+        "schema_valid": "5/5",
+        "grounded": "5/5",
+        "hallucinated": 0,
+        "over_150": 2,
+        "elapsed": 14.8,
+        "recall": "4/6",
+        "recall_pct": 66.7
+      },
+      "g4:e4b F": {
+        "count": 15,
+        "avg_length": 50.2,
+        "type_dist": {
+          "architectural": 9,
+          "procedural": 6
+        },
+        "specificity": "14/15",
+        "type_compliance": "15/15",
+        "schema_valid": "15/15",
+        "grounded": "15/15",
+        "hallucinated": 0,
+        "over_150": 0,
+        "elapsed": 5.3,
+        "recall": "5/6",
+        "recall_pct": 83.3
+      },
+      "g4:bf16": {
+        "count": 6,
+        "avg_length": 95.0,
+        "type_dist": {
+          "architectural": 4,
+          "procedural": 2
+        },
+        "specificity": "6/6",
+        "type_compliance": "6/6",
+        "schema_valid": "6/6",
+        "grounded": "6/6",
+        "hallucinated": 0,
+        "over_150": 0,
+        "elapsed": 69.0,
+        "recall": "5/6",
+        "recall_pct": 83.3
+      },
+      "g4:26b": {
+        "count": 12,
+        "avg_length": 53.6,
+        "type_dist": {
+          "architectural": 5,
+          "factual": 2,
+          "decision": 3,
+          "procedural": 2
+        },
+        "specificity": "11/12",
+        "type_compliance": "12/12",
+        "schema_valid": "12/12",
+        "grounded": "12/12",
+        "hallucinated": 0,
+        "over_150": 0,
+        "elapsed": 80.4,
+        "recall": "4/6",
+        "recall_pct": 66.7
+      }
+    }
+  }
+}

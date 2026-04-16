@@ -1,0 +1,1408 @@
+{
+  "timestamp": "2026-04-09 09:05:24",
+  "phase_a": {
+    "qwen3.5 T": [
+      {
+        "count": 4,
+        "avg_length": 63.8,
+        "content_lengths": [
+          50,
+          60,
+          70,
+          75
+        ],
+        "type_dist": {
+          "pitfall": 1,
+          "factual": 2,
+          "architectural": 1
+        },
+        "specificity": "4/4",
+        "type_compliance": "4/4",
+        "schema_valid": "4/4",
+        "grounded": "4/4",
+        "hallucinated": 0,
+        "elapsed": 40.8,
+        "items": [
+          {
+            "content": "Ollama Gemma 4 已知 Bug：設定 think=false 會破壞 for 迴圈行為。",
+            "type": "pitfall"
+          },
+          {
+            "content": "rdchat 已裝 Gemma 4 模型：e2b, e4b, e4b-it-bf16, 26b。缺 31b Dense。",
+            "type": "factual"
+          },
+          {
+            "content": "Embedding 模型維持 qwen3-embedding:latest，Gemma 4 在 Ollama 無 embedding 變體。",
+            "type": "architectural"
+          },
+          {
+            "content": "API 端點：http://192.168.199.130:11434。RTX 3090 跑 gemma4:e4b no-think 約 19.5s。",
+            "type": "factual"
+          }
+        ],
+        "recall": "2/7"
+      },
+      {
+        "count": 5,
+        "avg_length": 91.8,
+        "content_lengths": [
+          87,
+          111,
+          97,
+          77,
+          87
+        ],
+        "type_dist": {
+          "architectural": 1,
+          "procedural": 1,
+          "factual": 3
+        },
+        "specificity": "5/5",
+        "type_compliance": "5/5",
+        "schema_valid": "5/5",
+        "grounded": "5/5",
+        "hallucinated": 0,
+        "elapsed": 44.7,
+        "items": [
+          {
+            "content": "rules/ 四檔合併為 core.md (116 行→18 行, 980 tok→280 tok)。新建 memory/_ATOM_INDEX.md 儲存 atom 索引。",
+            "type": "architectural"
+          },
+          {
+            "content": "wg_atoms.py parse_memory_index() 優先讀 _ATOM_INDEX.md。wg_episodic.py 寫入該檔。toolchain.md 觸發移除通用詞 (bash/git/python)。",
+            "type": "procedural"
+          },
+          {
+            "content": "decisions-architecture.md 合併至 decisions.md。Layer A token 從 2,123 降至 675 tok。全域 atom 預算 3,000 tok。",
+            "type": "factual"
+          },
+          {
+            "content": "parse_project_aliases 讀 MEMORY.md L126 獲取 Project-Aliases，相容於 _ATOM_INDEX.md。",
+            "type": "factual"
+          },
+          {
+            "content": "專案路徑：C:/Users/holylight/.claude/rules/core.md, memory/MEMORY.md, memory/_ATOM_INDEX.md。",
+            "type": "factual"
+          }
+        ],
+        "recall": "0/7"
+      },
+      {
+        "count": 3,
+        "avg_length": 49.0,
+        "content_lengths": [
+          55,
+          33,
+          59
+        ],
+        "type_dist": {
+          "factual": 2,
+          "architectural": 1
+        },
+        "specificity": "3/3",
+        "type_compliance": "3/3",
+        "schema_valid": "3/3",
+        "grounded": "2/3",
+        "hallucinated": 1,
+        "elapsed": 34.3,
+        "items": [
+          {
+            "content": "專案根目錄：c:\\MyOfficeAI，Git 遠端：holylight1979/myOfficeMiscAI",
+            "type": "factual"
+          },
+          {
+            "content": "風險分級：批次檔案/郵件寄送=高風險，帳號登入/外部寫入=極高風險",
+            "type": "factual"
+          },
+          {
+            "content": "記憶原子存儲路徑：.claude/memory/，含 episodic, failures, _staging 子目錄",
+            "type": "architectural"
+          }
+        ],
+        "recall": "0/7"
+      },
+      {
+        "count": 5,
+        "avg_length": 63.8,
+        "content_lengths": [
+          82,
+          70,
+          52,
+          25,
+          90
+        ],
+        "type_dist": {
+          "factual": 4,
+          "architectural": 1
+        },
+        "specificity": "4/5",
+        "type_compliance": "5/5",
+        "schema_valid": "5/5",
+        "grounded": "5/5",
+        "hallucinated": 0,
+        "elapsed": 44.8,
+        "items": [
+          {
+            "content": "d:\\MyDev 根目錄由 SVN 管理，含 20+ 子專案。OpenAI-DotNet 與 SimpleGradioClient 子專案擁有獨立 .git 版控。",
+            "type": "factual"
+          },
+          {
+            "content": "TinyDataLinkTransform 產出 DLL 被 SkillDataEditor 與 DesignExcelToData 共用。",
+            "type": "architectural"
+          },
+          {
+            "content": "專案技術棧：C#/.NET (net4.6.1~8.0)、Unity 3D、C++ (VS 2015)。",
+            "type": "factual"
+          },
+          {
+            "content": "外部路徑依賴指向 C:\\MobileAnime\\。",
+            "type": "factual"
+          },
+          {
+            "content": "@MyPLAY 為 Unity 遊戲主專案 (NGUI, ILRuntime, Lua)；StressBotForTitan 用 Protobuf；GQ 為 C++/VS2015。",
+            "type": "factual"
+          }
+        ],
+        "recall": "0/7"
+      },
+      {
+        "error": "empty response",
+        "elapsed": 91.86474275588989
+      }
+    ],
+    "g4:e4b T": [
+      {
+        "count": 5,
+        "avg_length": 94.8,
+        "content_lengths": [
+          142,
+          94,
+          87,
+          81,
+          70
+        ],
+        "type_dist": {
+          "factual": 2,
+          "decision": 2,
+          "pitfall": 1
+        },
+        "specificity": "5/5",
+        "type_compliance": "5/5",
+        "schema_valid": "5/5",
+        "grounded": "5/5",
+        "hallucinated": 0,
+        "elapsed": 13.9,
+        "items": [
+          {
+            "content": "本地模型呼叫端點為 http://192.168.199.130:11434。目前已安裝的 Gemma 4 模型包括 gemma4:e2b (5.1B, 6.7GB)、gemma4:e4b (8.0B, 8.9GB) 和 gemma4:26b (25.8B MoE, 16.7GB)。",
+            "type": "factual"
+          },
+          {
+            "content": "最佳性價比候選方案為 gemma4:e4b 且設定 think=false。此配置在測試中展現了最快的平均時間 (19.5s)，同時保持了 100% 的原文依據和高一致性 (87.5%)。",
+            "type": "decision"
+          },
+          {
+            "content": "若追求最高品質，可考慮 gemma4:e4b-it-bf16。此模型具備 100% 的具體性、100% 的原文依據，且平均項目數最高 (5.0)，但耗時較長 (59.7s)。",
+            "type": "decision"
+          },
+          {
+            "content": "【Ollama Bug】目前已知 bug：在 Ollama 環境下，將 Gemma 4 的 think 參數設為 false，可能會破壞其 JSON 結構的輸出。",
+            "type": "pitfall"
+          },
+          {
+            "content": "RTX 3090 (24GB) 可穩定運行 26B MoE (Q4_K_M)，推理時僅激活 3.8B 參數，效能約 35-40 tok/s。",
+            "type": "factual"
+          }
+        ],
+        "recall": "4/7"
+      },
+      {
+        "count": 5,
+        "avg_length": 116.0,
+        "content_lengths": [
+          81,
+          146,
+          124,
+          112,
+          117
+        ],
+        "type_dist": {
+          "architectural": 1,
+          "procedural": 1,
+          "decision": 1,
+          "factual": 2
+        },
+        "specificity": "2/5",
+        "type_compliance": "5/5",
+        "schema_valid": "5/5",
+        "grounded": "5/5",
+        "hallucinated": 0,
+        "elapsed": 13.3,
+        "items": [
+          {
+            "content": "【記憶系統優化】將原有的 4 個 rules 檔案（約 980 tok）精簡為單一的 rules/core.md，節省了約 700 tok，將規則模組化和集中化。",
+            "type": "architectural"
+          },
+          {
+            "content": "【記憶索引機制】為實現記憶索引瘦身，系統已修改為優先讀取 _ATOM_INDEX.md。相關修改涉及 wg_atoms.py 的 parse_memory_index()、wg_episodic.py 的 _update_memory_index()，以及 MCP server 的寫入邏輯。",
+            "type": "procedural"
+          },
+          {
+            "content": "【觸發優化】為避免通用關鍵字過度觸發，已收窄 toolchain.md 的 trigger 關鍵字，移除了通用的 `bash`, `command`, `git`, `python` 等詞彙，確保只有特定控制指令（如 MCPControl）能觸發。",
+            "type": "decision"
+          },
+          {
+            "content": "【性能數據】整體系統優化後，Layer A 的 token 消耗從約 2,123 tok 降至約 675 tok（節省 68%）。預計每次提示注入的 token 消耗從 ~1,500 tok 降至 ~700-900 tok。",
+            "type": "factual"
+          },
+          {
+            "content": "【相容性確認】專案的 `parse_project_aliases` 函式仍能正確讀取專案 MEMORY.md 中保留的 `> Project-Aliases:` 行，且已確認其可從 _ATOM_INDEX.md 讀取，無需額外修改。",
+            "type": "factual"
+          }
+        ],
+        "recall": "0/7"
+      },
+      {
+        "count": 4,
+        "avg_length": 72.5,
+        "content_lengths": [
+          115,
+          66,
+          59,
+          50
+        ],
+        "type_dist": {
+          "architectural": 1,
+          "decision": 1,
+          "procedural": 1,
+          "factual": 1
+        },
+        "specificity": "4/4",
+        "type_compliance": "4/4",
+        "schema_valid": "4/4",
+        "grounded": "3/4",
+        "hallucinated": 1,
+        "elapsed": 10.7,
+        "items": [
+          {
+            "content": "專案核心目錄結構已建立：`c:\\MyOfficeAI` 包含 `CLAUDE.md` (專案導讀)、`_AIDocs` (文件索引/變更記錄) 和 `.claude/` (記憶層，包含 `memory/` atoms 儲存經驗)。",
+            "type": "architectural"
+          },
+          {
+            "content": "專案定位為「任務導向、非固定技術棧」的辦公自動化空間。風險分級已定義：批次檔案操作/郵件寄送為高風險；帳號登入/外部寫入為極高風險。",
+            "type": "decision"
+          },
+          {
+            "content": "專案的知識累積機制已建立，所有作業經驗和決策將自動存入 `.claude/memory/` 記憶層的 atoms 中。",
+            "type": "procedural"
+          },
+          {
+            "content": "Git 專案已初始化並連結到遠端倉庫 `holylight1979/myOfficeMiscAI`。",
+            "type": "factual"
+          }
+        ],
+        "recall": "0/7"
+      },
+      {
+        "count": 4,
+        "avg_length": 159.5,
+        "content_lengths": [
+          163,
+          202,
+          140,
+          133
+        ],
+        "type_dist": {
+          "architectural": 1,
+          "factual": 2,
+          "procedural": 1
+        },
+        "specificity": "4/4",
+        "type_compliance": "4/4",
+        "schema_valid": "4/4",
+        "grounded": "4/4",
+        "hallucinated": 0,
+        "elapsed": 13.3,
+        "items": [
+          {
+            "content": "專案根目錄 d:\\MyDev 包含 18 個 .sln 檔案，技術棧橫跨 C#/.NET (net4.6.1 ~ net8.0)、Unity 3D 和 C++。核心依賴鏈為：TinyDataLinkTransform 產出的 DLL 被 SkillDataEditor 和 DesignExcelToData 兩個子專案共用。",
+            "type": "architectural"
+          },
+          {
+            "content": "專案結構包含四大類別：遊戲開發（@MyPLAY, StressBotForTitan）、AI/ML 工具（GPT-Tool, OpenAI-DotNet）、資料轉換（DesignExcelToData, MyWPFApp01）及通用工具（PythonToCSharpConverter）。其中，OpenAI-DotNet 和 SimpleGradioClient 兩個子專案有獨立的 .git 版本控制。",
+            "type": "factual"
+          },
+          {
+            "content": "專案存在多個外部路徑依賴：1) 外部資源路徑指向 C:\\MobileAnime\\；2) 遊戲主專案 @MyPLAY 使用 Unity AssetBundle 和 ILRuntime；3) StressBotForTitan 專案使用 Protobuf 進行遊戲伺服器壓力測試通訊。",
+            "type": "factual"
+          },
+          {
+            "content": "專案包含多個跨領域的資料轉換器：DesignExcelToData 負責 Excel 到遊戲資料格式的轉換；MyWPFApp01 負責 WPF 網格編輯與 Excel 匯出；PythonToCSharpConverter 負責 Python 程式碼到 C# 的轉換。",
+            "type": "procedural"
+          }
+        ],
+        "recall": "0/7"
+      },
+      {
+        "count": 5,
+        "avg_length": 48.2,
+        "content_lengths": [
+          51,
+          45,
+          51,
+          46,
+          48
+        ],
+        "type_dist": {
+          "procedural": 3,
+          "pitfall": 1,
+          "factual": 1
+        },
+        "specificity": "5/5",
+        "type_compliance": "5/5",
+        "schema_valid": "5/5",
+        "grounded": "5/5",
+        "hallucinated": 0,
+        "elapsed": 14.2,
+        "items": [
+          {
+            "content": "eHRM 加班申請單的導航路徑為：公共事務區 → 電子表單作業區 → 表單申請 → 00_加班申請單。",
+            "type": "procedural"
+          },
+          {
+            "content": "加班時數計算規則：正常工時為上班時間 + 9小時（含午休1h）。加班起算點為正常下班時間。",
+            "type": "procedural"
+          },
+          {
+            "content": "加班單的晚餐扣除規則：超過 21:00 必須勾選「有吃晚餐」，否則超過 21:00 的時間不計入加班。",
+            "type": "procedural"
+          },
+          {
+            "content": "加班申請單的特殊限制：如申請未用餐加班者，其加班時間不可超過晚上 9 點，超過部分不予計算。",
+            "type": "pitfall"
+          },
+          {
+            "content": "公司資訊：公司代號為 89521257 (宇峻奧汀科技股份有限公司)，員工編號為 105056。",
+            "type": "factual"
+          }
+        ],
+        "recall": "0/7"
+      }
+    ],
+    "g4:e4b F": [
+      {
+        "count": 6,
+        "avg_length": 91.3,
+        "content_lengths": [
+          140,
+          80,
+          108,
+          87,
+          71,
+          62
+        ],
+        "type_dist": {
+          "factual": 5,
+          "pitfall": 1
+        },
+        "specificity": "6/6",
+        "type_compliance": "6/6",
+        "schema_valid": "6/6",
+        "grounded": "6/6",
+        "hallucinated": 0,
+        "elapsed": 4.0,
+        "items": [
+          {
+            "content": "在 rdchat 環境中，Gemma 4 模型已安裝了 gemma4:e2b (5.1B, Q4_K_M)、gemma4:e4b (8.0B, Q4_K_M)、gemma4:e4b-it-bf16 (8.0B, F16) 和 gemma4:26b (25.8B, Q4_K_M)。",
+            "type": "factual"
+          },
+          {
+            "content": "RTX 3090 (24GB) 可容納 gemma4:26b Q4_K_M (約 16.7GB)，推理時僅激活 3.8B 參數，效能約 35-40 tok/s。",
+            "type": "factual"
+          },
+          {
+            "content": "記憶系統的 LLM 萃取和衝突偵測目前使用 qwen3.5:latest (9.7B)。Embedding 階段使用 qwen3-embedding:latest (7.6B)，此部分無法直接替換為 Gemma 4。",
+            "type": "factual"
+          },
+          {
+            "content": "A/B 測試結果顯示，gemma4:e4b no-think 在速度（19.5s）和穩定性（一致性 87.5%）方面表現最佳，且具備 100% 的原文依據率和空輸入處理能力。",
+            "type": "factual"
+          },
+          {
+            "content": "gemma4:e4b-it-bf16 提供了最高的品質（具體性、原文依據皆 100%），但耗時較長 (59.7s)，VRAM 佔用 15GB。",
+            "type": "factual"
+          },
+          {
+            "content": "Ollama 存在已知 Bug：當使用 `think=false` 時，可能會破壞 Gemma 4 的 JSON 輸出結構。",
+            "type": "pitfall"
+          }
+        ],
+        "recall": "5/7"
+      },
+      {
+        "count": 5,
+        "avg_length": 66.0,
+        "content_lengths": [
+          67,
+          62,
+          67,
+          85,
+          49
+        ],
+        "type_dist": {
+          "architectural": 2,
+          "procedural": 2,
+          "factual": 1
+        },
+        "specificity": "3/5",
+        "type_compliance": "5/5",
+        "schema_valid": "5/5",
+        "grounded": "5/5",
+        "hallucinated": 0,
+        "elapsed": 2.6,
+        "items": [
+          {
+            "content": "rules/ 四合一精簡：將原 4 檔規則合併為 rules/core.md，Token 節省約 86% (980→136 tok)。",
+            "type": "architectural"
+          },
+          {
+            "content": "MEMORY.md 瘦身：拆分並新增 _ATOM_INDEX.md，Token 節省約 70% (553→166 tok)。",
+            "type": "architectural"
+          },
+          {
+            "content": "核心策略：已被 hook 程式碼實現的規則，從文字描述中刪除；trigger 表不再提供給 AI 閱讀；大 atom 內容按段落注入。",
+            "type": "procedural"
+          },
+          {
+            "content": "toolchain.md 的 Trigger 關鍵字收窄：移除通用詞如 `bash`, `command`, `git`, `python`，以避免對一般提示的過度觸發。",
+            "type": "procedural"
+          },
+          {
+            "content": "系統優化後，預計每次注入的 Token 從 ~1,500 tok 降至 ~700-900 tok。",
+            "type": "factual"
+          }
+        ],
+        "recall": "0/7"
+      },
+      {
+        "count": 4,
+        "avg_length": 70.2,
+        "content_lengths": [
+          111,
+          38,
+          47,
+          85
+        ],
+        "type_dist": {
+          "architectural": 2,
+          "factual": 2
+        },
+        "specificity": "4/4",
+        "type_compliance": "4/4",
+        "schema_valid": "4/4",
+        "grounded": "2/4",
+        "hallucinated": 2,
+        "elapsed": 2.1,
+        "items": [
+          {
+            "content": "專案根目錄為 `c:\\MyOfficeAI`，包含 `CLAUDE.md` (任務導向、非固定技術棧的辦公自動化空間定義)、`_AIDocs/` (包含索引和變更記錄)、`.claude/` (包含記憶層和 hooks)。",
+            "type": "architectural"
+          },
+          {
+            "content": "風險分級定義：批次檔案操作/郵件寄送為高風險；帳號登入/外部寫入為極高風險。",
+            "type": "factual"
+          },
+          {
+            "content": "專案記憶層結構已建立在 `.claude/memory/`，後續作業經驗和決策將自動累積於此。",
+            "type": "architectural"
+          },
+          {
+            "content": "專案已初始化 Git 儲存庫，並連結至 `holylight1979/myOfficeMiscAI`，初始骨架檔案已 commit 並 push 至 `main` 分支。",
+            "type": "factual"
+          }
+        ],
+        "recall": "0/7"
+      },
+      {
+        "count": 5,
+        "avg_length": 65.2,
+        "content_lengths": [
+          82,
+          83,
+          72,
+          60,
+          29
+        ],
+        "type_dist": {
+          "architectural": 2,
+          "factual": 3
+        },
+        "specificity": "3/5",
+        "type_compliance": "5/5",
+        "schema_valid": "5/5",
+        "grounded": "5/5",
+        "hallucinated": 0,
+        "elapsed": 2.4,
+        "items": [
+          {
+            "content": "專案根目錄為 d:\\MyDev，包含 123+ 原始碼檔，偵測到 20+ 子專案。主要技術棧為 C#/.NET (4.x～8.0)、Unity 3D、SVN 版控。",
+            "type": "architectural"
+          },
+          {
+            "content": "核心依賴鏈：`TinyDataLinkTransform` 產出的 DLL 被 `SkillDataEditor` 和 `DesignExcelToData` 共用。",
+            "type": "architectural"
+          },
+          {
+            "content": "專案包含 18 個 .sln 檔案，技術棧橫跨 .NET Framework 4.6.1 到 .NET 8.0，並涉及 Unity 和 C++。",
+            "type": "factual"
+          },
+          {
+            "content": "部分子專案（如 OpenAI-DotNet, SimpleGradioClient）具有獨立的 .git 版本控制目錄。",
+            "type": "factual"
+          },
+          {
+            "content": "存在外部路徑依賴指向 `C:\\MobileAnime\\`。",
+            "type": "factual"
+          }
+        ],
+        "recall": "0/7"
+      },
+      {
+        "count": 4,
+        "avg_length": 68.0,
+        "content_lengths": [
+          52,
+          49,
+          82,
+          89
+        ],
+        "type_dist": {
+          "procedural": 2,
+          "pitfall": 1,
+          "factual": 1
+        },
+        "specificity": "4/4",
+        "type_compliance": "4/4",
+        "schema_valid": "4/4",
+        "grounded": "4/4",
+        "hallucinated": 0,
+        "elapsed": 2.7,
+        "items": [
+          {
+            "content": "eHRM 系統的加班申請流程路徑為：公共事務區 → 電子表單作業區 → 表單申請 → 00_加班申請單。",
+            "type": "procedural"
+          },
+          {
+            "content": "加班申請單的關鍵規定：如因故須申請未用餐加班者，其加班時間不可超過晚上9點，如有超過者亦不予計算。",
+            "type": "pitfall"
+          },
+          {
+            "content": "計算加班時數的規則：正常工時為上班時間 + 9小時（含午休1h）。加班起算點為正常下班時間。晚餐扣除判斷：超過21:00需勾選「有吃晚餐」，否則超過部分不計入時數。",
+            "type": "procedural"
+          },
+          {
+            "content": "2月有加班紀錄的日期為：02/02, 02/04, 02/05, 02/06, 02/09, 02/11, 02/12，以及 02/23 (僅有上班卡紀錄，需確認是否為加班日)。",
+            "type": "factual"
+          }
+        ],
+        "recall": "0/7"
+      }
+    ],
+    "g4:bf16 T": [
+      {
+        "count": 3,
+        "avg_length": 99.0,
+        "content_lengths": [
+          102,
+          127,
+          68
+        ],
+        "type_dist": {
+          "pitfall": 1,
+          "factual": 2
+        },
+        "specificity": "3/3",
+        "type_compliance": "3/3",
+        "schema_valid": "3/3",
+        "grounded": "3/3",
+        "hallucinated": 0,
+        "elapsed": 48.0,
+        "items": [
+          {
+            "content": "Ollama 上的 Gemma 4 有已知 bug：當設定 `think=false` 時，會破壞其 JSON 輸出結構，因此在知識萃取任務中，必須使用 `think=true` 或其他確保結構化的方式。",
+            "type": "pitfall"
+          },
+          {
+            "content": "A/B 測試結果顯示，`gemma4:e4b-it-bf16` 提供了最高的萃取品質（具體性與原文依據皆為 100%），但推理時間為 59.7s。`gemma4:e4b no-think` 雖然速度最快（19.5s），但因 Ollama bug 不可用。",
+            "type": "factual"
+          },
+          {
+            "content": "在所有測試模型中，`gemma4:26b MoE` 的一致性（Jaccard）最低，僅為 45.5%，不適合用於需要高穩定性的生產管線。",
+            "type": "factual"
+          }
+        ],
+        "recall": "1/7"
+      },
+      {
+        "count": 6,
+        "avg_length": 86.0,
+        "content_lengths": [
+          125,
+          81,
+          71,
+          76,
+          82,
+          81
+        ],
+        "type_dist": {
+          "factual": 3,
+          "procedural": 1,
+          "decision": 2
+        },
+        "specificity": "3/6",
+        "type_compliance": "6/6",
+        "schema_valid": "6/6",
+        "grounded": "6/6",
+        "hallucinated": 0,
+        "elapsed": 62.0,
+        "items": [
+          {
+            "content": "系統固定載入量約 2,700 tokens；Hook 基礎設施包含 6,378 行 Python 程式碼。專案包含 12 核心 + 1 episodic + 3 staging atoms，_AIDocs 總計 89 檔，約 125K tokens。",
+            "type": "factual"
+          },
+          {
+            "content": "為實現記憶體瘦身，採用新增 `_ATOM_INDEX.md` 並修改 `wg_atoms.py` 和 `wg_episodic.py`，使系統優先讀取該索引檔案。",
+            "type": "procedural"
+          },
+          {
+            "content": "規則模組從 4 個檔案（約 980 tok）精簡至單一 `rules/core.md`（約 280 tok），實現約 70% 的規則內容節省。",
+            "type": "factual"
+          },
+          {
+            "content": "整體目標是將 session token 使用量從約 17,000 tok 降至約 9,200 tok，節省 46%。Layer A 節省率達 68%。",
+            "type": "factual"
+          },
+          {
+            "content": "為避免通用詞彙觸發，`toolchain.md` 的觸發關鍵字被收窄，移除了 `bash`, `git`, `python` 等通用詞，確保僅在特定控制指令時觸發。",
+            "type": "decision"
+          },
+          {
+            "content": "將 `decisions-architecture.md` 的內容合併至 `decisions.md`，並更新 `_ATOM_INDEX.md`，確保知識集中化。",
+            "type": "decision"
+          }
+        ],
+        "recall": "0/7"
+      },
+      {
+        "count": 4,
+        "avg_length": 43.8,
+        "content_lengths": [
+          61,
+          29,
+          36,
+          49
+        ],
+        "type_dist": {
+          "architectural": 1,
+          "decision": 1,
+          "factual": 2
+        },
+        "specificity": "3/4",
+        "type_compliance": "4/4",
+        "schema_valid": "4/4",
+        "grounded": "3/4",
+        "hallucinated": 1,
+        "elapsed": 51.4,
+        "items": [
+          {
+            "content": "專案根目錄為 c:\\MyOfficeAI，記憶層位於 .claude/memory/，專案導讀文件為 CLAUDE.md。",
+            "type": "architectural"
+          },
+          {
+            "content": "此專案被定義為「任務導向、非固定技術棧」的辦公自動化空間。",
+            "type": "decision"
+          },
+          {
+            "content": "風險分級：批次檔案操作/郵件寄送為高風險；帳號登入/外部寫入為極高風險。",
+            "type": "factual"
+          },
+          {
+            "content": "專案已初始化 Git，並連結到遠端倉庫 holylight1979/myOfficeMiscAI。",
+            "type": "factual"
+          }
+        ],
+        "recall": "0/7"
+      },
+      {
+        "count": 4,
+        "avg_length": 83.2,
+        "content_lengths": [
+          92,
+          96,
+          90,
+          55
+        ],
+        "type_dist": {
+          "architectural": 2,
+          "factual": 2
+        },
+        "specificity": "2/4",
+        "type_compliance": "4/4",
+        "schema_valid": "4/4",
+        "grounded": "4/4",
+        "hallucinated": 0,
+        "elapsed": 53.1,
+        "items": [
+          {
+            "content": "專案根目錄為 d:\\MyDev，包含 20+ 子專案。技術棧為 C#/.NET (4.x~8.0)、Unity 3D 遊戲引擎，並使用 SVN 版控。共包含 18 個 .sln 檔案。",
+            "type": "architectural"
+          },
+          {
+            "content": "核心依賴鏈：TinyDataLinkTransform 產出的 DLL 被 SkillDataEditor 和 DesignExcelToData 這兩個子專案共用，這是跨專案資料流的關鍵點。",
+            "type": "architectural"
+          },
+          {
+            "content": "專案中存在外部路徑依賴，指向 C:\\MobileAnime\\。此外，OpenAI-DotNet 和 SimpleGradioClient 兩個子專案擁有獨立的 .git 版本控制。",
+            "type": "factual"
+          },
+          {
+            "content": "StressBotForTitan 專案是用於遊戲伺服器壓力測試的 Bot，其通訊協議採用 Protobuf。",
+            "type": "factual"
+          }
+        ],
+        "recall": "0/7"
+      },
+      {
+        "count": 4,
+        "avg_length": 51.0,
+        "content_lengths": [
+          53,
+          43,
+          67,
+          41
+        ],
+        "type_dist": {
+          "procedural": 2,
+          "pitfall": 1,
+          "factual": 1
+        },
+        "specificity": "4/4",
+        "type_compliance": "4/4",
+        "schema_valid": "4/4",
+        "grounded": "4/4",
+        "hallucinated": 0,
+        "elapsed": 51.0,
+        "items": [
+          {
+            "content": "eHRM加班申請單的申請路徑為：公共事務區 -> 電子表單作業區 -> 表單申請 -> 00_加班申請單。",
+            "type": "procedural"
+          },
+          {
+            "content": "eHRM加班申請單規定：如申請未用餐加班，加班時間不可超過晚上9點，超過部分不予計算。",
+            "type": "pitfall"
+          },
+          {
+            "content": "加班時數計算規則：正常下班時間 = 上班時間 + 9小時（含午休1h）。超過正常下班時間後開始計算加班。超過21:00需勾選晚餐扣除。",
+            "type": "procedural"
+          },
+          {
+            "content": "公司系統資訊：宇峻奧汀科技股份有限公司 CompanyNo 為 89521257。",
+            "type": "factual"
+          }
+        ],
+        "recall": "0/7"
+      }
+    ],
+    "g4:26b T": [
+      {
+        "count": 5,
+        "avg_length": 99.4,
+        "content_lengths": [
+          146,
+          97,
+          125,
+          72,
+          57
+        ],
+        "type_dist": {
+          "factual": 2,
+          "architectural": 1,
+          "decision": 1,
+          "pitfall": 1
+        },
+        "specificity": "5/5",
+        "type_compliance": "5/5",
+        "schema_valid": "5/5",
+        "grounded": "5/5",
+        "hallucinated": 0,
+        "elapsed": 57.4,
+        "items": [
+          {
+            "content": "rdchat 的 Ollama 端點為 http://192.168.199.130:11434；已安裝模型包含 gemma4:e2b (6.7GB), gemma4:e4b (8.9GB), gemma4:e4b-it-bf16 (14.9GB), gemma4:26b (16.7GB)。",
+            "type": "factual"
+          },
+          {
+            "content": "RTX 3090 (24GB) 執行 gemma4:26b (Q4_K_M) 效能約 35-40 tok/s；gemma4:31B Dense (Q4_K_M) 約需 19-20GB VRAM。",
+            "type": "factual"
+          },
+          {
+            "content": "記憶系統架構：LLM 萃取/衝突偵測/Reranker 使用 qwen3.5:latest (9.7B)；Embedding 使用 qwen3-embedding:latest (7.6B)；Local fallback 使用 qwen3:1.7b。",
+            "type": "architectural"
+          },
+          {
+            "content": "建議將 LLM 萃取模型替換為 gemma4:e4b (no-think)，因其具備最高速度 (19.5s)、零幻覺且一致性高 (87.5%)。",
+            "type": "decision"
+          },
+          {
+            "content": "Ollama 執行 Gemma 4 時，若設定 think=false 可能會導致輸出中斷（破壞 for 結構）。",
+            "type": "pitfall"
+          }
+        ],
+        "recall": "4/7"
+      },
+      {
+        "count": 6,
+        "avg_length": 76.3,
+        "content_lengths": [
+          77,
+          71,
+          62,
+          71,
+          79,
+          98
+        ],
+        "type_dist": {
+          "architectural": 2,
+          "procedural": 1,
+          "decision": 1,
+          "factual": 1,
+          "pitfall": 1
+        },
+        "specificity": "2/6",
+        "type_compliance": "6/6",
+        "schema_valid": "6/6",
+        "grounded": "6/6",
+        "hallucinated": 0,
+        "elapsed": 57.5,
+        "items": [
+          {
+            "content": "rules/ 目錄已從 4 檔精簡為 1 檔 core.md (路徑: C:/Users/holylight/.claude/rules/core.md)",
+            "type": "architectural"
+          },
+          {
+            "content": "新增 _ATOM_INDEX.md 用於 atom 索引，wg_atoms.py 的 parse_memory_index() 會優先讀取此檔",
+            "type": "architectural"
+          },
+          {
+            "content": "wg_episodic.py 的 _update_memory_index() 現在會同步寫入 _ATOM_INDEX.md",
+            "type": "procedural"
+          },
+          {
+            "content": "toolchain.md 的 trigger 關鍵字已收窄，移除了 bash, command, git, python 以避免誤觸發全量注入",
+            "type": "decision"
+          },
+          {
+            "content": "優化後 Layer A (不含專案 CLAUDE.md) token 從 ~2,123 降至 ~675；Atom 注入從 ~1,500 降至 ~700-900",
+            "type": "factual"
+          },
+          {
+            "content": "parse_project_aliases 依賴 MEMORY.md 中的 '> Project-Aliases:' 行，即使資料搬移至 _ATOM_INDEX.md，原處仍需保留此行以維持相容性",
+            "type": "pitfall"
+          }
+        ],
+        "recall": "0/7"
+      },
+      {
+        "count": 4,
+        "avg_length": 40.2,
+        "content_lengths": [
+          24,
+          35,
+          40,
+          62
+        ],
+        "type_dist": {
+          "architectural": 2,
+          "decision": 1,
+          "factual": 1
+        },
+        "specificity": "3/4",
+        "type_compliance": "4/4",
+        "schema_valid": "4/4",
+        "grounded": "4/4",
+        "hallucinated": 0,
+        "elapsed": 34.5,
+        "items": [
+          {
+            "content": "專案定位為任務導向、非固定技術棧的辦公自動化空間",
+            "type": "architectural"
+          },
+          {
+            "content": "風險分級：批次檔案操作/郵件寄送為高風險，帳號登入/外部寫入為極高風險",
+            "type": "decision"
+          },
+          {
+            "content": "Git 遠端倉庫位址為 holylight1979/myOfficeMiscAI",
+            "type": "factual"
+          },
+          {
+            "content": "記憶結構包含 .claude/memory/ 下的 atom 索引、episodic、failures 與 _staging",
+            "type": "architectural"
+          }
+        ],
+        "recall": "0/7"
+      },
+      {
+        "count": 8,
+        "avg_length": 48.2,
+        "content_lengths": [
+          63,
+          39,
+          44,
+          41,
+          71,
+          60,
+          27,
+          41
+        ],
+        "type_dist": {
+          "factual": 7,
+          "architectural": 1
+        },
+        "specificity": "3/8",
+        "type_compliance": "8/8",
+        "schema_valid": "8/8",
+        "grounded": "8/8",
+        "hallucinated": 0,
+        "elapsed": 48.1,
+        "items": [
+          {
+            "content": "d:\\MyDev 為 SVN 管理的多專案目錄，技術棧包含 C#/.NET (4.x~8.0)、Unity 3D 及 C++。",
+            "type": "factual"
+          },
+          {
+            "content": "@MyPLAY 專案架構使用 NGUI、ILRuntime 與 Lua 腳本。",
+            "type": "factual"
+          },
+          {
+            "content": "StressBotForTitan 伺服器壓力測試工具使用 Protobuf 進行通訊。",
+            "type": "factual"
+          },
+          {
+            "content": "SkillDataEditor 整合了 WinForms、Excel 與 SVN。",
+            "type": "factual"
+          },
+          {
+            "content": "TinyDataLinkTransform 產出的 DLL 被 SkillDataEditor 與 DesignExcelToData 共用。",
+            "type": "architectural"
+          },
+          {
+            "content": "OpenAI-DotNet 與 SimpleGradioClient 專案使用獨立的 .git 版本控制，而非 SVN。",
+            "type": "factual"
+          },
+          {
+            "content": "專案存在外部路徑依賴：C:\\MobileAnime\\。",
+            "type": "factual"
+          },
+          {
+            "content": "GQ 專案為 C++ 視覺特效/Shader 工具，需使用 VS 2015 環境。",
+            "type": "factual"
+          }
+        ],
+        "recall": "0/7"
+      },
+      {
+        "count": 7,
+        "avg_length": 44.7,
+        "content_lengths": [
+          32,
+          39,
+          46,
+          58,
+          41,
+          29,
+          68
+        ],
+        "type_dist": {
+          "factual": 3,
+          "procedural": 3,
+          "pitfall": 1
+        },
+        "specificity": "5/7",
+        "type_compliance": "7/7",
+        "schema_valid": "7/7",
+        "grounded": "7/7",
+        "hallucinated": 0,
+        "elapsed": 63.5,
+        "items": [
+          {
+            "content": "宇峻奧汀科技股份有限公司 CompanyNo: 89521257",
+            "type": "factual"
+          },
+          {
+            "content": "公司內網系統網址：portal.uj.com.tw, hr.uj.com.tw",
+            "type": "factual"
+          },
+          {
+            "content": "加班計算規則：上班時間 + 9 小時（含 1 小時午休）為正常下班時間；超過此時間後起算加班",
+            "type": "procedural"
+          },
+          {
+            "content": "加班申請單填寫陷阱：若加班超過 21:00，必須勾選「有吃晚餐」以扣除晚餐時間，否則超過 21:00 的時數不予計算",
+            "type": "pitfall"
+          },
+          {
+            "content": "加班申請單路徑：公共事務區 → 電子表單作業區 → 表單申請 → 00_加班申請單",
+            "type": "procedural"
+          },
+          {
+            "content": "刷卡紀錄查詢路徑：個人專區 → 個人假勤紀錄 → 一般假勤",
+            "type": "procedural"
+          },
+          {
+            "content": "加班申請單欄位包含：加班專案（如 SGI）、加班類型（事前/事後）、預計加班區間、實際加班明細（日期、時間、扣午/晚餐、折換方式、原因）",
+            "type": "factual"
+          }
+        ],
+        "recall": "0/7"
+      }
+    ]
+  },
+  "phase_b_temp": {
+    "g4:e4b t=0.0": [
+      {
+        "count": 4,
+        "avg_length": 78.2,
+        "content_lengths": [
+          106,
+          87,
+          58,
+          62
+        ],
+        "type_dist": {
+          "decision": 2,
+          "pitfall": 2
+        },
+        "specificity": "4/4",
+        "type_compliance": "4/4",
+        "schema_valid": "4/4",
+        "grounded": "4/4",
+        "hallucinated": 0,
+        "elapsed": 5.7,
+        "items": [
+          {
+            "content": "gemma4:e4b no-think (think=false) 在 A/B 測試中表現最佳：速度最快 (19.5s)，原文依據 100%，一致性最高 (87.5%)，且能正確處理空輸入，是目前最佳的替換候選。",
+            "type": "decision"
+          },
+          {
+            "content": "gemma4:e4b-it-bf16 雖然耗時 (59.7s)，但在具體性、原文依據和項目數上表現最佳 (100% / 100% / 5.0)，可作為追求最高品質的備選方案。",
+            "type": "decision"
+          },
+          {
+            "content": "gemma4:26b MoE 因一致性極差 (Jaccard 僅 45.5%)，不適合用於需要穩定輸出的自動化管線。",
+            "type": "pitfall"
+          },
+          {
+            "content": "Ollama 存在已知 Bug：當使用 `think=false` 時，可能會破壞 Gemma 4 的 JSON 輸出結構。",
+            "type": "pitfall"
+          }
+        ]
+      },
+      {
+        "count": 4,
+        "avg_length": 78.2,
+        "content_lengths": [
+          106,
+          87,
+          58,
+          62
+        ],
+        "type_dist": {
+          "decision": 2,
+          "pitfall": 2
+        },
+        "specificity": "4/4",
+        "type_compliance": "4/4",
+        "schema_valid": "4/4",
+        "grounded": "4/4",
+        "hallucinated": 0,
+        "elapsed": 5.8,
+        "items": [
+          {
+            "content": "gemma4:e4b no-think (think=false) 在 A/B 測試中表現最佳：速度最快 (19.5s)，原文依據 100%，一致性最高 (87.5%)，且能正確處理空輸入，是目前最佳的替換候選。",
+            "type": "decision"
+          },
+          {
+            "content": "gemma4:e4b-it-bf16 雖然耗時 (59.7s)，但在具體性、原文依據和項目數上表現最佳 (100% / 100% / 5.0)，可作為追求最高品質的備選方案。",
+            "type": "decision"
+          },
+          {
+            "content": "gemma4:26b MoE 因一致性極差 (Jaccard 僅 45.5%)，不適合用於需要穩定輸出的自動化管線。",
+            "type": "pitfall"
+          },
+          {
+            "content": "Ollama 存在已知 Bug：當使用 `think=false` 時，可能會破壞 Gemma 4 的 JSON 輸出結構。",
+            "type": "pitfall"
+          }
+        ]
+      }
+    ],
+    "g4:e4b t=0.1": [
+      {
+        "count": 6,
+        "avg_length": 91.3,
+        "content_lengths": [
+          140,
+          79,
+          108,
+          81,
+          77,
+          63
+        ],
+        "type_dist": {
+          "factual": 5,
+          "pitfall": 1
+        },
+        "specificity": "6/6",
+        "type_compliance": "6/6",
+        "schema_valid": "6/6",
+        "grounded": "6/6",
+        "hallucinated": 0,
+        "elapsed": 3.7,
+        "items": [
+          {
+            "content": "在 rdchat 環境中，Gemma 4 模型已安裝了 gemma4:e2b (5.1B, Q4_K_M)、gemma4:e4b (8.0B, Q4_K_M)、gemma4:e4b-it-bf16 (8.0B, F16) 和 gemma4:26b (25.8B, Q4_K_M)。",
+            "type": "factual"
+          },
+          {
+            "content": "RTX 3090 (24GB) 可容納 gemma4:26b Q4_K_M (約 16.7GB)，推理時激活參數約 3.8B，效能約 35-40 tok/s。",
+            "type": "factual"
+          },
+          {
+            "content": "記憶系統的 LLM 萃取和衝突偵測目前使用 qwen3.5:latest (9.7B)。Embedding 階段使用 qwen3-embedding:latest (7.6B)，此部分無法直接替換為 Gemma 4。",
+            "type": "factual"
+          },
+          {
+            "content": "A/B 測試結果顯示，gemma4:e4b no-think 在速度（19.5s）和穩定性（一致性 87.5%）方面表現最佳，且具備零幻覺（原文依據 100%）。",
+            "type": "factual"
+          },
+          {
+            "content": "gemma4:e4b-it-bf16 提供了最高的品質（具體性 100%、原文依據 100%），但耗時較長 (59.7s)，且 VRAM 佔用 15GB。",
+            "type": "factual"
+          },
+          {
+            "content": "Ollama 存在已知 Bug：在 Gemma 4 模型上使用 `think=false` 可能會破壞其 JSON 輸出結構。",
+            "type": "pitfall"
+          }
+        ]
+      },
+      {
+        "count": 4,
+        "avg_length": 80.5,
+        "content_lengths": [
+          106,
+          87,
+          67,
+          62
+        ],
+        "type_dist": {
+          "decision": 2,
+          "pitfall": 2
+        },
+        "specificity": "4/4",
+        "type_compliance": "4/4",
+        "schema_valid": "4/4",
+        "grounded": "4/4",
+        "hallucinated": 0,
+        "elapsed": 2.3,
+        "items": [
+          {
+            "content": "gemma4:e4b no-think (think=false) 在 A/B 測試中表現最佳：速度最快 (19.5s)，原文依據 100%，一致性最高 (87.5%)，且能正確處理空輸入。建議作為首選替換方案。",
+            "type": "decision"
+          },
+          {
+            "content": "gemma4:e4b-it-bf16 雖然耗時 (59.7s)，但在具體性、原文依據和項目數上表現最佳 (100% / 100% / 5.0)，可作為追求最高品質的備選方案。",
+            "type": "decision"
+          },
+          {
+            "content": "gemma4:26b MoE 的一致性測試結果 (45.5% Jaccard) 顯示其穩定性較差，不適合用於需要高穩定性的自動化管線。",
+            "type": "pitfall"
+          },
+          {
+            "content": "Ollama 存在已知 Bug：當使用 `think=false` 時，可能會破壞 Gemma 4 的 JSON 輸出結構。",
+            "type": "pitfall"
+          }
+        ]
+      }
+    ],
+    "g4:e4b t=0.3": [
+      {
+        "count": 5,
+        "avg_length": 114.0,
+        "content_lengths": [
+          183,
+          124,
+          85,
+          112,
+          66
+        ],
+        "type_dist": {
+          "factual": 1,
+          "decision": 2,
+          "architectural": 1,
+          "pitfall": 1
+        },
+        "specificity": "5/5",
+        "type_compliance": "5/5",
+        "schema_valid": "5/5",
+        "grounded": "5/5",
+        "hallucinated": 0,
+        "elapsed": 3.6,
+        "items": [
+          {
+            "content": "在 rdchat 環境中，Gemma 4 模型已安裝包括 `gemma4:e2b` (5.1B, Q4_K_M)、`gemma4:e4b` (8.0B, Q4_K_M)、`gemma4:e4b-it-bf16` (8.0B, F16) 和 `gemma4:26b` (25.8B, MoE, Q4_K_M) 四個 variant。目前缺少 31B Dense 版本。",
+            "type": "factual"
+          },
+          {
+            "content": "在記憶系統的知識萃取環節，`gemma4:e4b no-think` (即 `think=false`) 表現最佳：速度最快（平均 19.5s，比 qwen3.5 快 2.7x），原文依據 100%，一致性最高 (87.5%)，且能正確處理空輸入。",
+            "type": "decision"
+          },
+          {
+            "content": "若追求最高品質，`gemma4:e4b-it-bf16` 表現最佳（具體性 100%，原文依據 100%），但耗時較長（平均 59.7s），且 VRAM 佔用 15GB。",
+            "type": "decision"
+          },
+          {
+            "content": "現有系統的 LLM 萃取和衝突偵測環節可考慮替換為 Gemma 4，但 Embedding 向量索引部分仍需沿用 `qwen3-embedding:latest`，因為 Gemma 4 缺乏對應的 embedding 變體。",
+            "type": "architectural"
+          },
+          {
+            "content": "Ollama 存在一個已知 Bug：當使用 `think=false` 參數時，可能會破壞 Gemma 4 的 JSON 輸出結構。",
+            "type": "pitfall"
+          }
+        ]
+      },
+      {
+        "count": 3,
+        "avg_length": 80.3,
+        "content_lengths": [
+          112,
+          70,
+          59
+        ],
+        "type_dist": {
+          "decision": 2,
+          "pitfall": 1
+        },
+        "specificity": "3/3",
+        "type_compliance": "3/3",
+        "schema_valid": "3/3",
+        "grounded": "3/3",
+        "hallucinated": 0,
+        "elapsed": 1.8,
+        "items": [
+          {
+            "content": "在 rdchat 環境中，gemma4:e4b no-think 表現最佳，速度最快（19.5s），原文依據 100%，一致性最高（87.5%），且能正確處理空輸入。建議優先考慮此模型作為 LLM 萃取和衝突偵測的替換方案。",
+            "type": "decision"
+          },
+          {
+            "content": "gemma4:e4b-it-bf16 雖然耗時（59.7s），但具體性、原文依據和項目數表現最佳（100%），可作為追求最高品質的備選方案。",
+            "type": "decision"
+          },
+          {
+            "content": "Ollama 存在一個已知 Bug：設定 `think=false` 會破壞 Gemma 4 的 JSON 輸出結構。",
+            "type": "pitfall"
+          }
+        ]
+      }
+    ],
+    "qwen3.5 t=0.0": [
+      {
+        "error": "empty response",
+        "elapsed": 47.29225707054138
+      },
+      {
+        "error": "empty response",
+        "elapsed": 47.345901012420654
+      }
+    ],
+    "qwen3.5 t=0.1": [
+      {
+        "error": "empty response",
+        "elapsed": 43.97759485244751
+      },
+      {
+        "error": "empty response",
+        "elapsed": 43.96089577674866
+      }
+    ],
+    "qwen3.5 t=0.3": [
+      {
+        "error": "empty response",
+        "elapsed": 43.99650168418884
+      },
+      {
+        "error": "empty response",
+        "elapsed": 44.00274181365967
+      }
+    ]
+  },
+  "phase_c_reject": {
+    "qwen3.5|空輸入": {
+      "pass": true,
+      "count": 0
+    },
+    "g4:e4b T|空輸入": {
+      "pass": true,
+      "count": 0
+    },
+    "g4:e4b F|空輸入": {
+      "pass": true,
+      "count": 0
+    },
+    "g4:bf16 T|空輸入": {
+      "pass": true,
+      "count": 0
+    },
+    "g4:26b T|空輸入": {
+      "pass": true,
+      "count": 0
+    },
+    "qwen3.5|通用知識": {
+      "pass": true,
+      "count": 0
+    },
+    "g4:e4b T|通用知識": {
+      "pass": true,
+      "count": 0
+    },
+    "g4:e4b F|通用知識": {
+      "pass": true,
+      "count": 0
+    },
+    "g4:bf16 T|通用知識": {
+      "pass": true,
+      "count": 0
+    },
+    "g4:26b T|通用知識": {
+      "pass": true,
+      "count": 0
+    }
+  },
+  "phase_d_format": {
+    "g4:e4b think=F + format": {
+      "is_json": false,
+      "elapsed": 6.5,
+      "preview": "```json\n[\n  {\n    \"content\": \"rdchat 已安裝 Gemma 4 的多個 variant，包括 `gemma4:e2b` (5.1B, Q4_K_M, 6.7 GB)、`gemma4:e4b` (8.0B, Q4_K_M, 8.9 GB)、`gemma4:e4b-it-bf16` (8.0B, F16, 14.9 GB) 和 `gemma4:26b` (25.8B "
+    },
+    "g4:e4b think=T + format": {
+      "is_json": true,
+      "elapsed": 10.4,
+      "preview": "{\"content\": \"rdchat 已安裝 Gemma 4 的多個 variant，包括 `gemma4:e2b` (5.1B, Q4_K_M, 6.7 GB)、`gemma4:e4b` (8.0B, Q4_K_M, 8.9 GB)、`gemma4:e4b-it-bf16` (8.0B, F16, 14.9 GB) 和 `gemma4:26b` (25.8B, Q4_K_M, 16.7 GB)"
+    },
+    "g4:e4b think=omit + format": {
+      "is_json": true,
+      "elapsed": 9.5,
+      "preview": "{\"content\": \"rdchat 已安裝 Gemma 4 的多個 variant，包括 `gemma4:e2b` (5.1B, Q4_K_M, 6.7 GB)、`gemma4:e4b` (8.0B, Q4_K_M, 8.9 GB)、`gemma4:e4b-it-bf16` (8.0B, F16, 14.9 GB) 和 `gemma4:26b` (25.8B, Q4_K_M, 16.7 GB)"
+    }
+  }
+}

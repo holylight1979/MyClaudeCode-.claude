@@ -30,7 +30,12 @@
       "Edit(c:\\tmp\\docs-progg\\.claude\\**)",
       "Write(c:\\tmp\\docs-progg\\.claude\\**)",
       "Bash(cp \"/c/Projects/.claude/memory/fcgi-api-directory.md\" /tmp/phpujadmin/atom.md)",
-      "Read(//tmp/phpujadmin/**)"
+      "Read(//tmp/phpujadmin/**)",
+      "Bash(mkdir -p _AIDocs/DevHistory/v41-handoffs _AIDocs/DevHistory/ab-test-gemma4)",
+      "Bash(mv memory/_staging/handoff-session-a-v4-finish.md _AIDocs/DevHistory/v41-handoffs/)",
+      "Bash(mv memory/_staging/handoff-session-b-v41-p1-detector.md _AIDocs/DevHistory/v41-handoffs/)",
+      "Bash(mv memory/_staging/handoff-session-c-v41-p2-prompts-lib.md _AIDocs/DevHistory/v41-handoffs/)",
+      "Bash(mv memory/_staging/handoff-session-d-v41-p2-integration.md _AIDocs/DevHistory/v41-handoffs/)"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [
