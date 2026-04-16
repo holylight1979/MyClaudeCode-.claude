@@ -212,6 +212,25 @@
           "trust": 1.0,
           "weighted_total": 0.8376
         }
+      },
+      {
+        "session_id": "5a349797-9114-4252-b4fa-7c40400f0627",
+        "ts": "2026-04-16T11:16:43.665158+00:00",
+        "prompt_count": 4,
+        "extract_triggered": 1,
+        "extract_written": 0,
+        "dedup_hit": 0,
+        "rejected_24h": 0,
+        "avg_l2_conf": 0.0,
+        "token_used": 97,
+        "scores": {
+          "density": 0.2449,
+          "precision_proxy": 1.0,
+          "novelty": 1.0,
+          "cost_efficiency": 0.5958,
+          "trust": 1.0,
+          "weighted_total": 0.8261
+        }
       }
     ]
   }

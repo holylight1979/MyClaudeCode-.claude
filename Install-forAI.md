@@ -1,7 +1,7 @@
 # Atomic Memory V4.1 — AI 安裝指南
 
 > **目標讀者**：Claude / 相容 AI 助手，代替使用者執行原子記憶系統的合併安裝。
-> **若你是人類**：建議不要逐步手作，直接在新 Claude Code session 貼 [README.md](README.md) 的「透過 AI 安裝」prompt，讓 AI 照本指南執行。
+> **若你是人類**：建議不要逐步手作，直接在新 Claude Code session 貼 [README.md](README.md) 的「由 AI 全程代跑」prompt，讓 AI 照本指南執行。
 
 ---
 
@@ -64,35 +64,12 @@
 
 ---
 
-## 3. 路徑 A：install.py 一鍵安裝（推薦全新環境）
-
-```bash
-git clone <repo-URL> ~/.claude
-python ~/.claude/install.py
-```
-
-`install.py` 自動做：
-
-1. **前置檢查** — Python 版本 / Node.js / ~/.claude 目錄
-2. **npm 全域套件** — 從 `mcp-servers.template.json` 讀取清單（MCPControl、Playwright）
-3. **~/.claude.json MCP 合併** — 冪等，不覆蓋既有 server
-4. **IDENTITY.md / USER.md 初始化** — 從 template（已存在則不動）
-5. **驗證報告** — hooks、settings.json、npm 套件狀態
-
-完成後跳到 **第 5 節：Ollama + Vector Service**。
-
-> **V4.1 已知缺漏**：install.py 目前不自動建 `workflow/project-registry.json`、不執行 `user-init.sh`、不做 `config.json` 版本 migration、不 bootstrap V4 `_roles.md` / `shared/`。使用者可參考 `memory/_staging/handoff-install-py-v41-upgrade.md` 看升級計畫。
-
----
-
-## 4. 路徑 B：手動合併安裝（已有 ~/.claude 個人設定）
-
-適用：使用者 `~/.claude/` 已有自訂 `settings.json` permissions 等，不想覆蓋。
+## 3. 安裝流程（合併安裝，不覆蓋既有設定）
 
 ### Step 0：備份現有設定
 
 ```bash
-cp ~/.claude/settings.json ~/.claude/settings.json.backup
+cp ~/.claude/settings.json ~/.claude/settings.json.backup 2>/dev/null || true
 ```
 
 ### Step 1：Clone repo 到暫存位置
@@ -170,6 +147,10 @@ mkdir -p ~/.claude/workflow
 # ── Slash commands (24 個) ──
 mkdir -p ~/.claude/commands
 cp /tmp/atomic-memory/commands/*.md ~/.claude/commands/
+
+# ── MCP server template + ensure-mcp hook ──
+cp /tmp/atomic-memory/mcp-servers.template.json ~/.claude/
+[ -f /tmp/atomic-memory/hooks/ensure-mcp.py ] && cp /tmp/atomic-memory/hooks/ensure-mcp.py ~/.claude/hooks/
 ```
 
 ### Step 3：合併 settings.json hooks 區塊（最關鍵）
@@ -197,7 +178,38 @@ cp /tmp/atomic-memory/commands/*.md ~/.claude/commands/
 
 > **Python 指令**：若使用者系統是 `python3` 而非 `python`，AI 要全部改成 `python3 ...`。先跑 `python --version` 確認。
 
-### Step 4：初始化個人記憶層
+### Step 4：npm 全域套件 + `~/.claude.json` MCP 合併
+
+讀 `~/.claude/mcp-servers.template.json` 的 `servers` 清單，把有 `npm_package` 的用 `npm i -g` 裝起來：
+
+```bash
+# 當前清單（template 內容為真源，以 template 為準；範例）：
+npm i -g computer-use-mcp     # MCPControl：螢幕/滑鼠/鍵盤
+npm i -g @playwright/mcp      # playwright：瀏覽器自動化
+```
+
+合併 `~/.claude.json` 的 `mcpServers` 欄位（冪等，不覆蓋使用者已有 server）：
+
+```
+讀 ~/.claude/mcp-servers.template.json 的每個 server
+→ 找出對應 npm 全域套件位置（Windows: %APPDATA%/npm/node_modules/{pkg}，Unix: $(npm root -g)/{pkg}）
+→ 在 ~/.claude.json.mcpServers 加入 entry：
+    {
+      "<name>": {
+        "command": "node",           // Windows 用 node.exe 絕對路徑更穩
+        "args": ["<絕對路徑>/dist/main.js"],   // entry_relative 來自 template
+        "type": "stdio"
+      }
+    }
+→ 對於 npm_package=null 的 server（如 workflow-guardian），用 entry_absolute 並把 {claude_dir} 展開為 $HOME/.claude
+```
+
+關鍵規則：
+- **全域安裝 + 絕對路徑**，不要用 `cmd /c npx`（VSCode 擴充環境不穩）
+- Windows: `C:\\Program Files\\nodejs\\node.exe` + `C:\\Users\\{user}\\AppData\\Roaming\\npm\\node_modules\\{pkg}\\...`
+- 若 `~/.claude.json` 已有同名 server，**不覆蓋**，跳過並回報使用者
+
+### Step 5：初始化個人記憶層
 
 若 `~/.claude/memory/MEMORY.md` 不存在才建。已存在**不動**（使用者可能已有累積）。
 
@@ -206,19 +218,11 @@ AI 把下列 template 寫入（若缺）：
 - `memory/preferences.md` — 使用者偏好初始空殼
 - `memory/decisions.md` — 全域決策初始空殼
 
-### Step 5：手動路徑 B 補齊後，仍建議跑
-
-```bash
-python ~/.claude/install.py
-```
-
-補 npm 套件 + MCP 合併（install.py 冪等，重跑安全）。
-
 ---
 
-## 5. Ollama + Vector Service
+## 4. Ollama + Vector Service
 
-### 5.1 Ollama 模型
+### 4.1 Ollama 模型
 
 ```bash
 # Embedding（語意搜尋）
@@ -232,7 +236,7 @@ ollama pull qwen3:1.7b                 # ~1.2 GB
 ollama pull gemma4:e4b                 # ~5 GB
 ```
 
-### 5.2 Python 套件
+### 4.2 Python 套件
 
 ```bash
 pip install lancedb>=0.20                # Vector DB（需 AVX2）
@@ -240,7 +244,7 @@ pip install sentence-transformers>=4.0   # Fallback embedding
 # 無 AVX2: pip install chromadb 並改 config.json 的 vector_search.fallback_backend
 ```
 
-### 5.3 Vector Service 啟動
+### 4.3 Vector Service 啟動
 
 ```bash
 cd ~/.claude/tools/memory-vector-service
@@ -260,7 +264,7 @@ curl -s http://127.0.0.1:3849/index/full
 
 > Vector Service 在每次 session 啟動時由 Guardian 自動檢查 + spawn，不需常駐。
 
-### 5.4 （可選）遠端 Ollama Backend
+### 4.4 （可選）遠端 Ollama Backend
 
 若使用者團隊有 GPU 伺服器（Open WebUI + Ollama），編輯 `~/.claude/workflow/config.json` 的 `vector_search.ollama_backends`：
 
@@ -299,7 +303,7 @@ echo "你的 LDAP 密碼" > ~/.claude/workflow/.rdchat_password
 
 ---
 
-## 6. 驗證 Checklist（AI 逐項確認）
+## 5. 驗證 Checklist（AI 逐項確認）
 
 跑完下面每條，把結果表格化回報給使用者：
 
@@ -312,11 +316,12 @@ echo "你的 LDAP 密碼" > ~/.claude/workflow/.rdchat_password
 | 5 | Memory 健檢 | `python ~/.claude/tools/memory-audit.py` | 無 ERROR |
 | 6 | V4 `_roles.md` | `ls ~/.claude/memory/_roles.md 2>/dev/null` | 單人環境**可不存在**（多職務未啟用）；團隊模式應存在 |
 | 7 | V4.1 commands | VS Code 中按 `/` 能看到 `/memory-peek` `/memory-undo` `/memory-session-score` | 三個 skill 皆出現 |
-| 8 | 整合驗證 | 開新 Claude Code session | 看到 `[Workflow Guardian] Active` |
+| 8 | MCP servers | 檢查 `~/.claude.json` 的 `mcpServers` 含 template 內 server | MCPControl + playwright + workflow-guardian 至少有 |
+| 9 | 整合驗證 | 開新 Claude Code session | 看到 `[Workflow Guardian] Active` |
 
 ---
 
-## 7. V2 / V3 → V4.1 升級
+## 6. V2 / V3 → V4.1 升級
 
 已安裝舊版使用者：
 
@@ -331,12 +336,13 @@ cd ~/.claude && git pull
 - [ ] `commands/` 含 `memory-peek.md` / `memory-undo.md` / `memory-session-score.md` / `conflict-review.md` / `init-roles.md`
 - [ ] `workflow/config.json` 含 `userExtraction` / `docdrift` / `hot_cache` sections（若缺，補預設值，不覆蓋既有）
 - [ ] `settings.json` 的 `Stop` hook 有 async `quick-extract.py` entry
+- [ ] `mcp-servers.template.json` 在 `~/.claude/` 根目錄
 
 > 多職務團隊若要啟用 V4 scope 分層：在專案裡執行 `/init-roles`，會建立 `memory/shared/_roles.md` + `role/{name}/` 目錄。
 
 ---
 
-## 8. 常見問題 FAQ
+## 7. 常見問題 FAQ
 
 ### Q: 安裝後 Claude Code 啟動變慢？
 **A**: V4.1 SessionStart 去重 + 非阻塞 vector 啟動，延遲 50-200 ms。每次 prompt 額外 200-500 ms（向量搜尋）。首次 prompt 較慢（500-1500 ms，episodic context search）。
@@ -365,14 +371,14 @@ cd ~/.claude && git pull
 - `"docdrift.enabled": false` → 關文件漂移偵測
 
 ### Q: 沒有 GPU 能用嗎？
-**A**: 可以。Ollama CPU fallback 約 200-500 ms（embedding）、1-3 s（qwen3:1.7b）。想加速可設定遠端 rdchat-direct backend（第 5.4 節）。
+**A**: 可以。Ollama CPU fallback 約 200-500 ms（embedding）、1-3 s（qwen3:1.7b）。想加速可設定遠端 rdchat-direct backend（第 4.4 節）。
 
 ### Q: 完全移除？
 **A**: 刪 `settings.json` 的 hooks 區塊 → 刪 `~/.claude/hooks/` `~/.claude/tools/` `~/.claude/memory/` 等目錄。Claude Code 本體零修改，移除無殘留。
 
 ---
 
-## 9. 清理暫存
+## 8. 清理暫存
 
 ```bash
 rm -rf /tmp/atomic-memory

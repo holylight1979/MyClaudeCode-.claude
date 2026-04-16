@@ -16,30 +16,19 @@
 | Ollama | 最新 | `ollama --version` |
 | Git | 任意 | `git --version` |
 
-### 2. 透過 AI 安裝（推薦）
+### 2. 由 AI 全程代跑
 
-開一個新的 Claude Code session（任何資料夾都行），把下面這段 prompt 整段貼進去就好：
+先 clone 或下載 repo 到 `~/.claude/`，再開一個新的 Claude Code session（任何資料夾都行），把下面這段 prompt 整段貼進去就好：
 
 ```
 請幫我把 原子記憶系統 Atomic Memory V4.1 合併安裝到我的 ~/.claude/ 目錄。
-1. 先讀 ~/.claude/Install-forAI.md（或從 repo URL 取，若本地沒有）完整流程；
+1. 先讀 ~/.claude/Install-forAI.md 完整流程；
 2. 檢查我環境的必備套件是否齊全（Python / Node.js / Ollama / Git / 向量 DB 套件），列出缺項告訴我怎麼補；
 3. 照 Install-forAI.md 的 AI 執行流程合併安裝（不覆蓋我現有的 settings.json permissions）；
 4. 最後跑驗證 checklist 並回報「安裝完成 / 尚缺 X」。
 ```
 
-AI 會自己走完安裝 + 環境自檢，缺套件會主動報給你去補，不會硬裝。
-
-### 3. 透過 install.py 安裝
-
-`install.py` 是一鍵腳本：合併 npm 全域套件、`~/.claude.json` MCP 設定、`IDENTITY.md` / `USER.md` 身份檔初始化。
-
-```bash
-git clone <repo-URL> ~/.claude
-python ~/.claude/install.py
-```
-
-完成後仍需安裝 Ollama 模型（`qwen3-embedding` / `qwen3:1.7b` / `gemma4:e4b`）與 Vector Service 依賴，詳細步驟見 [Install-forAI.md](Install-forAI.md)。
+AI 會自己走完檔案合併 + npm 套件 + MCP 設定 + Ollama 模型 + Vector Service + 驗證。缺套件會主動列給你去補，不會硬裝。
 
 ---
 

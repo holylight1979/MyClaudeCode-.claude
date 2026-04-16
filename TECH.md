@@ -26,7 +26,7 @@ LLM 的 context window 是**工作記憶**，缺的是**長期記憶**。原子�
 ~/.claude/
 ├── CLAUDE.md / IDENTITY.md / USER.md              ← 啟動三件套
 ├── settings.json                                   ← 7 hook events
-├── install.py                                       ← 一鍵安裝腳本
+├── mcp-servers.template.json                        ← MCP server 清單（Install-forAI 用）
 ├── README.md / TECH.md / Install-forAI.md          ← 使用者文件
 │
 ├── rules/                                           ← 模組化規則

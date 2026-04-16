@@ -32,7 +32,7 @@
 | `settings.json` | Hook 綁定 + 權限 + MCP |
 | `.mcp.json` | MCP server 定義 |
 | `workflow/config.json` | Guardian/Vector/WriteGate/Capture 參數 |
-| `install.py` | 一鍵安裝腳本（npm 套件 + ~/.claude.json MCP 合併 + bootstrap） |
+| `mcp-servers.template.json` | MCP server 清單，由 Install-forAI 流程讀取合併到 `~/.claude.json` |
 
 ### 規則模組（rules/）
 
