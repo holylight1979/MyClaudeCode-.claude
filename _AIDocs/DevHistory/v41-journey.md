@@ -194,6 +194,21 @@ Session F 報 GA blocker：整合測 `TestPrecisionRecall` aggregate `P=1.00 R=0
 
 修復後手測 `state-08b557ff` 自動從 `phase=merged` 復活為 `phase=working`，**立刻抓到使用者之前發的「請記住這是基本信任原則」prompt**（L0 matched「記住」）寫入 `pending_user_extract[]` — 實證 V4.1 整條 pipeline 運作無誤。
 
+**但接著觸發 Stop hook 實測又暴露另外兩個 GA 後 bug**（不同根因，非反覆修同一問題）：
+
+1. **`_is_lease_valid`/`_set_lease` 未 import**（commit `8625b45`）：`_maybe_spawn_user_extract_worker` 用到這兩個 helper，但 `workflow-guardian.py` 從 `wg_extraction` 的 import list 漏掉 → 每次 Stop/SessionEnd 觸發 `NameError` 崩潰 → worker **從未被真實 spawn**。Session F 整合測繞過 guardian 直接跑 pipeline 故沒抓到。
+2. **F22 budget tracker 算 full prompt tok**：原算法 `budget.spend(_estimate_tokens(l1_prompt))` 把 L1 few-shot 模板（~300 tok）全量計入 240 budget → 一條 pending 就 break 剩下全留下輪。Plan v2 §8 amortized 170 tok 預估的前提是 prompt cache 命中，但 ollama local/rdchat 無 anthropic-style cache；NFR#3「amortized per session」語意應該是 user-delta tok 不是 wall cost。修為只算 `user_prompt + response` 增量，few-shot 視為固定 overhead 不進 budget。
+
+**三 bug 清除後實測驗收（同 session 內完成）**：
+
+| pending | L1 | L2 | 結果 | 驗收點 |
+|---|---|---|---|---|
+| 「請記住這是基本信任原則」長篇 meta | no | — | 丟棄 | L1 正確判非長期規則 ✓ |
+| 「V4.2 L0 中文補強」| yes | ≥0.92 | `personal/auto/holylight/v4-2-版本應優先進行-l0-中文功能詞補強.md` | F5 明說+預設同意 → ack_then_clear → MCP atom_write 全走通 ✓ |
+| 「我決定覆蓋這張牌，結束本回合」遊戲王虛構 | no | — | 丟棄 | L1 正確識別虛構台詞非真實規則 ✓ |
+
+落盤 atom 含 `Source-turn-id` footer (F1)、`author=auto-extracted-v4.1` (F17)、`scope` 與 `trigger` 由 L2 推斷、`Confidence: [臨]` 初始。merge_history.log 三筆紀錄驗運作透明。
+
 ### 5.5 教訓
 
 這個 blocker 暴露四個系統性問題：
