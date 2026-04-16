@@ -1721,22 +1721,26 @@ function apiProjects(req, res) {
 
 function apiAtoms(req, res) {
   const atoms = [];
+  const seenAtomFiles = new Set();
   const scanDirs = [
-    { dir: MEMORY_DIR, layer: "global" },
-    { dir: path.join(MEMORY_DIR, "failures"), layer: "failures" },
-    { dir: path.join(MEMORY_DIR, "unity"), layer: "unity" },
+    { dir: MEMORY_DIR, layer: "global", scope: "global" },
+    { dir: path.join(MEMORY_DIR, "failures"), layer: "failures", scope: "global" },
+    { dir: path.join(MEMORY_DIR, "unity"), layer: "unity", scope: "global" },
   ];
 
-  for (const { dir, layer } of scanDirs) {
+  for (const { dir, layer, scope } of scanDirs) {
     if (!fs.existsSync(dir)) continue;
     for (const f of fs.readdirSync(dir)) {
       if (!f.endsWith(".md")) continue;
       if (f === "MEMORY.md" || f.startsWith("SPEC_") || f.startsWith("_")) continue;
 
       const filePath = path.join(dir, f);
+      const fileKey = path.resolve(filePath).toLowerCase();
+      if (seenAtomFiles.has(fileKey)) continue;
+      seenAtomFiles.add(fileKey);
       try {
         const content = fs.readFileSync(filePath, "utf-8");
-        const atom = { name: f.replace(".md", ""), layer, file: f };
+        const atom = { name: f.replace(".md", ""), layer, scope, file: f };
 
         // Parse metadata
         const metaRe = /^-\s+([\w-]+):\s*(.+)$/gm;
@@ -1752,6 +1756,9 @@ function apiAtoms(req, res) {
             case "created": atom.created = val; break;
             case "type": atom.type = val; break;
             case "tags": atom.tags = val.split(",").map(t => t.trim()); break;
+            case "scope": atom.scope = val; break;
+            case "audience": atom.audience = val.split(",").map(t => t.trim()); break;
+            case "author": atom.author = val; break;
           }
         }
 
@@ -1782,38 +1789,89 @@ function apiAtoms(req, res) {
     }
   }
 
-  // Helper: scan a project memory dir and push atoms
-  function scanProjMemDir(projMemDir, layerLabel) {
-    if (!fs.existsSync(projMemDir)) return;
-    for (const f of fs.readdirSync(projMemDir)) {
+  // Helper: scan a single .md as an atom (used by project + V4 shared/role scans)
+  function pushAtomFromFile(filePath, fileName, layerLabel, defaultScope) {
+    const fileKey = path.resolve(filePath).toLowerCase();
+    if (seenAtomFiles.has(fileKey)) return;
+    seenAtomFiles.add(fileKey);
+    try {
+      const content = fs.readFileSync(filePath, "utf-8");
+      if (content.includes("Status: migrated-v2.21")) return;
+      const atom = {
+        name: fileName.replace(".md", ""),
+        layer: layerLabel,
+        scope: defaultScope,
+        file: fileName,
+        content,
+      };
+      const metaRe = /^-\s+([\w-]+):\s*(.+)$/gm;
+      let m2;
+      while ((m2 = metaRe.exec(content)) !== null) {
+        const key = m2[1].toLowerCase(), val = m2[2].trim();
+        switch (key) {
+          case "confidence": atom.confidence = val; break;
+          case "last-used": atom.last_used = val; break;
+          case "confirmations": atom.confirmations = parseInt(val) || 0; break;
+          case "related": atom.related = val.split(",").map(t => t.trim()); break;
+          case "trigger": atom.triggers = val.split(",").map(t => t.trim()); break;
+          case "scope": atom.scope = val; break;
+          case "audience": atom.audience = val.split(",").map(t => t.trim()); break;
+          case "author": atom.author = val; break;
+        }
+      }
+      atom.line_count = content.split("\n").length;
+      atoms.push(atom);
+    } catch {}
+  }
+
+  // Helper: scan a flat memory dir, skip excluded dirs, optionally exclude personal/episodic/_*
+  function scanFlatDir(dir, layerLabel, defaultScope) {
+    if (!fs.existsSync(dir)) return;
+    for (const f of fs.readdirSync(dir)) {
       if (!f.endsWith(".md")) continue;
       if (f === "MEMORY.md" || f.startsWith("_")) continue;
+      pushAtomFromFile(path.join(dir, f), f, layerLabel, defaultScope);
+    }
+  }
+
+  // Helper: V4 shared/ + roles/{r}/ scan for any memory root
+  function scanV4ScopeDirs(memRoot, layerPrefix, scopePrefix) {
+    const sharedDir = path.join(memRoot, "shared");
+    if (fs.existsSync(sharedDir)) {
+      scanFlatDir(sharedDir, layerPrefix + "shared", scopePrefix + "shared");
+    }
+    const rolesDir = path.join(memRoot, "roles");
+    if (fs.existsSync(rolesDir)) {
       try {
-        const content = fs.readFileSync(path.join(projMemDir, f), "utf-8");
-        // Skip pointer-type MEMORY.md redirects
-        if (content.includes("Status: migrated-v2.21")) continue;
-        const atom = { name: f.replace(".md", ""), layer: layerLabel, file: f, content };
-        const metaRe = /^-\s+([\w-]+):\s*(.+)$/gm;
-        let m2;
-        while ((m2 = metaRe.exec(content)) !== null) {
-          const key = m2[1].toLowerCase(), val = m2[2].trim();
-          switch (key) {
-            case "confidence": atom.confidence = val; break;
-            case "last-used": atom.last_used = val; break;
-            case "confirmations": atom.confirmations = parseInt(val) || 0; break;
-            case "related": atom.related = val.split(",").map(t => t.trim()); break;
-          }
+        for (const role of fs.readdirSync(rolesDir)) {
+          const roleDir = path.join(rolesDir, role);
+          try {
+            if (!fs.statSync(roleDir).isDirectory()) continue;
+          } catch { continue; }
+          scanFlatDir(roleDir, layerPrefix + "role:" + role, scopePrefix + "role:" + role);
         }
-        atom.line_count = content.split("\n").length;
-        atoms.push(atom);
       } catch {}
     }
   }
 
+  // Helper: scan a project memory dir (legacy flat layout) and push atoms
+  function scanProjMemDir(projMemDir, slug) {
+    const before = atoms.length;
+    scanFlatDir(projMemDir, "project:" + slug, "project:" + slug);
+    // 若 atom frontmatter 寫 `Scope: project`（V4 SPEC 允許值），把 slug 補回去，避免畫面只看到 "project"
+    for (let i = before; i < atoms.length; i++) {
+      if (atoms[i].scope === "project") atoms[i].scope = "project:" + slug;
+    }
+    scanV4ScopeDirs(projMemDir, "project:" + slug + ":", "project:" + slug + ":");
+  }
+
+  // V4: global shared/ + roles/{r}/ scan (本專案目前無此目錄，預留給未來)
+  scanV4ScopeDirs(MEMORY_DIR, "", "");
+
   // V2.21: scan registry project dirs (new path)
   const seenProjDirs = new Set();
   for (const { slug, memDir } of getRegistryMemDirs()) {
-    scanProjMemDir(memDir, "project:" + slug);
+    scanProjMemDir(memDir, slug);
     seenProjDirs.add(memDir);
   }
 
@@ -1823,12 +1881,168 @@ function apiAtoms(req, res) {
     for (const proj of fs.readdirSync(projectsDir)) {
       const projMemDir = path.join(projectsDir, proj, "memory");
       if (seenProjDirs.has(projMemDir)) continue;
-      scanProjMemDir(projMemDir, "project:" + proj);
+      scanProjMemDir(projMemDir, proj);
     }
   }
 
   atoms.sort((a, b) => (b.last_used || "").localeCompare(a.last_used || ""));
   jsonRes(res, 200, atoms);
+}
+
+// ─── Skills (commands/*.md) ──────────────────────────────────────────────────
+// 純檔案掃描；提供「全域 + 各 registered project」的 slash command 清單。
+const SKILL_CATEGORY_MAP = {
+  // V4 / V4.1 共用核心
+  "memory-peek": "V4.1", "memory-undo": "V4.1", "memory-session-score": "V4.1",
+  "generate-episodic": "V4.1",
+  // 記憶維運
+  "extract": "記憶維運", "memory-health": "記憶維運", "memory-review": "記憶維運",
+  "conflict": "記憶維運", "conflict-review": "記憶維運", "atom-debug": "記憶維運",
+  "fix-escalation": "記憶維運",
+  // 開發協作
+  "handoff": "開發協作", "continue": "開發協作", "resume": "開發協作",
+  "init-project": "開發協作", "init-roles": "開發協作", "read-project": "開發協作",
+  "upgrade": "開發協作", "consciousness-stream": "開發協作",
+  // 工具
+  "harvest": "工具", "browse-sprites": "工具", "unity-yaml": "工具",
+  "svn-update": "工具", "vector": "工具",
+};
+
+function extractSkillDescription(content) {
+  const lines = content.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    // 跳過 H1 與空行；找第一個 `> ...` 引言行（這是現行 commands/*.md 的描述慣例）
+    if (line.startsWith("> ")) return line.slice(2).trim();
+  }
+  // fallback：第一個非 H1 / 非空 / 非分隔線的段落
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line || line.startsWith("#") || line.startsWith("---")) continue;
+    return line.slice(0, 200);
+  }
+  return "";
+}
+
+function scanCommandsDir(dir, source) {
+  const skills = [];
+  if (!fs.existsSync(dir)) return skills;
+  for (const f of fs.readdirSync(dir)) {
+    if (!f.endsWith(".md")) continue;
+    const filePath = path.join(dir, f);
+    try {
+      const stat = fs.statSync(filePath);
+      if (!stat.isFile()) continue;
+      const content = fs.readFileSync(filePath, "utf-8");
+      const name = f.replace(".md", "");
+      skills.push({
+        name,
+        command: "/" + name,
+        description: extractSkillDescription(content),
+        category: SKILL_CATEGORY_MAP[name] || "其他",
+        source,
+        file: filePath,
+        content,
+      });
+    } catch {}
+  }
+  return skills;
+}
+
+function apiSkills(req, res) {
+  const skills = [];
+  const seenFiles = new Set();
+  function pushUnique(list) {
+    for (const s of list) {
+      const key = path.resolve(s.file).toLowerCase();
+      if (seenFiles.has(key)) continue;
+      seenFiles.add(key);
+      skills.push(s);
+    }
+  }
+  // 全域（優先，避免被 registered project 重複撈走）
+  pushUnique(scanCommandsDir(path.join(CLAUDE_DIR, "commands"), "global"));
+  // 各 registered project
+  const reg = loadRegistry();
+  for (const [slug, info] of Object.entries(reg.projects || {})) {
+    if (!info.root) continue;
+    const rootNorm = path.resolve(info.root);
+    const projCmdDir = path.join(rootNorm, ".claude", "commands");
+    // 若 project root 的 .claude/commands 與 CLAUDE_DIR/commands 是同一目錄（例：root=user home），跳過
+    const projCmdNorm = path.resolve(projCmdDir).toLowerCase();
+    const globalCmdNorm = path.resolve(path.join(CLAUDE_DIR, "commands")).toLowerCase();
+    if (projCmdNorm === globalCmdNorm) continue;
+    pushUnique(scanCommandsDir(projCmdDir, "project:" + slug));
+  }
+  // 排序：分類 → 名稱
+  skills.sort((a, b) =>
+    a.category.localeCompare(b.category, "zh-Hant") ||
+    a.name.localeCompare(b.name)
+  );
+  jsonRes(res, 200, skills);
+}
+
+// ─── MCP Servers ─────────────────────────────────────────────────────────────
+// 來源：~/.claude/.mcp.json + 各 registered project .mcp.json + settings.json
+function readMcpJson(filePath) {
+  if (!fs.existsSync(filePath)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(filePath, "utf-8"));
+  } catch { return null; }
+}
+
+function apiMcpServers(req, res) {
+  const servers = [];
+
+  // 全域 .mcp.json
+  const globalMcp = readMcpJson(path.join(CLAUDE_DIR, ".mcp.json"));
+  if (globalMcp && globalMcp.mcpServers) {
+    for (const [name, cfg] of Object.entries(globalMcp.mcpServers)) {
+      servers.push(buildMcpEntry(name, cfg, "global", path.join(CLAUDE_DIR, ".mcp.json")));
+    }
+  }
+
+  // settings.json 的 enabled 狀態
+  const settings = readMcpJson(path.join(CLAUDE_DIR, "settings.json")) || {};
+  const enabledList = settings.enabledMcpjsonServers || [];
+  const enableAll = settings.enableAllProjectMcpServers === true;
+
+  // 各 registered project .mcp.json
+  const reg = loadRegistry();
+  for (const [slug, info] of Object.entries(reg.projects || {})) {
+    if (!info.root) continue;
+    const rootNorm = path.resolve(info.root);
+    const isClaudeDir = rootNorm.toLowerCase() === path.resolve(CLAUDE_DIR).toLowerCase();
+    if (isClaudeDir) continue;
+    const projMcpPath = path.join(rootNorm, ".mcp.json");
+    const projMcp = readMcpJson(projMcpPath);
+    if (!projMcp || !projMcp.mcpServers) continue;
+    for (const [name, cfg] of Object.entries(projMcp.mcpServers)) {
+      const entry = buildMcpEntry(name, cfg, "project:" + slug, projMcpPath);
+      // 專案 MCP 的啟用判斷：enableAllProjectMcpServers 或 enabledMcpjsonServers 含名稱
+      entry.enabled = enableAll || enabledList.includes(name);
+      servers.push(entry);
+    }
+  }
+
+  servers.sort((a, b) =>
+    a.source.localeCompare(b.source) || a.name.localeCompare(b.name)
+  );
+  jsonRes(res, 200, servers);
+}
+
+function buildMcpEntry(name, cfg, source, filePath) {
+  return {
+    name,
+    type: cfg.type || "stdio",
+    command: cfg.command || "",
+    args: Array.isArray(cfg.args) ? cfg.args : [],
+    url: cfg.url || "",
+    env_keys: cfg.env ? Object.keys(cfg.env) : [],
+    source,
+    config_file: filePath,
+    enabled: true, // 全域預設啟用；專案的會在 caller 覆寫
+  };
 }
 
 // ─── HTTP Dashboard ─────────────────────────────────────────────────────────
@@ -2010,6 +2224,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
   <button class="tab-btn" data-tab="projects">已知專案</button>
   <button class="tab-btn" data-tab="tests">測試</button>
   <button class="tab-btn" data-tab="vector">向量服務</button>
+  <button class="tab-btn" data-tab="env">環境</button>
 </nav>
 
 <div id="panelSessions" class="tab-panel active">
@@ -2043,6 +2258,10 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
 
 <div id="panelVector" class="tab-panel">
   <div id="vectorContent"><div class="empty">載入向量服務狀態中...</div></div>
+</div>
+
+<div id="panelEnv" class="tab-panel">
+  <div id="envContent"><div class="empty">載入環境資訊中...</div></div>
 </div>
 
 <script>
@@ -2081,6 +2300,7 @@ async function refreshCurrentTab() {
     case "projects": await renderProjects(); break;
     case "tests": break;
     case "vector": await renderVector(); break;
+    case "env": await renderEnv(); break;
   }
   window.scrollTo(0, prevScroll);
 }
@@ -2676,11 +2896,25 @@ function renderAtomsTable(atoms) {
   if (confCounts["[臨]"]) html += '<div class="stat"><div class="stat-value" style="color:#f0883e">' + confCounts["[臨]"] + '</div><div class="stat-label">[臨] 臨時</div></div>';
   html += '</div>';
 
-  html += '<input id="atomFilter" class="atom-filter" type="text" placeholder="搜尋原子名稱、觸發詞..." oninput="filterAtoms(this.value)">';
+  // 收集所有 scope 給下拉選單
+  const scopeSet = new Set();
+  for (const a of atoms) { if (a.scope) scopeSet.add(a.scope); }
+  const scopes = [...scopeSet].sort();
+
+  html += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">';
+  html += '<input id="atomFilter" class="atom-filter" type="text" placeholder="搜尋原子名稱、觸發詞..." oninput="applyAtomFilters()" style="margin-bottom:0">';
+  html += '<select id="atomScopeFilter" class="atom-filter" style="width:auto;margin-bottom:0" onchange="applyAtomFilters()">';
+  html += '<option value="">所有 scope</option>';
+  for (const s of scopes) {
+    html += '<option value="' + esc(s) + '">' + esc(s) + '</option>';
+  }
+  html += '</select>';
+  html += '</div>';
 
   html += '<table class="atom-table" id="atomTable">';
   html += '<thead><tr>' +
     '<th onclick="sortAtoms(\\'name\\')">名稱 &#8597;</th>' +
+    '<th onclick="sortAtoms(\\'scope\\')">Scope &#8597;</th>' +
     '<th onclick="sortAtoms(\\'layer\\')">層級 &#8597;</th>' +
     '<th onclick="sortAtoms(\\'confidence\\')">信心 &#8597;</th>' +
     '<th onclick="sortAtoms(\\'confirmations\\')">確認數 &#8597;</th>' +
@@ -2699,8 +2933,11 @@ function buildAtomRows(atoms) {
   for (const a of atoms) {
     const confClass = a.confidence === "[固]" ? "conf-fixed" : a.confidence === "[觀]" ? "conf-observe" : "conf-temp";
     const daysAgo = a.days_since_used != null ? a.days_since_used + ' 天前' : '-';
+    const audienceTitle = (a.audience||[]).join(", ");
+    const authorBadge = a.author ? ' <span style="color:#8b949e;font-size:0.78em">@' + esc(a.author) + '</span>' : '';
     html += '<tr data-name="' + esc(a.name) + '">' +
-      '<td><span class="atom-name" onclick="toggleAtomDetail(\\'' + esc(a.name) + '\\')">' + esc(a.name) + '</span></td>' +
+      '<td><span class="atom-name" onclick="toggleAtomDetail(\\'' + esc(a.name) + '\\')">' + esc(a.name) + '</span>' + authorBadge + '</td>' +
+      '<td><span class="atom-layer" title="audience: ' + esc(audienceTitle||"-") + '">' + esc(a.scope||"-") + '</span></td>' +
       '<td><span class="atom-layer">' + esc(a.layer) + '</span></td>' +
       '<td><span class="atom-conf ' + confClass + '">' + esc(a.confidence||"-") + '</span></td>' +
       '<td>' + (a.confirmations||0) + '</td>' +
@@ -2709,7 +2946,7 @@ function buildAtomRows(atoms) {
       '<td>' + (a.line_count||'-') + '</td>' +
     '</tr>';
     const detailVis = expandedAtoms.has(a.name) ? '' : 'none';
-    html += '<tr id="detail-' + esc(a.name) + '" style="display:' + detailVis + '"><td colspan="7"><div class="atom-detail">' + esc(a.content||"") + '</div></td></tr>';
+    html += '<tr id="detail-' + esc(a.name) + '" style="display:' + detailVis + '"><td colspan="8"><div class="atom-detail">' + esc(a.content||"") + '</div></td></tr>';
   }
   return html;
 }
@@ -2748,15 +2985,120 @@ function sortAtoms(key) {
 }
 
 function filterAtoms(query) {
-  const q = query.toLowerCase();
+  // 為了向後相容（既有呼叫點用 filterAtoms(saved)），轉呼叫 applyAtomFilters
+  const fi = document.getElementById("atomFilter");
+  if (fi && typeof query === "string") fi.value = query;
+  applyAtomFilters();
+}
+
+function applyAtomFilters() {
+  const fi = document.getElementById("atomFilter");
+  const sf = document.getElementById("atomScopeFilter");
+  const q = (fi ? fi.value : "").toLowerCase();
+  const scope = sf ? sf.value : "";
   const filtered = atomsData.filter(a => {
+    if (scope && (a.scope||"") !== scope) return false;
+    if (!q) return true;
     if (a.name.toLowerCase().includes(q)) return true;
     if ((a.triggers||[]).some(t => t.toLowerCase().includes(q))) return true;
     if ((a.related||[]).some(r => r.toLowerCase().includes(q))) return true;
     if ((a.layer||"").toLowerCase().includes(q)) return true;
+    if ((a.scope||"").toLowerCase().includes(q)) return true;
+    if ((a.author||"").toLowerCase().includes(q)) return true;
     return false;
   });
   applySortToBody(filtered);
+}
+
+// ─── Env Tab (Skills + MCP Servers) ───
+
+async function renderEnv() {
+  const el = document.getElementById("envContent");
+  try {
+    const [skills, mcps] = await Promise.all([
+      fetch("/api/skills").then(r => r.json()),
+      fetch("/api/mcp-servers").then(r => r.json()),
+    ]);
+    el.innerHTML = renderSkillsSection(skills) + renderMcpSection(mcps);
+  } catch (e) {
+    el.innerHTML = '<div class="empty">載入環境資訊失敗：' + esc(e.message) + '</div>';
+  }
+}
+
+function renderSkillsSection(skills) {
+  let html = '<div class="section-title">Slash Commands / Skills（' + skills.length + '）</div>';
+  if (!skills.length) return html + '<div class="empty">無 commands。</div>';
+
+  // 依分類分組
+  const byCat = {};
+  for (const s of skills) {
+    const cat = s.category || "其他";
+    if (!byCat[cat]) byCat[cat] = [];
+    byCat[cat].push(s);
+  }
+  const cats = Object.keys(byCat).sort();
+
+  for (const cat of cats) {
+    html += '<details open style="margin-bottom:12px"><summary style="color:#58a6ff;cursor:pointer;padding:6px 0">' + esc(cat) + ' （' + byCat[cat].length + '）</summary>';
+    html += '<table class="atom-table">';
+    html += '<thead><tr><th>指令</th><th>說明</th><th>來源</th></tr></thead><tbody>';
+    for (const s of byCat[cat]) {
+      const sourceLabel = s.source === "global" ?
+        '<span class="atom-layer">global</span>' :
+        '<span class="atom-layer" style="background:#1f6feb33;color:#58a6ff">' + esc(s.source) + '</span>';
+      html += '<tr>' +
+        '<td><span class="atom-name" onclick="toggleSkillDetail(\\'' + esc(s.name) + '\\')">' + esc(s.command) + '</span></td>' +
+        '<td style="color:#c9d1d9">' + esc(s.description||"-") + '</td>' +
+        '<td>' + sourceLabel + '</td>' +
+      '</tr>';
+      html += '<tr id="skill-detail-' + esc(s.name) + '" style="display:none"><td colspan="3"><div class="atom-detail">' + esc(s.content||"") + '</div></td></tr>';
+    }
+    html += '</tbody></table></details>';
+  }
+  return html;
+}
+
+function toggleSkillDetail(name) {
+  const row = document.getElementById("skill-detail-" + name);
+  if (!row) return;
+  row.style.display = row.style.display === "none" ? "" : "none";
+}
+
+function renderMcpSection(mcps) {
+  let html = '<div class="section-title" style="margin-top:24px">MCP Servers（' + mcps.length + '）</div>';
+  if (!mcps.length) return html + '<div class="empty">無 MCP servers。</div>';
+
+  // 依來源分組
+  const bySource = {};
+  for (const m of mcps) {
+    if (!bySource[m.source]) bySource[m.source] = [];
+    bySource[m.source].push(m);
+  }
+  const sources = Object.keys(bySource).sort();
+
+  for (const src of sources) {
+    html += '<details open style="margin-bottom:12px"><summary style="color:#58a6ff;cursor:pointer;padding:6px 0">' + esc(src) + ' （' + bySource[src].length + '）</summary>';
+    html += '<table class="atom-table">';
+    html += '<thead><tr><th>名稱</th><th>類型</th><th>狀態</th><th>command / url</th><th>env keys</th></tr></thead><tbody>';
+    for (const m of bySource[src]) {
+      const statusBadge = m.enabled ?
+        '<span class="status-dot status-online"></span>啟用' :
+        '<span class="status-dot status-disabled"></span>停用';
+      const cmdDisplay = m.url ? esc(m.url) :
+        (esc(m.command || "-") + (m.args.length ? ' ' + esc(m.args.slice(-1)[0]) : ''));
+      html += '<tr>' +
+        '<td><strong style="color:#e6edf3">' + esc(m.name) + '</strong></td>' +
+        '<td><span class="atom-layer">' + esc(m.type) + '</span></td>' +
+        '<td>' + statusBadge + '</td>' +
+        '<td style="font-family:monospace;font-size:0.78em;color:#8b949e;word-break:break-all">' + cmdDisplay + '</td>' +
+        '<td style="font-size:0.78em;color:#8b949e">' + (m.env_keys.length ? esc(m.env_keys.join(", ")) : '-') + '</td>' +
+      '</tr>';
+    }
+    html += '</tbody></table>';
+    html += '<div style="font-size:0.75em;color:#484f58;margin-top:4px">config: ' + esc(bySource[src][0].config_file) + '</div>';
+    html += '</details>';
+  }
+  return html;
 }
 
 // ─── Auto Refresh ───
@@ -2897,6 +3239,12 @@ const httpServer = http.createServer((req, res) => {
   }
   if (pathname === "/api/projects" && req.method === "GET") {
     return apiProjects(req, res);
+  }
+  if (pathname === "/api/skills" && req.method === "GET") {
+    return apiSkills(req, res);
+  }
+  if (pathname === "/api/mcp-servers" && req.method === "GET") {
+    return apiMcpServers(req, res);
   }
 
   // ── V3: Hot Cache status ──
