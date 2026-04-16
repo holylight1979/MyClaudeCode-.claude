@@ -5,7 +5,7 @@
 - Trigger: ollama, dual-backend, rdchat, qwen3, gemma4, embedding, 萃取品質, thinking, Open WebUI
 - Last-used: 2026-04-15
 - Created: 2026-03-19
-- Confirmations: 84
+- Confirmations: 86
 - Type: procedural
 - Tags: ollama, dual-backend, extraction
 - Related: toolchain, decisions-architecture, decisions

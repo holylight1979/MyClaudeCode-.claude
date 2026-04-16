@@ -7,6 +7,13 @@
 * **帳號**：holylight
 * **平台**：Windows 11 Pro；shell 環境：MSYS2 bash & POWERSHELL
 
+## V4 多職務模式（團隊共享記憶）
+
+* **當前職務**：programmer + management（雙重宣告：personal `role.md` + shared `_roles.md` 白名單）
+* **記憶分層**：`global`（個人）/ `shared`（團隊全員可見）/ `role`（同職務可見）/ `personal/{user}`（只自己）
+* **帳號切換**：`CLAUDE_USER` 環境變數（team collaborator 在同機測試用）
+* **管理職特權**：裁決 `shared/_pending_review/` 的敏感原子（architecture/decision）與 pull-audit 衝突報告，其他 user 只能提交草稿
+
 ## 使用者的溝通偏好
 
 * **回應語言**：繁體中文（技術術語可英文）

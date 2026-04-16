@@ -298,7 +298,7 @@ Service 端依 metadata filter，**不重 index**。
 - **舊 hook 共存**：`workflow-guardian.py` 升級後自動兼容無 `Scope:` 行的 V3 atom
 
 ---
-
+ 
 ## 11. 後續工作（不在 V4 範圍）
 
 ### 既有知識庫文件分類（另開計畫）

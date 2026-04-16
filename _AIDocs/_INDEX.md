@@ -1,7 +1,7 @@
 # MyClaudeCode (.claude) — AI 分析文件索引
 
 > 本資料夾記錄 `~/.claude` 自訂擴充系統的架構與演進。
-> 最近更新：2026-04-15（V4 Phase 6 收尾）
+> 最近更新：2026-04-16（V4.1 設計圓桌完成）
 
 ---
 
@@ -20,6 +20,7 @@
 | 9 | Failures/_INDEX.md | 踩坑記錄與失敗模式（環境陷阱、假設錯誤、靜默失敗、認知偏差、誤診） | 環境陷阱, Windows, MSYS2, npx, Ollama, 假設錯誤, 靜默, 過度工程, 誤診, 驗證優先 |
 | 10 | DevHistory/_INDEX.md | 開發紀錄（版本演進、遷移紀錄、A/B 實測數據、atom 演化日誌） | 演化, 版本, changelog, 遷移, migration, V2.18, V2.20, V2.21, A/B, 實測, benchmark |
 | 11 | SPEC_ATOM_V4.md | 原子記憶 V4 規格 — 多職務團隊共享（personal / shared / role 三層 scope、衝突三時段偵測、管理職雙向認證、JIT 角色 filter、六大分類大類） | V4, scope 三層, role-shared, personal-in-project, 多職務, 團隊協作, 衝突偵測, 管理職, audience, 角色 filter, gentle-puzzling-kettle |
+| 12 | V4.1-design-roundtable.md | V4.1 設計圓桌紀錄 — 8 大師 drafting + validation 雙 round + 2 資訊整合，Prior Art URL 清單 | V4.1, 圓桌, drafting, validation, prior art, Mem0, ChatGPT Memory, stance detection, 主動萃取, 使用者決策 |
 
 ---
 
