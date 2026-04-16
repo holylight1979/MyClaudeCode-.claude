@@ -12,16 +12,14 @@ Survives hook timeout — runs ~60s on GTX 1050 Ti.
 """
 
 import json
-import re
 import sys
 import time
 import urllib.request
 import urllib.parse
 import urllib.error
 from datetime import datetime
-from wg_content_classify import classify_extracted_item
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 # ─── Import centralized paths from wg_paths ─────────────────────────────────
 _HOOKS_DIR = str(Path.home() / ".claude" / "hooks")
@@ -35,6 +33,7 @@ from wg_paths import (
     CLAUDE_DIR,
     MEMORY_DIR,
 )
+from wg_content_classify import classify_extracted_item
 
 WORKFLOW_DIR = CLAUDE_DIR / "workflow"
 
@@ -44,10 +43,22 @@ if sys.platform == "win32":
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8", errors="replace")
 
-sys.path.insert(0, str(CLAUDE_DIR / "tools"))
-from ollama_client import get_client
+# ─── Import shared core from lib/ ───────────────────────────────────────────
+_CLAUDE_ROOT = str(CLAUDE_DIR)
+if _CLAUDE_ROOT not in sys.path:
+    sys.path.insert(0, _CLAUDE_ROOT)
 
-VALID_TYPES = ("factual", "procedural", "architectural", "pitfall", "decision")
+from lib.ollama_extract_core import (
+    _call_ollama,
+    _parse_llm_response,
+    _dedup_items,
+    _word_overlap_score,
+    _atom_debug_log,
+    _atom_debug_error,
+    _estimate_tokens,
+    ack_then_clear,
+    VALID_TYPES,
+)
 
 
 def _now_iso() -> str:
@@ -60,46 +71,6 @@ def _empty_result() -> Dict[str, Any]:
         "cross_session_observations": [],
         "aggregation_suggestions": [],
     }
-
-
-# ─── Atom Debug Log ──────────────────────────────────────────────────────────
-
-
-def _estimate_tokens(text: str) -> int:
-    """CJK-aware token estimation. Chinese ~1.5 tok/char, ASCII ~0.25 tok/word."""
-    if not text:
-        return 0
-    cjk = sum(1 for c in text if '\u4e00' <= c <= '\u9fff' or '\u3000' <= c <= '\u303f')
-    ascii_part = len(text) - cjk
-    return int(cjk * 1.5 + ascii_part * 0.25)
-
-
-def _atom_debug_log(tag: str, content: str, config: Dict[str, Any] = None) -> None:
-    """Write to atom-debug.log when atom_debug flag is on.
-    For ERROR tag, always write regardless of flag.
-    Skips empty/NONE entries to reduce noise."""
-    if tag != "ERROR" and not (config or {}).get("atom_debug", False):
-        return
-    if not content or not content.strip():
-        return  # suppress empty entries
-    try:
-        log_dir = Path.home() / ".claude" / "Logs"
-        log_dir.mkdir(parents=True, exist_ok=True)
-        log_path = log_dir / f"atom-debug-{datetime.now().strftime('%Y-%m-%d_%H')}.log"
-        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        with open(log_path, "a", encoding="utf-8") as f:
-            f.write(f"[{ts}][{tag}] {content.strip()}\n\n")
-    except Exception:
-        pass
-
-
-def _atom_debug_error(source: str, exc: Exception) -> None:
-    """Log error with source context and stack trace."""
-    import traceback
-    tb = traceback.format_exc()
-    if "NoneType" in tb:
-        tb = f"{type(exc).__name__}: {exc}"
-    _atom_debug_log("ERROR", f"[{source}] {tb}", {"atom_debug": True})
 
 
 # ─── Transcript helpers ──────────────────────────────────────────────────────
@@ -142,24 +113,6 @@ def _extract_all_assistant_texts(
     except (OSError, UnicodeDecodeError):
         pass
     return texts, final_offset
-
-
-# ─── Ollama ───────────────────────────────────────────────────────────────────
-
-
-def _call_ollama(prompt: str, model: str = None, timeout: int = 120) -> str:
-    try:
-        client = get_client()
-        # think="auto": rdchat(gemma4:e4b)=True, local(qwen3:1.7b)=False — 由 backend config 控制
-        # temperature=0.0: A/B 測試 Round 2 結論，一致性最佳
-        # num_predict: 由 backend config 的 llm_num_predict 控制（rdchat=4096, local=2048）
-        return client.generate(
-            prompt, model=model, timeout=timeout,
-            think="auto", temperature=0.0,
-        )
-    except Exception as e:
-        _atom_debug_error("萃取:_call_ollama", e)
-        return ""
 
 
 # ─── Prompt templates ─────────────────────────────────────────────────────────
@@ -244,80 +197,6 @@ def _build_prompt(intent: str, text: str, existing_items: List[dict] = None) -> 
     # V2.14: Removed pre-filter dedup injection (was ~200 tok/call).
     # Post-filter _dedup_items() at threshold=0.65 is sufficient to catch duplicates.
     return prompt
-
-
-# ─── Parse + Dedup ────────────────────────────────────────────────────────────
-
-
-def _parse_llm_response(raw: str) -> List[dict]:
-    if not raw:
-        return []
-    items = []
-    try:
-        match = re.search(r"\[.*\]", raw, re.DOTALL)
-        if match:
-            parsed = json.loads(match.group(0))
-            # Filter: only keep dict items (LLM may emit strings/ints in array)
-            items = [x for x in parsed if isinstance(x, dict)]
-    except (json.JSONDecodeError, ValueError):
-        for m in re.finditer(r'"content"\s*:\s*"([^"]{10,150})"', raw):
-            items.append({"content": m.group(1), "type": "factual"})
-    return items
-
-
-def _word_overlap_score(a: str, b: str) -> float:
-    wa = set(a.lower().split())
-    wb = set(b.lower().split())
-    if not wa or not wb:
-        return 0.0
-    return len(wa & wb) / min(len(wa), len(wb))
-
-
-def _dedup_items(
-    items: List[dict], existing_queue: List[dict], threshold: float = 0.80
-) -> List[dict]:
-    """Validate, deduplicate, and format extracted items."""
-    existing_contents = [q.get("content", "") for q in existing_queue if q.get("content")]
-    results = []
-    now = _now_iso()
-
-    for item in items[:5]:
-        content = item.get("content", "").strip()
-        if not content or len(content) < 10:
-            continue
-
-        # Check overlap against existing queue
-        skip = False
-        for ec in existing_contents:
-            if _word_overlap_score(content, ec) >= threshold:
-                skip = True
-                break
-        if skip:
-            continue
-
-        # Check overlap against already-accepted results
-        for r in results:
-            if _word_overlap_score(content, r["content"]) >= threshold:
-                skip = True
-                break
-        if skip:
-            continue
-
-        kt = item.get("type", "factual")
-        if kt not in VALID_TYPES:
-            kt = "factual"
-
-        results.append({
-            "content": content[:150],
-            "classification": "[臨]",
-            "knowledge_type": kt,
-            "source": "session-end",
-            "confirmations": 1,
-            "at": now,
-        })
-        existing_contents.append(content)
-
-    return results
 
 
 # ─── Pattern aggregation ──────────────────────────────────────────────────────
@@ -586,6 +465,10 @@ def _per_turn_writeback(ctx: dict, result: dict) -> None:
     state["extract_worker_pid"] = 0  # clear lease (worker done)
     state["last_updated"] = _now_iso()
     _write_state_atomic(state_path, state)
+    # Note: ack_then_clear (imported from lib/) is available for V4.1
+    # user-extract-worker.py to pop from pending_user_extract after
+    # successful atom_write. Not called here — per_turn appends to
+    # knowledge_queue for later session_end processing.
 
     # ── V3: deep extract → hot cache writeback ──
     try:

@@ -30,7 +30,8 @@
 | `wg_docdrift.py` | ~160 | DocDrift 偵測：src 改動→_AIDocs 映射→advisory 提醒 |
 | `wg_episodic.py` | ~860 | episodic 生成/衝突偵測/品質回饋 |
 | `wg_iteration.py` | ~450 | 自我迭代/震盪/衰減/晉升/覆轍偵測（含 atom header 與內部條目一致性對齊） |
-| `extract-worker.py` | ~806 | SessionEnd/per-turn/failure 子程序：LLM 萃取 + dedup（rdchat: gemma4:e4b, local: qwen3:1.7b） |
+| `extract-worker.py` | ~690 | SessionEnd/per-turn/failure 子程序：LLM 萃取 + dedup（共用核心移至 `lib/ollama_extract_core.py`） |
+| `lib/ollama_extract_core.py` | ~190 | 萃取共用核心：`_call_ollama` / `_parse_llm_response` / `_dedup_items` / `_word_overlap_score` / debug log / `ack_then_clear` / `SessionBudgetTracker`。extract-worker + 未來 user-extract-worker 共用 |
 | `quick-extract.py` | ~155 | Stop async 快篩：local qwen3:1.7b → hot_cache |
 | `wisdom_engine.py` | ~177 | 反思引擎：硬規則 + 反思指標 |
 

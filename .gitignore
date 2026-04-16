@@ -56,6 +56,7 @@ memory/_distant/
 # ─── User-specific config (per-user, auto-generated) ──────
 USER.md
 USER-*.md
+!prompts/user-decision-*.md
 IDENTITY.md
 IDENTITY-*.md
 
