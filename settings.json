@@ -35,7 +35,10 @@
       "Bash(mv memory/_staging/handoff-session-a-v4-finish.md _AIDocs/DevHistory/v41-handoffs/)",
       "Bash(mv memory/_staging/handoff-session-b-v41-p1-detector.md _AIDocs/DevHistory/v41-handoffs/)",
       "Bash(mv memory/_staging/handoff-session-c-v41-p2-prompts-lib.md _AIDocs/DevHistory/v41-handoffs/)",
-      "Bash(mv memory/_staging/handoff-session-d-v41-p2-integration.md _AIDocs/DevHistory/v41-handoffs/)"
+      "Bash(mv memory/_staging/handoff-session-d-v41-p2-integration.md _AIDocs/DevHistory/v41-handoffs/)",
+      "Bash(cp tools/workflow-guardian-mcp/server.js /tmp/dashboard-test.js)",
+      "Bash(sed -i 's|loadConfig\\(\\).dashboard_port || 3848|loadConfig\\(\\).dashboard_port || 13848|' /tmp/dashboard-test.js)",
+      "Read(//tmp/**)"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [
@@ -50,7 +53,8 @@
       "C:\\tmp\\docs-progg\\.claude\\memory\\_staging",
       "c:\\tmp\\docs-progg\\.claude\\memory\\_staging",
       "C:\\Users\\holylight\\.claude\\tests",
-      "c:\\tmp\\docs-progg\\.claude\\memory\\shared\\_pending_review"
+      "c:\\tmp\\docs-progg\\.claude\\memory\\shared\\_pending_review",
+      "C:\\Users\\holylight\\.claude\\journals"
     ]
   },
   "hooks": {
