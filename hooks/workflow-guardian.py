@@ -77,6 +77,7 @@ from wg_extraction import (
     _is_pid_alive, _find_transcript, _count_new_assistant_chars,
     _spawn_extract_worker, _maybe_spawn_per_turn_extraction,
     _detect_failure_keywords, _maybe_spawn_failure_extraction,
+    _is_lease_valid, _set_lease,
 )
 from wg_episodic import (
     _should_generate_episodic, _extract_area,

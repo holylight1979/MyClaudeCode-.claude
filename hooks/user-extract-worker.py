@@ -536,7 +536,10 @@ def run_user_extraction(ctx: Dict[str, Any]) -> Dict[str, Any]:
             stats["skipped"] += 1
             continue
 
-        l1_tok = _estimate_tokens(l1_prompt) + 12  # ~12 tok response
+        # [F22] Budget counts user-side delta only (plan v2 §8 intent: amortized
+        # user-delta tok, not wall cost). Few-shot template is a fixed overhead
+        # independent of pending count.
+        l1_tok = _estimate_tokens(prompt_text) + 12  # user prompt + ~12 tok yes/no response
         budget.spend(l1_tok)
 
         l1_result = _call_l1(l1_prompt)
@@ -574,7 +577,14 @@ def run_user_extraction(ctx: Dict[str, Any]) -> Dict[str, Any]:
             stats["skipped"] += 1
             continue
 
-        l2_tok = _estimate_tokens(l2_prompt) + 180  # ~180 tok response
+        # [F22] Budget counts user-side delta only (user prompt + assistant
+        # context window + ~180 tok structured response). Few-shot template is
+        # fixed overhead.
+        l2_tok = (
+            _estimate_tokens(prompt_text)
+            + _estimate_tokens(assistant_last[:600])
+            + 180
+        )
         budget.spend(l2_tok)
 
         l2_result = _call_l2(l2_prompt)

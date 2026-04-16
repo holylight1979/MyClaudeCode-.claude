@@ -307,6 +307,16 @@ JIT 保護：_collect_v4_role_atoms 以 rel_parts[:-1] startswith("_") 過濾
   → 管理職改從 SessionStart [Pending Review] N 件 提示得知有待裁決項
 ```
 
+### V4.1 使用者決策萃取 Pipeline
+
+- **三層 gating**：L0 規則 detector (`wg_user_extract.detect_signal` ≤5ms) → L1 qwen3:1.7b 二元 yes/no → L2 gemma4:e4b 結構化萃取 (`{decision, conf, scope, audience, trigger, statement}`)
+- **UserPromptSubmit gate**（`workflow-guardian.py handle_user_prompt_submit`）：`config.userExtraction.enabled=true` 時 `detect_signal(clean_prompt)` 命中→append `state["pending_user_extract"][]`；GC 滑窗 cap 10 (F11)
+- **Stop/SessionEnd spawn**（`_maybe_spawn_user_extract_worker`）：detached subprocess invoke `hooks/user-extract-worker.py`，傳 `{session_id, cwd, config, user}` via stdin；PID lease 防重複 spawn (`_is_lease_valid`/`_set_lease` from `wg_extraction`)
+- **Worker 流程**：讀 `pending_user_extract[]` → 混合句[F10]/情緒承諾[F24] 過濾 → L1 → L2 → conf-based routing：`≥0.92` 進 `state["confirmed_extractions"][]` 等使用者 veto (F5 明說+預設同意)；`0.70-0.92` 寫 `personal/auto/{user}/_pending.candidates.md`；`<0.70` 丟棄
+- **Budget tracker** (F22, `lib.ollama_extract_core.SessionBudgetTracker`)：計 **user-delta tok**（user prompt + assistant context + response，不含 few-shot 靜態模板），對應 plan v2 §8 amortized NFR ≤240 tok；超 220→L1-only，超 240→break 留下輪 Stop 處理
+- **[F5] 落盤機制**：confirmed_extractions 不直接寫 atom，下輪 UserPromptSubmit 檢查 veto 詞（否/不要記/別記/取消記憶）→ 無 veto → `_ack_then_clear` + MCP atom_write 走 V4 write-gate chain → `personal/auto/{user}/{slug}.md`（含 footer `<!-- src: {sid}-{turn_n} -->` F1）
+- **Session merge self-heal** (GA 後補)：`_ensure_state` 遇 `merged_into` target 已被孤兒清理時，清 merged_into + phase→working，避免 V4.1 gate 寫入落入死水 state
+
 ### 跨 Session 鞏固
 
 - 廢除自動晉升，改為 Confirmations +1 簡單計數
