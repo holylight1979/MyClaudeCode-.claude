@@ -13,7 +13,8 @@
 | 2 | Project_File_Tree.md | 完整目錄結構 | 目錄結構, 檔案位置, 資料夾, 在哪裡 |
 | 3 | _CHANGELOG.md | 變更記錄（最近 ~8 筆） | 變更記錄, 最近更新, 改了什麼 |
 | 4 | _CHANGELOG_ARCHIVE.md | 變更記錄封存 | 歷史變更, 舊版記錄 |
-| 5 | ../README.md | 完整運作知識庫 + 7 階段流程圖（GitHub 入口） | 設計哲學, 安裝, 入門, 流程圖, 使用方式 |
+| 5 | ../README.md | 安裝 + 3 步上手（人類入門，80 行） | 安裝, 入門, 使用方式, 快速開始 |
+| 5b | ../TECH.md | 技術深度文件：架構 / 流程圖 / 子系統 / V4 scope 分層 / V4.1 決策萃取（以代碼為真源） | 設計哲學, 流程圖, ACT-R, Write Gate, Hot Cache, V4 scope, V4.1 使用者決策, 核心子系統 |
 | 6 | DocIndex-System.md | 全檔系統索引（啟動鏈 + Hook 模組 + 16 Skills + Tools + Memory 25 atoms） | 啟動鏈, lifecycle, 全檔索引, 檔案清單, 系統索引 |
 | 7 | ClaudeCodeInternals/_INDEX.md | Claude Code 原生架構深度分析（14 章：Harness Engineering 全書） | claude code 架構, harness engineering, tool system, hook system, agent, permission, prompt, MCP, skill, plugin, feature flag, query loop, context, state |
 | 8 | Tools/_INDEX.md | 工具與領域知識（Excel 操作、Unity YAML/Prefab、記憶系統檔案索引） | Excel, xlsx, openpyxl, Unity YAML, fileID, GUID, prefab, WndForm, 記憶系統架構, 檔案結構, 目錄結構 |

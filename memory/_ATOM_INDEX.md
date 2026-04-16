@@ -22,3 +22,4 @@
 | feedback-handoff | memory/feedback_handoff_self_sufficient.md | 下 session, 續接, 交接, 下次繼續, next-phase, handoff, 下個 claude, resume prompt | global |
 | feedback-no-outsource-rigor | memory/feedback-no-outsource-rigor.md | 縝密, 規範, 角度, 漏掉, 沒看到, max thinking, high thinking, 外包思考, 自主, 角色縝密, 我有沒有漏, 還有什麼, rigor | global |
 | feedback-git-log-chinese | memory/feedback-git-log-chinese.md | git, commit, log, message, 上GIT, 上版, push |
+| feedback-fix-on-discovery | memory/feedback-fix-on-discovery.md | 不在範圍, 範圍外, 未來處理, 另開 session, out of scope, drift, 順手發現, 尾巴 |
