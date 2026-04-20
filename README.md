@@ -21,7 +21,7 @@
 先 clone 或下載 repo 到 `~/.claude/`，再開一個新的 Claude Code session（任何資料夾都行），把下面這段 prompt 整段貼進去就好：
 
 ```
-請幫我把 原子記憶系統 Atomic Memory V4.1 合併安裝到我的 ~/.claude/ 目錄。
+請幫我把 原子記憶系統 Atomic Memory 合併安裝到我的 ~/.claude/ 目錄。
 1. 先讀 ~/.claude/Install-forAI.md 完整流程；
 2. 檢查我環境的必備套件是否齊全（Python / Node.js / Ollama / Git / 向量 DB 套件），列出缺項告訴我怎麼補；
 3. 照 Install-forAI.md 的 AI 執行流程合併安裝（不覆蓋我現有的 settings.json permissions）；
