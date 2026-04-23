@@ -54,6 +54,18 @@ _DISMISS_RE = re.compile(
     re.IGNORECASE,
 )
 
+# 掃描報告標記：合規完成報告必須出現下列其一
+_SCAN_REPORT_RE = re.compile(
+    r"("
+    r"順手修補|順手修|附帶修補|發現[^，。\n]{0,6}drift|"
+    r"本次[^，。\n]{0,3}(?:無|沒有)[^，。\n]{0,6}drift|"
+    r"無發現\s*drift|無\s*drift|no\s+drift|"
+    r"掃描報告|drift\s+(?:check|report)|"
+    r"需另開\s*session|列入\s*handoff"
+    r")",
+    re.IGNORECASE,
+)
+
 
 def is_test_command(cmd: str) -> bool:
     return bool(_TEST_CMD_RE.search(cmd or ""))
@@ -104,6 +116,38 @@ def detect_evasion(text: str, recent_user_prompts: List[str]) -> Optional[Dict[s
 
 def is_dismiss_prompt(prompt: str) -> bool:
     return bool(_DISMISS_RE.search(prompt or ""))
+
+
+def has_scan_report(text: str) -> bool:
+    """回報尾端是否含『順手修補清單/無 drift 宣告/另開 session』之一。"""
+    if not text:
+        return False
+    return bool(_SCAN_REPORT_RE.search(text))
+
+
+def detect_missing_scan_report(
+    text: str,
+    modified_file_count: int,
+    recent_user_prompts: List[str],
+) -> bool:
+    """宣告完成但缺掃描報告 → 違約。
+
+    觸發條件（全部成立）：
+      1. text 含完成宣告詞
+      2. modified_file_count > 0（有實際動工才要求掃描）
+      3. text 不含任何 _SCAN_REPORT_RE 標記
+      4. 近 3 則 user prompt 無豁免關鍵字
+    """
+    if not text or modified_file_count <= 0:
+        return False
+    if not claims_completion(text):
+        return False
+    if has_scan_report(text):
+        return False
+    for p in (recent_user_prompts or [])[-3:]:
+        if _DISMISS_RE.search(p or ""):
+            return False
+    return True
 
 
 def get_last_assistant_text(transcript_path: Optional[Path]) -> str:

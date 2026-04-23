@@ -93,7 +93,7 @@ from wg_episodic import (
 from wg_evasion import (
     is_test_command, detect_test_failure,
     claims_completion, detect_evasion, is_dismiss_prompt,
-    get_last_assistant_text,
+    get_last_assistant_text, detect_missing_scan_report,
 )
 
 sys.path.insert(0, str(Path.home() / ".claude" / "tools"))
@@ -1777,6 +1777,28 @@ def handle_stop(input_data: Dict[str, Any], config: Dict[str, Any]) -> None:
             ev["at"] = _now_iso()
             state["evasion_flag"] = ev
             write_state(session_id, state)
+
+    # ── Scan-Report Gate：宣告完成但缺「順手修補清單/無drift宣告」→ 硬阻 ──
+    # 觸發：有動工 (modified_files>0) + 宣告完成 + 缺掃描報告 + 無使用者豁免
+    mod_files_all = state.get("modified_files", []) or []
+    if mod_files_all and not state.get("scan_report_warned"):
+        if not last_text:
+            last_text = get_last_assistant_text(transcript)
+        recent_prompts = state.get("recent_user_prompts", []) or []
+        if detect_missing_scan_report(last_text, len(mod_files_all), recent_prompts):
+            state["stop_blocked_count"] = stop_count + 1
+            state["scan_report_warned"] = True
+            write_state(session_id, state)
+            reason = (
+                "[Guardian:ScanReport] 宣告完成但未提交掃描報告，違反 IDENTITY「反退避契約」。\n"
+                "依格式強制，報告尾端必須包含下列之一：\n"
+                "  (a) 順手修補清單：- 檔:行 — 改了什麼\n"
+                "      （若確實無則明寫「本次無發現 drift」）\n"
+                "  (b) 需另開 session：項目 X — 超出原因：Y\n"
+                "請補上後再宣告完成；不得用「不在範圍 / 留給未來」籠統帶過。"
+            )
+            output_block(reason)
+            return
 
     # Anti-loop guard
     if stop_count >= max_blocks:
