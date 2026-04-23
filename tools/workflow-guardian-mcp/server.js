@@ -475,6 +475,27 @@ const TOOL_DEFINITIONS = [
       required: ["atom_name", "scope", "execute"],
     },
   },
+  {
+    name: "atom_move",
+    description:
+      "Atomic atom move/reconcile across memory layers. " +
+      "subcommand='move' moves atom from --from to --to (both memory-root dirs) and syncs _ATOM_INDEX/MEMORY.md/inbound refs. " +
+      "subcommand='reconcile' assumes atom already lives at --at and cleans stale state elsewhere. " +
+      "Enforces layering: down-refs (global→project) removed automatically, up-refs (project→global) kept, " +
+      "sibling cross-project refs reported as warnings. Use dry_run=true to preview.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        subcommand: { type: "string", enum: ["move", "reconcile"], description: "move=full mv + sync; reconcile=sync only (atom already at target)" },
+        atom: { type: "string", description: "Atom slug (filename without .md)" },
+        from: { type: "string", description: "Source memory root dir (required for move)" },
+        to: { type: "string", description: "Target memory root dir (required for move)" },
+        at: { type: "string", description: "Current memory root where atom lives (required for reconcile)" },
+        dry_run: { type: "boolean", description: "Preview without applying changes" },
+      },
+      required: ["subcommand", "atom"],
+    },
+  },
 ];
 
 // ─── Tool Handlers ──────────────────────────────────────────────────────────
@@ -493,6 +514,8 @@ function handleToolCall(id, toolName, args) {
       return toolAtomWrite(id, args).catch(e => sendToolResult(id, `atom_write error: ${e.message}`, true));
     case "atom_promote":
       return toolAtomPromote(id, args);
+    case "atom_move":
+      return toolAtomMove(id, args).catch(e => sendToolResult(id, `atom_move error: ${e.message}`, true));
     default:
       sendError(id, -32601, `Unknown tool: ${toolName}`);
   }
@@ -1401,6 +1424,57 @@ function toolAtomPromote(id, args) {
     mergeReport +
     mergeHint
   );
+}
+
+// ─── Atom Move Handler ─────────────────────────────────────────────────────
+
+function toolAtomMove(id, args) {
+  const { subcommand, atom, dry_run } = args;
+  if (!subcommand || !atom) {
+    return Promise.resolve(sendToolResult(id, "atom_move: subcommand and atom are required", true));
+  }
+  const scriptPath = path.join(TOOLS_DIR, "atom-move.py");
+  if (!fs.existsSync(scriptPath)) {
+    return Promise.resolve(sendToolResult(id, `atom_move: script not found at ${scriptPath}`, true));
+  }
+  const argv = [scriptPath, subcommand, atom];
+  if (subcommand === "move") {
+    if (!args.from || !args.to) {
+      return Promise.resolve(sendToolResult(id, "atom_move move: --from and --to required", true));
+    }
+    argv.push("--from", args.from, "--to", args.to);
+  } else if (subcommand === "reconcile") {
+    if (!args.at) {
+      return Promise.resolve(sendToolResult(id, "atom_move reconcile: --at required", true));
+    }
+    argv.push("--at", args.at);
+  } else {
+    return Promise.resolve(sendToolResult(id, `atom_move: unknown subcommand '${subcommand}'`, true));
+  }
+  if (dry_run) argv.push("--dry-run");
+
+  return new Promise((resolve) => {
+    const cp = require("child_process").spawn("python", argv, { windowsHide: true });
+    let out = "", err = "";
+    const timer = setTimeout(() => { try { cp.kill(); } catch {} }, 30000);
+    cp.stdout.on("data", d => { out += d.toString(); });
+    cp.stderr.on("data", d => { err += d.toString(); });
+    cp.on("close", (code) => {
+      clearTimeout(timer);
+      const combined = (out || "") + (err ? ("\n[stderr]\n" + err) : "");
+      if (code !== 0) {
+        sendToolResult(id, `atom_move exited ${code}\n${combined}`, true);
+      } else {
+        sendToolResult(id, combined.trim() || "(no output)");
+      }
+      resolve();
+    });
+    cp.on("error", (e) => {
+      clearTimeout(timer);
+      sendToolResult(id, `atom_move spawn error: ${e.message}`, true);
+      resolve();
+    });
+  });
 }
 
 function extractKnowledgeLines(content) {

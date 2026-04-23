@@ -23,6 +23,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 MEMORY_ROOT = Path.home() / ".claude" / "memory"
+GLOBAL_MEMORY_ROOT = Path.home() / ".claude" / "memory"
+EXTRA_SCAN_ROOTS: list[Path] = []  # populated from CLI; searched as fallback for ref resolution
 SKIP_FILES = {"MEMORY.md", "SPEC_Atomic_Memory_System.md", "_ATOM_INDEX.md"}
 SKIP_DIRS = {"_distant", "_staging", "_vectordb", "episodic", "_reference", "templates"}
 # Central hub atoms — skip reverse-link warnings for these
@@ -120,6 +122,10 @@ def resolve_ref(ref: str, atoms: dict[str, Path], aliases: dict[str, str]) -> st
     # Last resort: check if file exists on disk (covers SKIP_FILES entries)
     for md in MEMORY_ROOT.rglob(f"{ref}.md"):
         return ref
+    # Cross-layer: fall back to extra roots (project → global up-ref is valid)
+    for extra in EXTRA_SCAN_ROOTS:
+        for md in extra.rglob(f"{ref}.md"):
+            return ref
     return None
 
 
@@ -138,6 +144,32 @@ def validate_refs(atoms: dict[str, Path], aliases: dict[str, str] | None = None)
                     "file": str(path),
                 })
     return issues
+
+
+def auto_fix_broken_refs(broken: list[dict]) -> list[dict]:
+    """Remove broken refs from their source atom's Related field.
+
+    Returns list of applied fixes. A broken ref means the target doesn't exist
+    in MEMORY_ROOT nor any EXTRA_SCAN_ROOTS, so removal is safe.
+    """
+    fixes = []
+    for b in broken:
+        path = Path(b["file"])
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8")
+        m = re.search(r"^- Related:\s*(.+)$", text, re.MULTILINE)
+        if not m:
+            continue
+        items = [i.strip() for i in m.group(1).split(",") if i.strip()]
+        missing = b["missing_ref"]
+        new_items = [i for i in items if i != missing]
+        if len(new_items) == len(items):
+            continue
+        new_line = f"- Related: {', '.join(new_items) if new_items else '(none)'}"
+        path.write_text(text.replace(m.group(0), new_line, 1), encoding="utf-8")
+        fixes.append({"atom": b["atom"], "removed_ref": missing, "file": str(path)})
+    return fixes
 
 
 def check_reverse_refs(atoms: dict[str, Path], aliases: dict[str, str] | None = None) -> list[dict]:
@@ -377,6 +409,7 @@ def main():
     parser = argparse.ArgumentParser(description="Atom Health Check")
     parser.add_argument("--validate-refs", action="store_true", help="Check Related references exist")
     parser.add_argument("--fix-refs", action="store_true", help="Auto-fix missing reverse references")
+    parser.add_argument("--auto-fix-broken", action="store_true", help="Auto-remove broken Related refs from source atoms (unresolvable targets)")
     parser.add_argument("--stale-check", action="store_true", help="List atoms with Last-used > 60 days")
     parser.add_argument("--stale-days", type=int, default=60, help="Stale threshold in days (default: 60)")
     parser.add_argument("--report", action="store_true", help="Full health report")
@@ -384,7 +417,7 @@ def main():
     parser.add_argument("--memory-root", type=str, default=None, help="Override memory root path")
     args = parser.parse_args()
 
-    global MEMORY_ROOT
+    global MEMORY_ROOT, EXTRA_SCAN_ROOTS
     if args.memory_root:
         MEMORY_ROOT = Path(args.memory_root)
 
@@ -392,10 +425,21 @@ def main():
         print(f"Error: {MEMORY_ROOT} does not exist", file=sys.stderr)
         sys.exit(1)
 
+    # Auto-enable cross-layer ref resolution when scanning a non-global root:
+    # project-layer atoms may legitimately reference global atoms (up-ref).
+    # Does NOT affect down-ref detection (global→project refs still flagged when
+    # scanning global, since MEMORY_ROOT will be global and project not in extras).
+    try:
+        if MEMORY_ROOT.resolve() != GLOBAL_MEMORY_ROOT.resolve():
+            if GLOBAL_MEMORY_ROOT.is_dir():
+                EXTRA_SCAN_ROOTS = [GLOBAL_MEMORY_ROOT]
+    except OSError:
+        pass
+
     atoms = find_atoms(MEMORY_ROOT)
     aliases = parse_memory_index(MEMORY_ROOT)
 
-    if not any([args.validate_refs, args.fix_refs, args.stale_check, args.report]):
+    if not any([args.validate_refs, args.fix_refs, args.auto_fix_broken, args.stale_check, args.report]):
         parser.print_help()
         sys.exit(0)
 
@@ -409,6 +453,19 @@ def main():
             print(f"\nFixed {len(fixes)} missing reverse reference(s).")
         else:
             print("✅ No missing reverse references to fix.")
+        sys.exit(0)
+
+    if args.auto_fix_broken:
+        broken = validate_refs(atoms, aliases)
+        fixes = auto_fix_broken_refs(broken)
+        if args.json:
+            print(json.dumps({"fixes": fixes, "count": len(fixes)}, indent=2, ensure_ascii=False))
+        elif fixes:
+            for f in fixes:
+                print(f"✅ {f['atom']} — removed broken ref: {f['removed_ref']}")
+            print(f"\nRemoved {len(fixes)} broken reference(s).")
+        else:
+            print("✅ No broken references to fix.")
         sys.exit(0)
 
     if args.validate_refs:

@@ -40,7 +40,15 @@
       "Bash(sed -i 's|loadConfig\\(\\).dashboard_port || 3848|loadConfig\\(\\).dashboard_port || 13848|' /tmp/dashboard-test.js)",
       "Read(//tmp/**)",
       "Bash(mkdir -p feedback)",
-      "Bash(git mv *)"
+      "Bash(git mv *)",
+      "Bash(mv \"c:/Users/holylight/.claude/memory/hyper-v-切換完整機制與檢測陷阱.md\" \"c:/Users/holylight/.claude/projects/c--tmp/memory/\")",
+      "Bash(mv \"c:/Users/holylight/.claude/memory/hypervtoggle-工具位置與用途.md\" \"c:/Users/holylight/.claude/projects/c--tmp/memory/\")",
+      "Bash(mv \"c:/Users/holylight/.claude/memory/windows-內建-c-編譯-cscexe-實用配方.md\" \"c:/Users/holylight/.claude/projects/c--tmp/memory/\")",
+      "Bash(mkdir -p \"c:/tmp/.claude/memory\")",
+      "Bash(mv \"c:/Users/holylight/.claude/projects/c--tmp/memory/hyper-v-切換完整機制與檢測陷阱.md\" \"c:/tmp/.claude/memory/\")",
+      "Bash(mv \"c:/Users/holylight/.claude/projects/c--tmp/memory/hypervtoggle-工具位置與用途.md\" \"c:/tmp/.claude/memory/\")",
+      "Bash(mv \"c:/Users/holylight/.claude/projects/c--tmp/memory/windows-內建-c-編譯-cscexe-實用配方.md\" \"c:/tmp/.claude/memory/\")",
+      "Bash(mv \"c:/Users/holylight/.claude/projects/c--tmp/memory/MEMORY.md\" \"c:/tmp/.claude/memory/\")"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [

@@ -129,7 +129,8 @@ Session Ready
 - memory-write-gate.py — 寫入閘門（6 規則 + 0.80 dedup；[固] 不再 fast-path，一律過品質檢查）
 - memory-conflict-detector.py — 向量衝突 + LLM 分類；mode ∈ {full-scan / write-check / pull-audit}（V4 Phase 5 三時段衝突偵測核心）
 - conflict-review.py — V4 Pending Queue 後端：list/approve/reject 三動作，is_management 雙向認證 guard，approve 寫 Decided-by + merge_history + 觸發 `/index/incremental`
-- atom-health-check.py — 參照完整性（`_` 前綴檔案豁免、`decisions`/`decisions-architecture`/`spec` 為 central hub 反向參照豁免）
+- atom-health-check.py — 參照完整性（`_` 前綴檔案豁免、`decisions`/`decisions-architecture`/`spec` 為 central hub 反向參照豁免；`--memory-root` 非全域時自動把全域加入 ref resolution fallback，支援 project→global up-ref 合法解析；`--auto-fix-broken` 自動從 source atom 移除真斷裂 ref）
+- atom-move.py — 跨層原子搬遷工具。`move` 子命令：mv 檔案 + 更新 Scope + 同步兩層 `_ATOM_INDEX`/`MEMORY` + 按層序規則處理 inbound refs（down-ref 自動移除、up-ref 保留、sibling 回報警告）。`reconcile` 子命令：atom 已在 target（如手動 mv 之後）時跑完整清理。均支援 `--dry-run`。MCP 工具 `mcp__workflow-guardian__atom_move` 為對應 in-session 封裝
 
 ### 遷移/測試
 - migrate-v221.py — V2.21 遷移（_AIAtoms + 個人記憶 → .claude/memory/）

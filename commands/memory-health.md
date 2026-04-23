@@ -121,6 +121,10 @@ python ~/.claude/tools/atom-health-check.py --report [--json]
 
 如果發現問題，詢問使用者是否要立即修正：
 - 格式錯誤 → 提供修正方案
-- 斷裂參照 → 建議移除或補上
+- **斷裂參照** → 先區分類型：
+  - **真斷裂（目標不存在任何層）**：建議跑 `python ~/.claude/tools/atom-health-check.py --auto-fix-broken [--memory-root PROJECT_MEM_DIR]` 自動從 source atom 的 Related 移除
+  - **跨層殘留（atom 被搬但 inbound refs/索引未清）**：建議跑 `python ~/.claude/tools/atom-move.py reconcile <atom-slug> --at <current-memory-root>` 完整清理（自動套 up/down-ref 層序規則）
+  - MCP 環境可直接呼叫 `mcp__workflow-guardian__atom_move`（subcommand=reconcile）；支援 `dry_run=true` 預覽
 - 過期 atom → 建議封存或更新 Last-used
 - 索引不一致 → 提供 MEMORY.md 修正
+- **禁止手動 `mv` atom 跨層** — 見 `_AIDocs/Failures/silent-failures.md`；一律用 `atom-move.py move` 或 MCP `atom_move`
