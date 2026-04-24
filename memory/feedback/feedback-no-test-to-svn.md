@@ -4,7 +4,8 @@
 - Confidence: [固]
 - Trigger: 上SVN, svn commit, 測試碼, 新手作業, 練習, 不可上傳
 - Last-used: 2026-04-15
-- Confirmations: 12
+- Confirmations: 0
+- ReadHits: 12
 
 ## 知識
 

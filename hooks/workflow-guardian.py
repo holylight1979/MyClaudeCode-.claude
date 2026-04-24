@@ -1100,12 +1100,13 @@ def handle_user_prompt_submit(
             lines.extend(atom_lines)
             state["injected_atoms"] = already_injected + newly_injected
 
-            # Auto-update Last-used timestamp + Confirmations++ in injected atom files (v2.1)
+            # Auto-update Last-used timestamp + ReadHits++ in injected atom files (v2.1→v3 dual-field)
             today_str = datetime.now().strftime("%Y-%m-%d")
             last_used_re = re.compile(r"^(- Last-used:\s*)\d{4}-\d{2}-\d{2}", re.MULTILINE)
-            confirmations_re = re.compile(r"^(- Confirmations:\s*)(\d+)", re.MULTILINE)
+            readhits_re = re.compile(r"^(- ReadHits:\s*)(\d+)", re.MULTILINE)
             confidence_re = re.compile(r"^- Confidence:\s*(\[(?:臨|觀|固)\])", re.MULTILINE)
-            PROMOTION_THRESHOLDS = {"[臨]": 2, "[觀]": 4}
+            # SYNC: memory/decisions.md — ReadHits auxiliary thresholds (hint only, not gate)
+            READHIT_THRESHOLDS = {"[臨]": 20, "[觀]": 50}
             PROMOTION_TARGETS = {"[臨]": "[觀]", "[觀]": "[固]"}
             for inj_name in newly_injected:
                 for (name, rel_path, triggers), base_dir in matched_with_dir:
@@ -1124,17 +1125,26 @@ def handle_user_prompt_submit(
                             if new_text != text:
                                 text = new_text
                                 changed = True
-                        # Confirmations++ (v2.1)
-                        cm = confirmations_re.search(text)
-                        if cm:
-                            new_count = int(cm.group(2)) + 1
-                            text = confirmations_re.sub(rf"\g<1>{new_count}", text)
+                        # ReadHits++ (v3 dual-field: Path A injection hit)
+                        rm = readhits_re.search(text)
+                        if rm:
+                            new_count = int(rm.group(2)) + 1
+                            text = readhits_re.sub(rf"\g<1>{new_count}", text)
+                            changed = True
+                        elif "- Confirmations:" in text:
+                            # No ReadHits field yet — add it after Confirmations
+                            text = re.sub(
+                                r"^(- Confirmations:\s*.+)$",
+                                r"\1\n- ReadHits: 1",
+                                text, count=1, flags=re.MULTILINE,
+                            )
+                            new_count = 1
                             changed = True
                         elif "- Last-used:" in text:
-                            # No Confirmations field yet — add it after Last-used
+                            # No Confirmations nor ReadHits — add after Last-used
                             text = re.sub(
                                 r"^(- Last-used:\s*.+)$",
-                                r"\1\n- Confirmations: 1",
+                                r"\1\n- ReadHits: 1",
                                 text, count=1, flags=re.MULTILINE,
                             )
                             new_count = 1
@@ -1153,23 +1163,23 @@ def handle_user_prompt_submit(
                             access_file.write_text(json.dumps(adata), encoding="utf-8")
                         except (OSError, json.JSONDecodeError):
                             pass
-                        # Promotion hint (v2.11) — no auto-promote, hint only
+                        # Promotion hint (v3 dual-field) — ReadHits auxiliary hint only
                         if new_count is not None:
                             conf_m = confidence_re.search(text)
                             if conf_m:
                                 cur = conf_m.group(1)
-                                threshold = PROMOTION_THRESHOLDS.get(cur)
-                                if threshold and new_count >= threshold:
+                                rh_threshold = READHIT_THRESHOLDS.get(cur)
+                                if rh_threshold and new_count >= rh_threshold:
                                     target = PROMOTION_TARGETS[cur]
                                     lines.append(
-                                        f"⚡ [{inj_name}] Confirmations={new_count}, "
-                                        f"目前{cur}, 已達{target}門檻，"
+                                        f"⚡ [{inj_name}] ReadHits={new_count}, "
+                                        f"目前{cur}, ReadHits 已達{target}輔助門檻，"
                                         f"觸及相關行為時請主動確認是否晉升"
                                     )
                                     log_promotion_audit(
                                         "hint", inj_name,
                                         **{"from": cur, "to": target,
-                                           "confirmations": new_count,
+                                           "readhits": new_count,
                                            "session_id": session_id}
                                     )
                     except (OSError, UnicodeDecodeError):
@@ -1335,7 +1345,7 @@ def _check_memory_atom_format(
     content = tool_input.get("content", "")[:300]
     required = [
         "- Scope:", "- Confidence:", "- Trigger:",
-        "- Last-used:", "- Confirmations:",
+        "- Last-used:", "- Confirmations:", "- ReadHits:",
     ]
     hits = sum(1 for r in required if r in content)
     if hits >= 3:

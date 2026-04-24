@@ -353,6 +353,7 @@ def _write_atom_via_mcp(
         f"- Created: {now}\n"
         f"- Last-used: {now}\n"
         f"- Confirmations: 1\n"
+        f"- ReadHits: 0\n"
         f"- Related: \n"
         f"- Author: auto-extracted-v4.1\n"
         f"- Audience: {audience}\n\n"

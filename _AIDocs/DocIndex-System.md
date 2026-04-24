@@ -113,7 +113,7 @@ Session Ready
 - service.py — HTTP daemon
 - config.py — config.json 讀寫
 - indexer.py — atom→chunk→embed→LanceDB
-- searcher.py — semantic + ranked + section-level（5-factor: semantic 0.45 + recency 0.15 + intent 0.20 + confidence 0.10 + confirmations 0.10）
+- searcher.py — semantic + ranked + section-level（5-factor: semantic 0.45 + recency 0.15 + intent 0.20 + confidence 0.10 + confirmations 0.10）；排名用 Confirmations（高訊號），ReadHits 可選輕微加分
 - reranker.py — LLM query rewrite + re-rank
 
 ### Ollama 雙 Backend
@@ -125,7 +125,7 @@ Session Ready
   - `_request_with_failover` 在 `explicit_model` 與 backend `llm_model` 不符時直接 skip（不計 failure，避免毒化 health_cache 60s 使後續呼叫 silent return）
 
 ### 記憶品質
-- memory-audit.py — 格式驗證 + staleness（支援 `--project-dir`、Claude-native YAML frontmatter、2 欄 MEMORY.md、wildcard 索引項、orphan memory dir 容忍）
+- memory-audit.py — 格式驗證 + staleness + 雙軌晉升建議（Conf≥4/10 or RH≥20/50）（支援 `--project-dir`、Claude-native YAML frontmatter、2 欄 MEMORY.md、wildcard 索引項、orphan memory dir 容忍）
 - memory-write-gate.py — 寫入閘門（6 規則 + 0.80 dedup；[固] 不再 fast-path，一律過品質檢查）
 - memory-conflict-detector.py — 向量衝突 + LLM 分類；mode ∈ {full-scan / write-check / pull-audit}（V4 Phase 5 三時段衝突偵測核心）
 - conflict-review.py — V4 Pending Queue 後端：list/approve/reject 三動作，is_management 雙向認證 guard，approve 寫 Decided-by + merge_history + 觸發 `/index/incremental`
@@ -141,6 +141,7 @@ Session Ready
 - memory-undo.py — V4.1 /memory-undo 後端：撤銷到 _rejected/ + reason 分類 + 寫 reflection_metrics
 - changelog-roll.py — _CHANGELOG.md 自動滾動（保留最新 N 條，超額搬 _CHANGELOG_ARCHIVE.md）；由 PostToolUse hook 偵測 _CHANGELOG 寫入後自動觸發 detached subprocess
 - test-memory-v21.py — E2E 測試
+- migrate-confirmations.py — v3 雙欄位拆分 migration（Confirmations→ReadHits+Confirmations 歸零，支援 --dry-run）
 - eval-ranked-search.py — 50 query benchmark
 - cleanup-old-files.py — 環境清理
 

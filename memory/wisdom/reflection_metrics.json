@@ -3,8 +3,8 @@
   "metrics": {
     "first_approach_accuracy": {
       "single_file": {
-        "correct": 358,
-        "total": 372
+        "correct": 359,
+        "total": 373
       },
       "multi_file": {
         "correct": 3,
@@ -17,10 +17,10 @@
     },
     "over_engineering_rate": {
       "user_reverted_or_simplified": 0,
-      "total_suggestions": 428
+      "total_suggestions": 429
     },
     "silence_accuracy": {
-      "held_back_ok": 361,
+      "held_back_ok": 362,
       "held_back_missed": 23
     }
   },
@@ -29,7 +29,7 @@
     "architecture 首次正確率 7%"
   ],
   "arch_sensitivity_elevated": true,
-  "last_reflection": "2026-04-24T01:39:39.252129+00:00",
+  "last_reflection": "2026-04-24T02:29:32.038891+00:00",
   "v41_extraction": {
     "total_written": 0,
     "total_rejected": 0,
@@ -1110,6 +1110,25 @@
         "session_id": "0e118cf2-2d18-4074-8445-e9dc230be296",
         "ts": "2026-04-24T01:39:39.124031+00:00",
         "prompt_count": 0,
+        "extract_triggered": 0,
+        "extract_written": 0,
+        "dedup_hit": 0,
+        "rejected_24h": 0,
+        "avg_l2_conf": 0.0,
+        "token_used": 0,
+        "scores": {
+          "density": 0.0,
+          "precision_proxy": 1.0,
+          "novelty": 1.0,
+          "cost_efficiency": 1.0,
+          "trust": 1.0,
+          "weighted_total": 0.85
+        }
+      },
+      {
+        "session_id": "c2ae90d5-813f-4fd5-9db0-2fbe1861e551",
+        "ts": "2026-04-24T02:29:32.025442+00:00",
+        "prompt_count": 2,
         "extract_triggered": 0,
         "extract_written": 0,
         "dedup_hit": 0,

@@ -39,7 +39,11 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 STALENESS_THRESHOLDS: Dict[str, int] = {"[固]": 90, "[觀]": 60, "[臨]": 30}
 # v2.1 Sprint 3: Type-based decay multiplier (procedural ages slower, episodic faster)
 TYPE_DECAY_MULTIPLIER: Dict[str, float] = {"semantic": 1.0, "episodic": 0.8, "procedural": 1.5}
-PROMOTION_THRESHOLDS: Dict[str, int] = {"[臨]": 2, "[觀]": 4}
+# SYNC: memory/decisions.md — dual-track promotion thresholds (suggest only, not gate)
+PROMOTION_THRESHOLDS = {
+    "[臨]": {"confirmations": 4, "readhits": 20},
+    "[觀]": {"confirmations": 10, "readhits": 50},
+}
 INDEX_MAX_LINES = 40
 ATOM_MAX_LINES = 200
 TRIGGER_MIN = 3
@@ -48,7 +52,7 @@ MEMORY_INDEX = "MEMORY.md"
 DISTANT_DIR = "_distant"
 SKIP_PREFIXES = ("SPEC_", "_")  # Files to skip during atom scanning
 REQUIRED_METADATA = {"Scope", "Confidence", "Trigger", "Last-used"}
-OPTIONAL_METADATA = {"Confirmations", "Privacy", "Source", "Type", "Created", "TTL",
+OPTIONAL_METADATA = {"Confirmations", "ReadHits", "Privacy", "Source", "Type", "Created", "TTL",
                      "Expires-at", "Tags", "Related", "Supersedes", "Quality"}
 REQUIRED_SECTIONS = {"知識", "行動"}
 VALID_CONFIDENCE = {"[固]", "[觀]", "[臨]"}
@@ -210,6 +214,11 @@ def parse_atom_file(path: Path, layer_name: str) -> AtomMetadata:
         atom.confirmations = int(raw_conf_count)
     except ValueError:
         atom.confirmations = 0
+    raw_rh_count = atom.raw_metadata.get("ReadHits", "0")
+    try:
+        atom.readhits = int(raw_rh_count)
+    except ValueError:
+        atom.readhits = 0
 
     atom.privacy = atom.raw_metadata.get("Privacy", "public")
     atom.source = atom.raw_metadata.get("Source", "")
@@ -409,22 +418,27 @@ def check_staleness(atom: AtomMetadata, today: date) -> Optional[Suggestion]:
 
 
 def suggest_promotions(atom: AtomMetadata) -> Optional[Suggestion]:
-    """Suggest promotion based on confirmations count."""
-    threshold = PROMOTION_THRESHOLDS.get(atom.confidence)
-    if threshold is None:
+    """Suggest promotion based on dual-track thresholds (v3)."""
+    thresholds = PROMOTION_THRESHOLDS.get(atom.confidence)
+    if thresholds is None:
         return None
 
-    if atom.confirmations < threshold:
+    conf_ok = atom.confirmations >= thresholds["confirmations"]
+    rh_ok = getattr(atom, "readhits", 0) >= thresholds["readhits"]
+    if not conf_ok and not rh_ok:
         return None
 
+    method = "Conf" if conf_ok else "ReadHits"
+    val = atom.confirmations if conf_ok else getattr(atom, "readhits", 0)
+    req = thresholds["confirmations"] if conf_ok else thresholds["readhits"]
     rel = _rel_path(atom.file_path)
     if atom.confidence == "[臨]":
         return Suggestion(
-            rel, "[臨]", "[觀]", f"{atom.confirmations} confirmations（閾值 {threshold}）"
+            rel, "[臨]", "[觀]", f"{method}={val}（閾值 {req}）"
         )
     elif atom.confidence == "[觀]":
         return Suggestion(
-            rel, "[觀]", "[固]", f"{atom.confirmations} confirmations（閾值 {threshold}）"
+            rel, "[觀]", "[固]", f"{method}={val}（閾值 {req}）"
         )
     return None
 
@@ -596,9 +610,16 @@ def restore_from_distant(atom_path: Path) -> Tuple[bool, str]:
         flags=re.MULTILINE,
     )
 
-    # Reset confirmations
+    # Reset confirmations + readhits
     text = re.sub(
         r"^(-\s+Confirmations:\s*).*$",
+        r"\g<1>0",
+        text,
+        count=1,
+        flags=re.MULTILINE,
+    )
+    text = re.sub(
+        r"^(-\s+ReadHits:\s*).*$",
         r"\g<1>0",
         text,
         count=1,

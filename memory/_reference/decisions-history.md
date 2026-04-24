@@ -5,6 +5,7 @@
 - Trigger: 決策歷史, 版本演進, decisions-history, V2 changelog
 - Last-used: 2026-03-23
 - Confirmations: 0
+- ReadHits: 0
 - Related: decisions
 
 從 decisions.md 拆出，僅供追溯參考。

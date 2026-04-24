@@ -327,6 +327,7 @@ def full_report(atoms: dict[str, Path], aliases: dict[str, str] | None = None) -
             "confidence": fm.get("Confidence", "—"),
             "last_used": fm.get("Last-used", "—"),
             "confirmations": fm.get("Confirmations", "—"),
+            "readhits": fm.get("ReadHits", "—"),
             "related": related,
             "issues": [],
         }
@@ -337,6 +338,8 @@ def full_report(atoms: dict[str, Path], aliases: dict[str, str] | None = None) -
                 entry["issues"].append("missing Last-used")
             if not fm.get("Confirmations"):
                 entry["issues"].append("missing Confirmations")
+            if not fm.get("ReadHits"):
+                entry["issues"].append("missing ReadHits")
             if not fm.get("Trigger"):
                 entry["issues"].append("missing Trigger")
         elif fm.get("_format") == "claude-native":
@@ -359,7 +362,7 @@ def print_text_report(report: dict):
         related_str = ", ".join(a["related"]) if a["related"] else "(none)"
         print(f"  {status} {a['name']}")
         print(f"     File: {a['file']} | Confidence: {a['confidence']}")
-        print(f"     Last-used: {a['last_used']} | Confirmations: {a['confirmations']}")
+        print(f"     Last-used: {a['last_used']} | Confirmations: {a['confirmations']} | ReadHits: {a['readhits']}")
         print(f"     Related: {related_str}")
         if a["issues"]:
             print(f"     Issues: {', '.join(a['issues'])}")

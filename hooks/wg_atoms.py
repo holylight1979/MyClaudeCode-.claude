@@ -239,7 +239,7 @@ def compute_token_budget(prompt: str) -> int:
 
 # V2.14: Token Diet — strip non-essential metadata before injection
 _STRIP_META_RE = re.compile(
-    r"^- (?:Scope|Type|Trigger|Last-used|Created|Confirmations|Tags|TTL|Expires-at):\s.*$\n?",
+    r"^- (?:Scope|Type|Trigger|Last-used|Created|Confirmations|ReadHits|Tags|TTL|Expires-at):\s.*$\n?",
     re.MULTILINE,
 )
 

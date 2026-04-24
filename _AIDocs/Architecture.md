@@ -142,7 +142,12 @@ PostToolUse hook 偵測 `_CHANGELOG.md` 寫入 → 行數 >`config.changelog_aut
 
 ### atom_promote
 
-門檻：`[臨]≥20 confirmations → [觀]`，`[觀]≥40 → [固]`。`merge_to_preferences=true`（global only，[觀]→[固] 時）把「## 知識」合併到 `preferences.md` 並搬原 atom 到 `memory/_archived/`。
+雙軌門檻（v3 dual-field）：
+- **Primary**: Confirmations（跨 session 萃取命中）[臨]→[觀] ≥4, [觀]→[固] ≥10
+- **Auxiliary**: ReadHits（注入讀取）[臨]→[觀] ≥20, [觀]→[固] ≥50
+- 7 天豁免期（migration 起算）：Confirmations 未達標時 ReadHits/5 ≥ 門檻可 fallback
+
+`merge_to_preferences=true`（global only，[觀]→[固] 時）把「## 知識」合併到 `preferences.md` 並搬原 atom 到 `memory/_archived/`。
 
 ### UserPromptSubmit Atom-Write Guard
 

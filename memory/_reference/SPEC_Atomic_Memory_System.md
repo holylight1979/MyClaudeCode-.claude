@@ -161,7 +161,8 @@ memory/
 - Type: semantic                 ← v2.1（semantic/episodic/procedural，預設 semantic）
 - Trigger: kw1, kw2, kw3
 - Last-used: YYYY-MM-DD
-- Confirmations: 5
+- Confirmations: 0
+- ReadHits: 5
 - Created: YYYY-MM-DD            ← v2.1（首次建立日期）
 - TTL: 30d                       ← v2.1 [DEPRECATED-unused] 可選，無 atom 使用
 - Expires-at: YYYY-MM-DD         ← v2.1 [DEPRECATED-unused] 可選，無 atom 使用

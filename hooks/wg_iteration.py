@@ -244,16 +244,18 @@ def _self_iterate_atoms(
             # Parse metadata
             lu_match = re.search(r"Last-used:\s*(\d{4}-\d{2}-\d{2})", text)
             conf_match = re.search(r"Confirmations:\s*(\d+)", text)
-            if not lu_match or not conf_match:
+            rh_match = re.search(r"ReadHits:\s*(\d+)", text)
+            if not lu_match or (not conf_match and not rh_match):
                 continue
 
             last_used = datetime.strptime(lu_match.group(1), "%Y-%m-%d")
-            confirmations = int(conf_match.group(1))
+            confirmations = int(conf_match.group(1)) if conf_match else 0
+            readhits = int(rh_match.group(1)) if rh_match else 0
 
-            # Composite decay score
+            # Composite decay score (v3: use max of dual fields)
             days_since = (today - last_used).days
             recency = math.exp(-math.log(2) * max(days_since, 0) / decay_half_life)
-            usage = min(1.0, math.log10(confirmations + 1) / 2)
+            usage = min(1.0, math.log10(max(confirmations, readhits) + 1) / 2)
             score = 0.5 * recency + 0.5 * usage
 
             # Archive candidate?

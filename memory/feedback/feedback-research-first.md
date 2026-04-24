@@ -4,7 +4,8 @@
 - Confidence: [固]
 - Trigger: 試錯, trial-and-error, 不熟悉, API試錯, 框架不熟, 搜尋策略, research
 - Last-used: 2026-04-10
-- Confirmations: 22
+- Confirmations: 0
+- ReadHits: 22
 
 ## 知識
 

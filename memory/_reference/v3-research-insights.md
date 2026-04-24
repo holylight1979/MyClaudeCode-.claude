@@ -6,7 +6,8 @@
 - Trigger: V3, 研究, 認知科學, 佛學, 唯識, ACT-R, spreading activation
 - Last-used: 2026-03-11
 - Created: 2026-03-11
-- Confirmations: 1
+- Confirmations: 0
+- ReadHits: 1
 - Tags: research, theory, v3-design
 - Related: decisions, v3-design-spec
 

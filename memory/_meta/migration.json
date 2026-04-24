@@ -1,0 +1,196 @@
+{
+  "version": "dual-field-v1",
+  "timestamp": 1776998770.7724607,
+  "iso": "2026-04-24T10:46:10",
+  "total_migrated": 31,
+  "total_skipped": 7,
+  "total_errors": 0,
+  "details": [
+    {
+      "file": "_reference\\decisions-history.md",
+      "old_confirmations": 0,
+      "new_readhits": 0,
+      "new_confirmations": 0
+    },
+    {
+      "file": "_reference\\self-iteration.md",
+      "old_confirmations": 1,
+      "new_readhits": 1,
+      "new_confirmations": 0
+    },
+    {
+      "file": "_reference\\SPEC_Atomic_Memory_System.md",
+      "old_confirmations": 5,
+      "new_readhits": 5,
+      "new_confirmations": 0
+    },
+    {
+      "file": "_reference\\SPEC_impl_params.md",
+      "old_confirmations": 0,
+      "new_readhits": 0,
+      "new_confirmations": 0
+    },
+    {
+      "file": "_reference\\v21-research-plan.md",
+      "old_confirmations": 3,
+      "new_readhits": 3,
+      "new_confirmations": 0
+    },
+    {
+      "file": "_reference\\v3-design-spec.md",
+      "old_confirmations": 0,
+      "new_readhits": 0,
+      "new_confirmations": 0
+    },
+    {
+      "file": "_reference\\v3-research-insights.md",
+      "old_confirmations": 1,
+      "new_readhits": 1,
+      "new_confirmations": 0
+    },
+    {
+      "file": "decisions-architecture.md",
+      "old_confirmations": 0,
+      "new_readhits": 0,
+      "new_confirmations": 0
+    },
+    {
+      "file": "decisions.md",
+      "old_confirmations": 167,
+      "new_readhits": 167,
+      "new_confirmations": 0
+    },
+    {
+      "file": "episodic\\episodic-20260330-users-holylight.md",
+      "old_confirmations": 0,
+      "new_readhits": 0,
+      "new_confirmations": 0
+    },
+    {
+      "file": "feedback\\feedback-decision-no-tech-menu.md",
+      "old_confirmations": 7,
+      "new_readhits": 7,
+      "new_confirmations": 0
+    },
+    {
+      "file": "feedback\\feedback-fix-escalation.md",
+      "old_confirmations": 21,
+      "new_readhits": 21,
+      "new_confirmations": 0
+    },
+    {
+      "file": "feedback\\feedback-fix-on-discovery.md",
+      "old_confirmations": 2,
+      "new_readhits": 2,
+      "new_confirmations": 0
+    },
+    {
+      "file": "feedback\\feedback-git-log-chinese.md",
+      "old_confirmations": 8,
+      "new_readhits": 8,
+      "new_confirmations": 0
+    },
+    {
+      "file": "feedback\\feedback-global-install.md",
+      "old_confirmations": 1,
+      "new_readhits": 1,
+      "new_confirmations": 0
+    },
+    {
+      "file": "feedback\\feedback-handoff-self-sufficient.md",
+      "old_confirmations": 3,
+      "new_readhits": 3,
+      "new_confirmations": 0
+    },
+    {
+      "file": "feedback\\feedback-memory-path.md",
+      "old_confirmations": 34,
+      "new_readhits": 34,
+      "new_confirmations": 0
+    },
+    {
+      "file": "feedback\\feedback-no-outsource-rigor.md",
+      "old_confirmations": 4,
+      "new_readhits": 4,
+      "new_confirmations": 0
+    },
+    {
+      "file": "feedback\\feedback-no-test-to-svn.md",
+      "old_confirmations": 12,
+      "new_readhits": 12,
+      "new_confirmations": 0
+    },
+    {
+      "file": "feedback\\feedback-research-first.md",
+      "old_confirmations": 22,
+      "new_readhits": 22,
+      "new_confirmations": 0
+    },
+    {
+      "file": "feedback\\feedback-scope-sensitive-values.md",
+      "old_confirmations": 4,
+      "new_readhits": 4,
+      "new_confirmations": 0
+    },
+    {
+      "file": "feedback-humanist-decision-framing.md",
+      "old_confirmations": 3,
+      "new_readhits": 3,
+      "new_confirmations": 0
+    },
+    {
+      "file": "gdoc-harvester.md",
+      "old_confirmations": 32,
+      "new_readhits": 32,
+      "new_confirmations": 0
+    },
+    {
+      "file": "preferences.md",
+      "old_confirmations": 148,
+      "new_readhits": 148,
+      "new_confirmations": 0
+    },
+    {
+      "file": "templates\\icld-sprint-template.md",
+      "old_confirmations": 0,
+      "new_readhits": 0,
+      "new_confirmations": 0
+    },
+    {
+      "file": "toolchain-ollama.md",
+      "old_confirmations": 87,
+      "new_readhits": 87,
+      "new_confirmations": 0
+    },
+    {
+      "file": "toolchain.md",
+      "old_confirmations": 185,
+      "new_readhits": 185,
+      "new_confirmations": 0
+    },
+    {
+      "file": "wisdom\\DESIGN.md",
+      "old_confirmations": 0,
+      "new_readhits": 0,
+      "new_confirmations": 0
+    },
+    {
+      "file": "workflow-icld.md",
+      "old_confirmations": 61,
+      "new_readhits": 61,
+      "new_confirmations": 0
+    },
+    {
+      "file": "workflow-rules.md",
+      "old_confirmations": 141,
+      "new_readhits": 141,
+      "new_confirmations": 0
+    },
+    {
+      "file": "workflow-svn.md",
+      "old_confirmations": 152,
+      "new_readhits": 152,
+      "new_confirmations": 0
+    }
+  ]
+}

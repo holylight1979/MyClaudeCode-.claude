@@ -4,7 +4,8 @@
 - Scope: global
 - Confidence: [固]
 - Last-used: 2026-04-11
-- Confirmations: 4
+- Confirmations: 0
+- ReadHits: 4
 - Related:
 
 ## 知識

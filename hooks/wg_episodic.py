@@ -351,7 +351,7 @@ def _check_cross_session_patterns(
             else:
                 action = f"跨 session 命中 {hit_count} 次（Confirmations +1）"
 
-            # Increment Confirmations in matched atom files
+            # Increment Confirmations in matched atom files (Path B: cross-session behavior hit)
             for r in results:
                 atom_file = r.get("file_path", "")
                 if atom_file and os.path.isfile(atom_file):
@@ -365,6 +365,25 @@ def _check_cross_session_patterns(
                                 atom_text, count=1, flags=re.MULTILINE,
                             )
                             Path(atom_file).write_text(atom_text, encoding="utf-8")
+                        # Phase B: write correlation_id to access.json
+                        try:
+                            import uuid as _uuid
+                            access_file = Path(atom_file).with_suffix(".access.json")
+                            if access_file.exists():
+                                adata = json.loads(access_file.read_text(encoding="utf-8"))
+                            else:
+                                adata = {"timestamps": [], "confirmations": []}
+                            if "confirmations" not in adata:
+                                adata["confirmations"] = []
+                            adata["confirmations"].append({
+                                "ts": time.time(),
+                                "correlation_id": str(_uuid.uuid4()),
+                                "hit_count": hit_count,
+                            })
+                            adata["confirmations"] = adata["confirmations"][-100:]
+                            access_file.write_text(json.dumps(adata), encoding="utf-8")
+                        except (OSError, json.JSONDecodeError):
+                            pass
                     except (OSError, UnicodeDecodeError):
                         pass
 
@@ -758,6 +777,7 @@ def _generate_episodic_atom(
         f"- Last-used: {today}\n"
         f"- Created: {today}\n"
         f"- Confirmations: 0\n"
+        f"- ReadHits: 0\n"
         f"- TTL: 24d\n"
         f"- Expires-at: {expires}\n"
         f"\n"

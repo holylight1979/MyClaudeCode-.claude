@@ -7,6 +7,7 @@
 - Last-used: 2026-03-11
 - Created: 2026-03-11
 - Confirmations: 0
+- ReadHits: 0
 - Tags: v2.9, design, retrieval, architecture
 - Related: decisions, v3-research-insights
 

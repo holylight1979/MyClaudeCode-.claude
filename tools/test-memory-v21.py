@@ -218,7 +218,7 @@ def test_decay_enforce(ctx: TestContext) -> TestResult:
         f"# Stale Temp Decision\n\n"
         f"- Scope: global\n- Confidence: [臨]\n- Type: semantic\n"
         f"- Trigger: stale, temp, test\n- Last-used: {old_date}\n"
-        f"- Created: {old_date}\n- Confirmations: 0\n\n"
+        f"- Created: {old_date}\n- Confirmations: 0\n- ReadHits: 0\n\n"
         f"## 知識\n\n- [臨] 過期臨時決策\n\n## 行動\n\n- 測試用\n\n"
         f"## 演化日誌\n\n| 日期 | 變更 | 來源 |\n|------|------|------|\n"
         f"| {old_date} | 建立 | test |\n",

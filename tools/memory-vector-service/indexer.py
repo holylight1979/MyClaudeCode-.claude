@@ -225,6 +225,7 @@ def parse_and_chunk(
     confidence = ""
     last_used = ""
     confirmations = 0
+    readhits = 0
     atom_type = "semantic"
     tags_str = ""
     scope_meta = ""      # V4: "shared" | "role:{r}" | "personal:{u}" | "global"
@@ -242,6 +243,9 @@ def parse_and_chunk(
                 confidence = f"[{cm.group(1)}]" if cm else val
             elif key == "Last-used":
                 last_used = val
+            elif key == "ReadHits":
+                cm2 = re.search(r"\d+", val)
+                readhits = int(cm2.group()) if cm2 else 0
             elif key == "Confirmations":
                 cm2 = re.search(r"\d+", val)
                 confirmations = int(cm2.group()) if cm2 else 0
@@ -290,6 +294,7 @@ def parse_and_chunk(
                     "line_number": current_bullet_start,
                     "last_used": last_used,
                     "confirmations": confirmations,
+                    "readhits": readhits,
                     "atom_type": atom_type,
                     "tags": tags_str,
                     "scope": scope_meta,
@@ -573,6 +578,7 @@ def build_index(
                 "line_number": chunk["line_number"],
                 "last_used": chunk.get("last_used", ""),
                 "confirmations": chunk.get("confirmations", 0),
+                "readhits": chunk.get("readhits", 0),
                 "atom_type": chunk.get("atom_type", "semantic"),
                 "tags": chunk.get("tags", ""),
                 "scope": chunk_scope,

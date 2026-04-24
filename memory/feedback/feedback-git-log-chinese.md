@@ -5,7 +5,8 @@
 - Confidence: [臨]
 - Trigger: git, commit, log, message, 上GIT, 上版, push
 - Last-used: 2026-04-23
-- Confirmations: 8
+- Confirmations: 0
+- ReadHits: 8
 - Created-at: 2026-04-16
 - Related: preferences, workflow-rules
 

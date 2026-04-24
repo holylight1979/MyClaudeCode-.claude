@@ -456,7 +456,7 @@ const TOOL_DEFINITIONS = [
     name: "atom_promote",
     description:
       "Promote an atom's confidence level. " +
-      "Checks promotion thresholds: [臨]≥20 confirmations→[觀], [觀]≥40→[固]. " +
+      "Checks dual thresholds: [臨]→[觀] Conf≥4 or RH≥20, [觀]→[固] Conf≥10 or RH≥50. " +
       "Use execute=false for dry-run. " +
       "When promoting to [固], pass merge_to_preferences=true to append knowledge " +
       "into preferences.md and archive the source atom (global scope only).",
@@ -693,6 +693,7 @@ function buildAtomContent({
   lines.push(`- Trigger: ${triggers.join(", ")}`);
   lines.push(`- Last-used: ${today}`);
   lines.push("- Confirmations: 0");
+  lines.push("- ReadHits: 0");
   if (pendingReviewBy) {
     lines.push(`- Pending-review-by: ${pendingReviewBy}`);
   }
@@ -1033,6 +1034,7 @@ function parseAtomMeta(content) {
     switch (key) {
       case "confidence": meta.confidence = val; break;
       case "confirmations": meta.confirmations = parseInt(val, 10) || 0; break;
+      case "readhits": meta.readhits = parseInt(val, 10) || 0; break;
       case "scope": meta.scope = val; break;
       case "trigger": meta.triggers = val; break;
       case "last-used": meta.lastUsed = val; break;
@@ -1110,7 +1112,7 @@ async function toolAtomWrite(id, args) {
         `New atom must start at [臨] (confidence=${confidence} rejected).\n` +
         `Reason: [觀]/[固] reflect cross-session stability; first-write cannot assert that.\n` +
         `Knowledge items inside should also use [臨] prefix.\n` +
-        `Promotion: trigger hits auto-accumulate Confirmations → ≥20 auto-promote to [觀] → ≥40 user-approve [固]`,
+        `Promotion: Confirmations (cross-session) ≥4→[觀] ≥10→[固]; ReadHits (injection) ≥20/≥50 auxiliary.`,
         true);
     }
 
@@ -1233,8 +1235,9 @@ async function toolAtomWrite(id, args) {
 
   // ── Mode: replace ──
   if (mode === "replace") {
-    // Preserve Confirmations + initial Author/Created-at if file exists
+    // Preserve Confirmations + ReadHits + initial Author/Created-at if file exists
     let confirmations = 0;
+    let readhits = 0;
     let prevAuthor = author;
     let prevCreatedAt = today;
     if (fs.existsSync(filePath)) {
@@ -1242,6 +1245,7 @@ async function toolAtomWrite(id, args) {
         const old = fs.readFileSync(filePath, "utf-8");
         const meta = parseAtomMeta(old);
         confirmations = meta.confirmations || 0;
+        readhits = meta.readhits || 0;
         const am = old.match(/^- Author:\s*(.+)$/m);
         if (am) prevAuthor = am[1].trim();
         const cm = old.match(/^- Created-at:\s*(.+)$/m);
@@ -1258,10 +1262,9 @@ async function toolAtomWrite(id, args) {
       return sendToolResult(id, `Validation failed: ${err}`, true);
     }
 
-    const finalContent = content.replace(
-      /^- Confirmations:\s*\d+$/m,
-      `- Confirmations: ${confirmations}`
-    );
+    const finalContent = content
+      .replace(/^- Confirmations:\s*\d+$/m, `- Confirmations: ${confirmations}`)
+      .replace(/^- ReadHits:\s*\d+$/m, `- ReadHits: ${readhits}`);
 
     fs.mkdirSync(memDir, { recursive: true });
     const tmp = filePath + ".tmp";
@@ -1272,7 +1275,7 @@ async function toolAtomWrite(id, args) {
     triggerVectorReindex();
 
     return sendToolResult(id,
-      `Replaced atom: ${slug}.md (${confidence}, preserved confirmations=${confirmations}, author=${prevAuthor})\n` +
+      `Replaced atom: ${slug}.md (${confidence}, preserved conf=${confirmations} rh=${readhits}, author=${prevAuthor})\n` +
       `MEMORY.md index updated.`
     );
   }
@@ -1304,10 +1307,11 @@ function toolAtomPromote(id, args) {
     return sendToolResult(id, `Cannot parse confidence from ${atom_name}.md`, true);
   }
 
-  // Determine promotion path
+  // Determine promotion path (v3 dual-field)
+  // SYNC: memory/decisions.md — promotion thresholds
   const THRESHOLDS = {
-    "[臨]": { next: "[觀]", required: 20 },
-    "[觀]": { next: "[固]", required: 40 },
+    "[臨]": { next: "[觀]", confirmations: 4, readhits: 20 },
+    "[觀]": { next: "[固]", confirmations: 10, readhits: 50 },
     "[固]": null, // already max
   };
 
@@ -1318,15 +1322,43 @@ function toolAtomPromote(id, args) {
     );
   }
 
-  const { next, required } = path_info;
+  const { next, confirmations: reqConf, readhits: reqRH } = path_info;
   const confirmations = meta.confirmations || 0;
+  const readhits = meta.readhits || 0;
 
-  if (confirmations < required) {
+  // Primary gate: Confirmations (cross-session behavior hits)
+  let eligible = confirmations >= reqConf;
+  let method = "confirmations";
+
+  // Auxiliary gate: ReadHits (injection hits)
+  if (!eligible && readhits >= reqRH) {
+    eligible = true;
+    method = "readhits_auxiliary";
+  }
+
+  // 7-day exemption: migration fallback (ReadHits/5 ≥ reqConf)
+  if (!eligible) {
+    try {
+      const migrationPath = path.join(MEMORY_DIR, "_meta", "migration.json");
+      if (fs.existsSync(migrationPath)) {
+        const migData = JSON.parse(fs.readFileSync(migrationPath, "utf-8"));
+        const daysSinceMigration = (Date.now() - (migData.timestamp || 0) * 1000) / 86400000;
+        if (daysSinceMigration <= 7 && Math.floor(readhits / 5) >= reqConf) {
+          eligible = true;
+          method = "readhits_7day_fallback";
+        }
+      }
+    } catch {}
+  }
+
+  if (!eligible) {
     return sendToolResult(id,
       `## Dry-run: ${atom_name}\n` +
-      `Current: ${meta.confidence} (${confirmations} confirmations)\n` +
-      `Required: ${required} confirmations for → ${next}\n` +
-      `Deficit: ${required - confirmations} more confirmations needed.`
+      `Current: ${meta.confidence}\n` +
+      `  Confirmations: ${confirmations}/${reqConf}\n` +
+      `  ReadHits: ${readhits}/${reqRH} (auxiliary)\n` +
+      `Required: Confirmations ≥ ${reqConf} OR ReadHits ≥ ${reqRH}\n` +
+      `Deficit: ${Math.max(0, reqConf - confirmations)} conf / ${Math.max(0, reqRH - readhits)} rh`
     );
   }
 
@@ -1334,8 +1366,10 @@ function toolAtomPromote(id, args) {
   if (!execute) {
     return sendToolResult(id,
       `## Dry-run: ${atom_name}\n` +
-      `Current: ${meta.confidence} (${confirmations} confirmations)\n` +
-      `Eligible for promotion → ${next}\n` +
+      `Current: ${meta.confidence}\n` +
+      `  Confirmations: ${confirmations}/${reqConf}\n` +
+      `  ReadHits: ${readhits}/${reqRH}\n` +
+      `Eligible via: ${method} → ${next}\n` +
       `Set execute=true to apply.`
     );
   }
@@ -1367,6 +1401,8 @@ function toolAtomPromote(id, args) {
       from: meta.confidence,
       to: next,
       confirmations,
+      readhits,
+      method,
       scope,
     };
     fs.appendFileSync(auditPath, JSON.stringify(entry) + "\n");
@@ -1419,7 +1455,7 @@ function toolAtomPromote(id, args) {
 
   return sendToolResult(id,
     `Promoted ${atom_name}: ${meta.confidence} → ${next}\n` +
-    `Confirmations: ${confirmations}\n` +
+    `Confirmations: ${confirmations} | ReadHits: ${readhits} (via ${method})\n` +
     `Knowledge lines updated to ${next}.` +
     mergeReport +
     mergeHint
@@ -1890,6 +1926,7 @@ function apiAtoms(req, res) {
             case "confidence": atom.confidence = val; break;
             case "last-used": atom.last_used = val; break;
             case "confirmations": atom.confirmations = parseInt(val) || 0; break;
+            case "readhits": atom.readhits = parseInt(val) || 0; break;
             case "trigger": atom.triggers = val.split(",").map(t => t.trim()); break;
             case "related": atom.related = val.split(",").map(t => t.trim()); break;
             case "created": atom.created = val; break;
@@ -1951,6 +1988,7 @@ function apiAtoms(req, res) {
           case "confidence": atom.confidence = val; break;
           case "last-used": atom.last_used = val; break;
           case "confirmations": atom.confirmations = parseInt(val) || 0; break;
+          case "readhits": atom.readhits = parseInt(val) || 0; break;
           case "related": atom.related = val.split(",").map(t => t.trim()); break;
           case "trigger": atom.triggers = val.split(",").map(t => t.trim()); break;
           case "scope": atom.scope = val; break;
@@ -3057,6 +3095,7 @@ function renderAtomsTable(atoms) {
     '<th onclick="sortAtoms(\\'layer\\')">層級 &#8597;</th>' +
     '<th onclick="sortAtoms(\\'confidence\\')">信心 &#8597;</th>' +
     '<th onclick="sortAtoms(\\'confirmations\\')">確認數 &#8597;</th>' +
+    '<th onclick="sortAtoms(\\'readhits\\')">讀取數 &#8597;</th>' +
     '<th onclick="sortAtoms(\\'last_used\\')">最後使用 &#8597;</th>' +
     '<th onclick="sortAtoms(\\'knowledge_count\\')">知識數 &#8597;</th>' +
     '<th>行數</th>' +
@@ -3080,12 +3119,13 @@ function buildAtomRows(atoms) {
       '<td><span class="atom-layer">' + esc(a.layer) + '</span></td>' +
       '<td><span class="atom-conf ' + confClass + '">' + esc(a.confidence||"-") + '</span></td>' +
       '<td>' + (a.confirmations||0) + '</td>' +
+      '<td>' + (a.readhits||0) + '</td>' +
       '<td title="' + esc(a.last_used||"") + '">' + daysAgo + '</td>' +
       '<td>' + (a.knowledge_count||'-') + '</td>' +
       '<td>' + (a.line_count||'-') + '</td>' +
     '</tr>';
     const detailVis = expandedAtoms.has(a.name) ? '' : 'none';
-    html += '<tr id="detail-' + esc(a.name) + '" style="display:' + detailVis + '"><td colspan="8"><div class="atom-detail">' + esc(a.content||"") + '</div></td></tr>';
+    html += '<tr id="detail-' + esc(a.name) + '" style="display:' + detailVis + '"><td colspan="9"><div class="atom-detail">' + esc(a.content||"") + '</div></td></tr>';
   }
   return html;
 }

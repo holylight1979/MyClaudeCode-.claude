@@ -5,7 +5,8 @@
 - Confidence: [臨]
 - Trigger: 不在範圍, 範圍外, 未來處理, 另開 session, out of scope, drift, 順手發現, 尾巴
 - Last-used: 2026-04-17
-- Confirmations: 2
+- Confirmations: 0
+- ReadHits: 2
 - Created-at: 2026-04-16
 - Related: feedback-handoff-self-sufficient, workflow-rules, preferences
 

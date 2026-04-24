@@ -5,6 +5,7 @@
 - Trigger: Sprint template, ICLD template, Sprint 計畫模板, 驗證報告模板, Sprint Prompt
 - Last-used: 2026-03-25
 - Confirmations: 0
+- ReadHits: 0
 - Related: workflow-icld
 
 > **ICLD** = Incremental Closed-Loop Development（增量式閉環開發）

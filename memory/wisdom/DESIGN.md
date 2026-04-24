@@ -5,6 +5,7 @@
 - Trigger: wisdom engine, DESIGN, 情境分類, silence_accuracy, over_engineering, Bayesian, reflection, arch_sensitivity
 - Last-used: 2026-03-13
 - Confirmations: 0
+- ReadHits: 0
 - Related: decisions-architecture, decisions
 - Status: ✅ V2.11 重構完成
 - Created: 2026-03-10

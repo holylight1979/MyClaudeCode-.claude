@@ -4,7 +4,8 @@
 - Confidence: [固]
 - Trigger: 自我迭代, self-iteration, 演進原則, 規則管理
 - Last-used: 2026-03-13
-- Confirmations: 1
+- Confirmations: 0
+- ReadHits: 1
 - Type: knowledge
 - Related: decisions
 
