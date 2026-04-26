@@ -138,10 +138,10 @@
     "threshold": 8
   },
   "codex_companion": {
-    "enabled": false,
+    "enabled": true,
     "service_port": 3850,
     "codex_binary": "codex",
-    "model": "o3",
+    "model": "",
     "assessment_timeout": 60,
     "soft_gate": {
       "completion_evidence": true,

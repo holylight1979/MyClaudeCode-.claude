@@ -89,7 +89,7 @@ def _extract_arch_files(trace: List[Dict[str, Any]]) -> str:
 def _run_codex(prompt_text: str, cwd: str, config: Dict[str, Any]) -> str:
     """Run `codex exec` and return stdout text."""
     codex_bin = config.get("codex_binary", "codex")
-    model = config.get("model", "o3")
+    model = config.get("model", "")
     timeout = config.get("assessment_timeout", 60)
 
     # Write prompt to temp file to avoid shell escaping issues
@@ -103,9 +103,10 @@ def _run_codex(prompt_text: str, cwd: str, config: Dict[str, Any]) -> str:
     output_file = prompt_file + ".out"
 
     try:
-        cmd = [
-            codex_bin, "exec",
-            "-m", model,
+        cmd = [codex_bin, "exec"]
+        if model:
+            cmd += ["-m", model]
+        cmd += [
             "-s", "read-only",
             "--ephemeral",
             "--ignore-rules",
