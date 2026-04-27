@@ -149,10 +149,19 @@ def _run_assessment(
         )
         result["_turn_index"] = turn_index
 
+        # Phase 5 觀測：依分類結果累加計數
+        category = str(result.get("category", "")).lower()
+        summary = str(result.get("summary", ""))
+        if category == "system" and "sandbox" in summary:
+            companion_state.increment_metric(session_id, "sandbox_failures")
+        elif result.get("notify_next_turn"):
+            # 非 sandbox 的失敗回退（含 timeout / FileNotFoundError）皆視為 empty_returns
+            companion_state.increment_metric(session_id, "empty_returns")
+
         companion_state.write_assessment(session_id, turn_index, assessment_type, result)
         _log(
             f"Assessment completed: {session_id[:8]} t{turn_index} "
-            f"type={assessment_type} status={result.get('status')}"
+            f"type={assessment_type} status={result.get('status')} attempts={result.get('_attempts', 1)}"
         )
 
     except Exception as e:

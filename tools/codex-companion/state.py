@@ -204,11 +204,58 @@ def mark_assessment_path_injected(path: Path) -> None:
 
 
 def cleanup(session_id: str) -> None:
-    """Remove state and per-turn assessment files for a session."""
-    paths: List[Path] = [_state_path(session_id)]
+    """Remove state, metrics and per-turn assessment files for a session."""
+    paths: List[Path] = [_state_path(session_id), _metrics_path(session_id)]
     paths.extend(WORKFLOW_DIR.glob(f"companion-assessment-{session_id}-t*.json"))
     for path in paths:
         try:
             path.unlink(missing_ok=True)
         except OSError:
             pass
+
+
+# --- Sprint 4 Phase 5：observability metrics（獨立檔避免與 state 競爭寫入）---
+
+def _metrics_path(session_id: str) -> Path:
+    return WORKFLOW_DIR / f"companion-metrics-{session_id}.json"
+
+
+_METRIC_KEYS = (
+    "audits_skipped_by_score",
+    "empty_returns",
+    "sandbox_failures",
+    "behavior_gap_blocks",
+    "quality_gap_advises",
+)
+
+
+def increment_metric(session_id: str, name: str, delta: int = 1) -> None:
+    """Increment a per-session counter. Best-effort, fail-silent.
+
+    跨 process（hook + service）有微小 race window，但對觀測指標來說
+    遺失 1-2 次累加可接受。獨立檔 companion-metrics-{sid}.json 避免污染
+    主 state（service 主寫入路徑）。
+    """
+    if name not in _METRIC_KEYS:
+        return
+    path = _metrics_path(session_id)
+    with _state_lock:
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            data = {}
+        data[name] = int(data.get(name, 0)) + delta
+        try:
+            _atomic_write(path, data)
+        except OSError:
+            pass
+
+
+def read_metrics(session_id: str) -> Dict[str, int]:
+    """Read all metric counters for a session (zero defaults for未累加項)。"""
+    path = _metrics_path(session_id)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        data = {}
+    return {k: int(data.get(k, 0)) for k in _METRIC_KEYS}

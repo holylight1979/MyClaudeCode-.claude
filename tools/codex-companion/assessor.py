@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -117,8 +118,12 @@ def _extract_verification_evidence(trace: List[Dict[str, Any]]) -> str:
     return "\n".join(hits[-5:])  # 最近 5 條足夠
 
 
-def _run_codex(prompt_text: str, cwd: str, config: Dict[str, Any]) -> str:
-    """Run `codex exec` and return stdout text."""
+def _run_codex(prompt_text: str, cwd: str, config: Dict[str, Any]) -> tuple[str, str]:
+    """Run `codex exec` and return (stdout_text, stderr_text).
+
+    Sprint 4 Phase 5.1：stderr 回傳給上層做 sandbox 失敗識別。
+    無論成功失敗都把 stderr（含 timeout/spawn 錯誤的合成訊息）一併送出。
+    """
     codex_bin = config.get("codex_binary", "codex")
     model = config.get("model", "")
     timeout = config.get("assessment_timeout", 60)
@@ -159,25 +164,26 @@ def _run_codex(prompt_text: str, cwd: str, config: Dict[str, Any]) -> str:
             )
 
         _log(f"codex exec exit code: {result.returncode}")
+        stderr_text = (result.stderr or "")
 
         # Prefer -o output file
         if os.path.exists(output_file):
             text = Path(output_file).read_text(encoding="utf-8").strip()
             if text:
-                return text
+                return text, stderr_text
 
         # Fallback to stdout
-        return result.stdout.strip()
+        return result.stdout.strip(), stderr_text
 
     except subprocess.TimeoutExpired:
         _log(f"codex exec timed out after {timeout}s")
-        return ""
+        return "", f"[assessor] timeout after {timeout}s"
     except FileNotFoundError:
         _log(f"codex binary not found: {codex_bin}")
-        return ""
+        return "", f"[assessor] codex binary not found: {codex_bin}"
     except Exception as e:
         _log(f"codex exec error: {e}")
-        return ""
+        return "", f"[assessor] exception: {e}"
     finally:
         # Cleanup temp files
         for f in (prompt_file, output_file):
@@ -187,58 +193,114 @@ def _run_codex(prompt_text: str, cwd: str, config: Dict[str, Any]) -> str:
                 pass
 
 
-def _parse_assessment(raw: str) -> Dict[str, Any]:
-    """Parse Codex output into structured assessment dict."""
-    if not raw:
-        return {
-            "status": "error",
-            "severity": "low",
-            "category": "system",
-            "summary": "Codex returned empty response.",
-        }
+_SANDBOX_FAILURE_RE = re.compile(r"CreateProcessWithLogon|sandbox", re.IGNORECASE)
 
-    # Try to extract JSON from response
-    # Codex might wrap it in markdown fences
+
+def _run_codex_with_retry(
+    prompt_text: str, cwd: str, config: Dict[str, Any]
+) -> tuple[str, str, int]:
+    """Sprint 4 Phase 5.1：空字串/非 JSON → 退 300-500ms 重試 1 次。
+
+    回傳 (stdout, stderr_combined, attempts)。
+    第一次 stdout 不空且能 JSON 解析 → 直接返回 attempts=1。
+    否則 sleep 0.4s 再跑一次，stderr 串接讓上層做 sandbox 識別。
+    """
+    stdout1, stderr1 = _run_codex(prompt_text, cwd, config)
+
+    if stdout1 and _try_parse_json(stdout1) is not None:
+        return stdout1, stderr1, 1
+
+    _log("First codex call returned empty/non-JSON; retry once in 400ms")
+    time.sleep(0.4)
+    stdout2, stderr2 = _run_codex(prompt_text, cwd, config)
+
+    final_stdout = stdout2 or stdout1
+    combined_stderr = "\n".join(s for s in (stderr1, stderr2) if s)
+    return final_stdout, combined_stderr, 2
+
+
+def _classify_failure(stderr: str) -> Dict[str, Any]:
+    """Sprint 4 Phase 5.1：依 stderr 內容把 codex 失敗分類成 assessment。
+
+    sandbox 命中（CreateProcessWithLogon|sandbox）→ system 高嚴重度，
+      防 R2-5 級 bug 再被吞掉。
+    其他失敗 → warning + delivery=inject + notify_next_turn=True，
+      下一輪 drain 端會加注短訊提醒。
+    """
+    stderr_excerpt = (stderr or "")[-300:]
+    if _SANDBOX_FAILURE_RE.search(stderr or ""):
+        return _apply_defaults({
+            "status": "error",
+            "severity": "high",
+            "category": "system",
+            "summary": "Codex sandbox 失敗，請檢查 -s 設定",
+            "evidence": stderr_excerpt,
+            "delivery": "inject",
+            "confidence": "high",
+            "applies_until": "next_prompt",
+            "notify_next_turn": True,
+        })
+    return _apply_defaults({
+        "status": "warning",
+        "severity": "low",
+        "category": "system",
+        "summary": "退回 heuristics-only",
+        "evidence": stderr_excerpt,
+        "delivery": "inject",
+        "confidence": "low",
+        "applies_until": "next_prompt",
+        "notify_next_turn": True,
+    })
+
+
+def _apply_defaults(d: Dict[str, Any]) -> Dict[str, Any]:
+    """Sprint 3：補 schema v2 預設值；舊 codex 回 recommended_action 也吃。
+
+    Sprint 4 提到模組級：給 _classify_failure / _try_parse_json 共用。
+    """
+    d.setdefault("status", "ok")
+    d.setdefault("severity", "low")
+    d.setdefault("category", "unknown")
+    d.setdefault("summary", "")
+    d.setdefault("evidence", "")
+    # delivery 預設策略：嚴重度 medium 以上才 inject，否則 ignore（保守）
+    if "delivery" not in d:
+        sev = str(d.get("severity", "low")).lower()
+        d["delivery"] = "inject" if sev in ("medium", "high") else "ignore"
+    d.setdefault("confidence", "medium")
+    d.setdefault("applies_until", "next_prompt")
+    # turn_index 由 service 補 _turn_index，這裡先補 0 占位
+    d.setdefault("turn_index", 0)
+    # 舊欄位 recommended_action 視為 corrective_prompt 的別名
+    if "corrective_prompt" not in d and d.get("recommended_action"):
+        d["corrective_prompt"] = d["recommended_action"]
+    d.setdefault("corrective_prompt", "")
+    return d
+
+
+def _try_parse_json(raw: str) -> Optional[Dict[str, Any]]:
+    """嘗試從 codex stdout 抽出 JSON dict。失敗回 None（讓 retry 路徑判斷）。
+
+    Sprint 4：抽 module-level 給 _run_codex_with_retry 用。
+    """
+    if not raw:
+        return None
     text = raw.strip()
 
     # Remove markdown fences if present
     if text.startswith("```"):
         lines = text.split("\n")
-        # Find first and last fence
         start = 0
         end = len(lines)
         for i, line in enumerate(lines):
             if line.strip().startswith("```") and i == 0:
                 start = i + 1
-                # Skip language tag like ```json
                 continue
             if line.strip() == "```" and i > 0:
                 end = i
                 break
         text = "\n".join(lines[start:end]).strip()
 
-    def _apply_defaults(d: Dict[str, Any]) -> Dict[str, Any]:
-        """Sprint 3：補 schema v2 預設值；舊 codex 回 recommended_action 也吃。"""
-        d.setdefault("status", "ok")
-        d.setdefault("severity", "low")
-        d.setdefault("category", "unknown")
-        d.setdefault("summary", "")
-        d.setdefault("evidence", "")
-        # delivery 預設策略：嚴重度 medium 以上才 inject，否則 ignore（保守）
-        if "delivery" not in d:
-            sev = str(d.get("severity", "low")).lower()
-            d["delivery"] = "inject" if sev in ("medium", "high") else "ignore"
-        d.setdefault("confidence", "medium")
-        d.setdefault("applies_until", "next_prompt")
-        # turn_index 由 service 補 _turn_index，這裡先補 0 占位
-        d.setdefault("turn_index", 0)
-        # 舊欄位 recommended_action 視為 corrective_prompt 的別名
-        if "corrective_prompt" not in d and d.get("recommended_action"):
-            d["corrective_prompt"] = d["recommended_action"]
-        d.setdefault("corrective_prompt", "")
-        return d
-
-    # Try JSON parse
     try:
         parsed = json.loads(text)
         if isinstance(parsed, dict):
@@ -246,8 +308,6 @@ def _parse_assessment(raw: str) -> Dict[str, Any]:
     except json.JSONDecodeError:
         pass
 
-    # Try to find JSON object anywhere in text
-    import re
     json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', text, re.DOTALL)
     if json_match:
         try:
@@ -257,13 +317,25 @@ def _parse_assessment(raw: str) -> Dict[str, Any]:
         except json.JSONDecodeError:
             pass
 
+    return None
+
+
+def _parse_assessment(raw: str) -> Dict[str, Any]:
+    """Parse Codex output into structured assessment dict.
+
+    Sprint 4：失敗分類已搬到 _classify_failure；本函式只負責成功路徑與
+    legacy fallback（unknown 文字當 summary）。
+    """
+    parsed = _try_parse_json(raw)
+    if parsed is not None:
+        return parsed
     # Fallback: wrap raw text as summary
     return _apply_defaults({
         "status": "ok",
         "severity": "low",
         "category": "unknown",
-        "summary": text[:500],
-        "delivery": "ignore",  # 解析失敗不主動干擾
+        "summary": (raw or "")[:500],
+        "delivery": "ignore",
         "confidence": "low",
     })
 
@@ -349,11 +421,17 @@ def run_assessment(
 
     _log(f"Prompt built for {assessment_type} (t{turn_index}): {len(prompt)} chars")
 
-    raw = _run_codex(prompt, cwd, config)
-    result = _parse_assessment(raw)
+    # Sprint 4 Phase 5.1：retry 1 次 + sandbox 失敗識別
+    raw, stderr_combined, attempts = _run_codex_with_retry(prompt, cwd, config)
+    parsed = _try_parse_json(raw) if raw else None
+    if parsed is None:
+        result = _classify_failure(stderr_combined)
+    else:
+        result = parsed
 
     # Tag with metadata
     result["_assessment_type"] = assessment_type
     result["_session_id"] = session_id
+    result["_attempts"] = attempts
 
     return result

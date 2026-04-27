@@ -267,5 +267,75 @@ def test_stop_hook_dedups_when_assessment_for_turn_already_exists(cleanup_sessio
     )
 
 
+# ─── Sprint 4 Phase 5.2：notify_next_turn drain reminder ─────────────
+
+
+@pytest.mark.skipif(not HOOK_SCRIPT.exists(), reason="codex_companion.py not present")
+def test_drain_notify_next_turn_prepends_reminder(cleanup_session):
+    """assessment 帶 notify_next_turn=True → drain 應前置一段 [Codex Companion 提醒]。"""
+    sid = cleanup_session
+    _write_assessment_file(
+        sid, turn_index=1, atype="turn_audit",
+        assessment={
+            "status": "warning",
+            "severity": "low",
+            "category": "system",
+            "summary": "退回 heuristics-only",
+            "delivery": "inject",
+            "confidence": "low",
+            "applies_until": "next_prompt",
+            "notify_next_turn": True,
+        },
+    )
+
+    stdout, stderr, rc = _run_hook({
+        "hook_event_name": "UserPromptSubmit",
+        "session_id": sid,
+        "prompt": "next user message",
+    })
+
+    assert rc == 0, f"hook crashed: {stderr}"
+    parsed = json.loads(stdout.strip().splitlines()[-1])
+    ctx = parsed["hookSpecificOutput"]["additionalContext"]
+    # 提醒區塊應在最前
+    assert ctx.startswith("[Codex Companion 提醒]"), (
+        f"reminder must be prepended; got ctx[:80]={ctx[:80]!r}"
+    )
+    assert "heuristics-only" in ctx
+    # 原 assessment 文字仍要出現
+    assert "退回 heuristics-only" in ctx
+    # turn 標記
+    assert "t1" in ctx
+
+
+@pytest.mark.skipif(not HOOK_SCRIPT.exists(), reason="codex_companion.py not present")
+def test_drain_no_reminder_when_notify_absent(cleanup_session):
+    """assessment 無 notify_next_turn → drain 不應出現提醒前置區塊。"""
+    sid = cleanup_session
+    _write_assessment_file(
+        sid, turn_index=1, atype="turn_audit",
+        assessment={
+            "status": "warning",
+            "severity": "medium",
+            "summary": "正常 advisory",
+            "delivery": "inject",
+            "confidence": "medium",
+        },
+    )
+
+    stdout, stderr, rc = _run_hook({
+        "hook_event_name": "UserPromptSubmit",
+        "session_id": sid,
+        "prompt": "x",
+    })
+
+    assert rc == 0, f"hook crashed: {stderr}"
+    parsed = json.loads(stdout.strip().splitlines()[-1])
+    ctx = parsed["hookSpecificOutput"]["additionalContext"]
+    assert "[Codex Companion 提醒]" not in ctx, (
+        f"no notify_next_turn → no reminder; got ctx={ctx!r}"
+    )
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))

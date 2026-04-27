@@ -146,7 +146,14 @@ def _output_context(event_name: str, text: str) -> None:
     })
 
 
-def _output_block(reason: str) -> None:
+def _output_block(reason: str, session_id: str = "") -> None:
+    # Phase 5 觀測：每次 BLOCK 累加 behavior_gap_blocks
+    if session_id:
+        try:
+            import state as companion_state
+            companion_state.increment_metric(session_id, "behavior_gap_blocks")
+        except Exception:
+            pass
     _output_json({"decision": "block", "reason": reason})
 
 
@@ -352,6 +359,7 @@ def handle_user_prompt_submit(input_data: Dict[str, Any], config: Dict[str, Any]
     }
 
     blocks: list[str] = []
+    notify_summaries: list[str] = []  # Phase 5.2：notify_next_turn 短訊收集
     for turn_index, atype, path, data in pending:
         assessment = data.get("assessment", {})
         type_label = type_label_map.get(atype, "Review")
@@ -365,6 +373,10 @@ def handle_user_prompt_submit(input_data: Dict[str, Any], config: Dict[str, Any]
         summary = assessment.get("summary", "")
         evidence = assessment.get("evidence", "")
         corrective = assessment.get("corrective_prompt", "") or assessment.get("recommended_action", "")
+
+        # Phase 5.2：assessor 在失敗回退時會帶 notify_next_turn=True
+        if assessment.get("notify_next_turn"):
+            notify_summaries.append(f"t{turn_index} {summary or status}")
 
         header = (
             f"[Codex Companion: {type_label} t{turn_index}] "
@@ -384,6 +396,21 @@ def handle_user_prompt_submit(input_data: Dict[str, Any], config: Dict[str, Any]
 
     if not blocks:
         _output_nothing()
+
+    # Phase 5.2：若任一 pending 帶 notify_next_turn，前置一段提醒短訊
+    if notify_summaries:
+        reminder = (
+            "[Codex Companion 提醒] 上輪審查未取得有效回應，本輪暫退回 heuristics-only。"
+            f"來源：{'; '.join(notify_summaries[:3])}"
+        )
+        blocks.insert(0, reminder)
+
+    # Phase 5 觀測：累加注入次數（每實際送出 1 個 inject 即 +1）
+    try:
+        import state as companion_state
+        companion_state.increment_metric(session_id, "quality_gap_advises", len(blocks))
+    except Exception:
+        pass
 
     context_text = "\n\n".join(blocks)
     # Token budget guard: ~600 chars Chinese ≈ 300 tokens per block，整體 cap 1800
@@ -507,10 +534,16 @@ def handle_stop(input_data: Dict[str, Any], config: Dict[str, Any]):
                 threshold = soft_gate_config.get("block_severity_threshold", "high")
                 if heuristics.severity_at_or_above(results, threshold):
                     detail = heuristics.format_for_context(results)
-                    _output_block(
-                        f"Codex Companion 軟閘：偵測到高風險缺漏。\n{detail}\n"
-                        "請補充驗證或修正後再收尾。"
+                    # Phase 5.3/5.4：block reason 從 config 讀
+                    template = config.get(
+                        "block_template",
+                        "Codex Companion 軟閘：偵測到高風險缺漏。\n{detail}\n請補充驗證或修正後再收尾。",
                     )
+                    try:
+                        block_reason = template.format(detail=detail)
+                    except (KeyError, IndexError):
+                        block_reason = template + "\n" + detail
+                    _output_block(block_reason, session_id=session_id)
         except Exception:
             pass  # Heuristics failure → degrade gracefully
 
@@ -526,6 +559,12 @@ def handle_stop(input_data: Dict[str, Any], config: Dict[str, Any]):
         score = 99  # 算分失敗安全預設：不抑制觸發，避免漏審查
 
     if score < score_threshold:
+        # Phase 5 觀測
+        try:
+            import state as companion_state
+            companion_state.increment_metric(session_id, "audits_skipped_by_score")
+        except Exception:
+            pass
         _output_nothing()
 
     # Dedup：同 turn_index + turn_audit 已落盤 → skip
@@ -559,6 +598,46 @@ def handle_stop(input_data: Dict[str, Any], config: Dict[str, Any]):
     _output_nothing()
 
 
+def _flush_metrics_to_reflection(session_id: str) -> None:
+    """Phase 5 觀測：把本 session 的 codex_companion 計數附加到
+    memory/wisdom/reflection_metrics.json 的 codex_companion.sessions 陣列。
+
+    最多保留最近 100 筆，與 wisdom_engine 既有結構共存（top-level codex_companion
+    為新欄位，wisdom_engine 不讀，不破壞 V4.1 P4 路徑）。
+    全 zero 的 session 跳過避免噪音。
+    """
+    try:
+        import state as companion_state
+        metrics = companion_state.read_metrics(session_id)
+    except Exception:
+        return
+    if not metrics or not any(metrics.values()):
+        return
+
+    metrics_path = CLAUDE_DIR / "memory" / "wisdom" / "reflection_metrics.json"
+    try:
+        data = json.loads(metrics_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return  # 既有檔不存在/壞檔不主動建立，避免覆寫風險
+
+    section = data.setdefault("codex_companion", {})
+    sessions = section.setdefault("sessions", [])
+    from datetime import datetime, timezone
+    sessions.append({
+        "session_id": session_id,
+        "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        **metrics,
+    })
+    if len(sessions) > 100:
+        section["sessions"] = sessions[-100:]
+    try:
+        tmp = metrics_path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        tmp.replace(metrics_path)
+    except OSError:
+        pass
+
+
 def handle_session_end(input_data: Dict[str, Any], config: Dict[str, Any]):
     port = config.get("service_port", 3850)
     session_id = input_data.get("session_id", "")
@@ -567,6 +646,9 @@ def handle_session_end(input_data: Dict[str, Any], config: Dict[str, Any]):
         "session_id": session_id,
         "type": "session_end",
     })
+
+    if session_id:
+        _flush_metrics_to_reflection(session_id)
 
     _output_nothing()
 

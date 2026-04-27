@@ -149,7 +149,8 @@
       "completion_evidence": true,
       "architecture_review": false,
       "block_severity_threshold": "high"
-    }
+    },
+    "block_template": "Codex Companion 軟閘：偵測到高風險缺漏。\n{detail}\n請補充驗證或修正後再收尾。"
   },
   "docdrift": {
     "enabled": true,
