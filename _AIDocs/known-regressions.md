@@ -4,13 +4,15 @@
 
 ---
 
-## REG-001 · `test_v4_atoms_unchanged` 基準漂移
+## REG-001 · `test_v4_atoms_unchanged` 基準漂移 ✅ RESOLVED 2026-04-27
 
 | 欄位 | 內容 |
 |------|------|
-| 檔案 | `tests/regression/test_v4_atoms_unchanged.py::TestV4AtomsUnchanged::test_all_atoms_sha256_match` |
+| 檔案 | ~~`tests/regression/test_v4_atoms_unchanged.py`~~（已刪除） |
 | 首次偵測 | 2026-04-27（Sprint 2 收尾跑全套 pytest 時觸發 TestFailGate） |
 | 範圍 | 9 atom 檔的 SHA256 與 `tests/fixtures/v4_atoms_baseline.jsonl` 不符 |
+| 處理決策 | **選項 2 退役測試**（管理職 2026-04-27 拍板）——理由：V4.1 GA 整合期已結束、現有 `atom_write` MCP + write_gate + auto-pending + 三時段衝突偵測已涵蓋未授權漂移防護，多一層 SHA256 baseline 屬過度防禦 |
+| 處理動作 | 刪除 `tests/regression/test_v4_atoms_unchanged.py` + `tests/fixtures/v4_atoms_baseline.jsonl`；保留 `tools/snapshot-v4-atoms.py`（未來若要重建 baseline 可用） |
 
 ### 不符清單
 
@@ -45,11 +47,12 @@ c:\Projects\.claude\memory\architecture.md
 - 否。Sprint 2 commit (`fa9897b`) 修改範圍：`tools/codex-companion/heuristics.py`、`hooks/codex_companion.py`、`workflow/config.json`、兩個 test 檔、`_AIDocs/DocIndex-System.md`、`_AIDocs/_CHANGELOG.md`
 - 9 個漂移 atom 沒有任何一個被 Sprint 2 commit 觸碰，git diff 可驗證
 
-### 修補路徑（待管理職決策）
+### 修補路徑（已決議 2026-04-27）
 
-擇一：
-1. **重新固化基準**（推薦）：跑 `python tools/snapshot-v4-atoms.py` 重新產出 `v4_atoms_baseline.jsonl`，commit 為「V4.1 後第二代 atom 基準」。前提：先把 9 個未 commit 的 atom 修改視為合法、commit 進來
-2. **退役該測試**：V4.1 GA 已結束，整合期保護任務已完成；`pytest.mark.skip` 或刪除
-3. **xfail 標記**：`@pytest.mark.xfail(reason="REG-001", strict=False)`，測試仍跑但不阻擋
+~~擇一~~ → **採選項 2 退役**：
 
-備註：本檔由 Sprint 2 收尾時建立。後續 session 處理時請更新「狀態」欄位（暫無，視首次處理時補上）。
+1. ~~重新固化基準~~ —— 缺點：每次合法演進這 9 個 atom 都要重簽 baseline，等同每次寫入 `decisions.md` / `preferences.md` 都要多一道 commit
+2. **✅ 退役該測試** —— 已執行：刪 `test_v4_atoms_unchanged.py` + `v4_atoms_baseline.jsonl`
+3. ~~xfail 標記~~ —— 缺點：每次 pytest 看到 `1 xfailed` 雜訊永遠在
+
+備註：本檔由 Sprint 2 收尾時建立，於 Sprint 3 開頭由管理職拍板退役。

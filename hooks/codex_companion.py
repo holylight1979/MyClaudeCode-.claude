@@ -277,11 +277,35 @@ def handle_session_start(input_data: Dict[str, Any], config: Dict[str, Any]):
     _output_nothing()
 
 
+_CONFIDENCE_LABEL = {
+    "low": "低信心",
+    "medium": "中信心",
+    "high": "高信心",
+}
+
+_APPLIES_LABEL = {
+    "next_prompt": "限本輪",
+    "until_arch_change": "直到架構變動",
+}
+
+
+def _mark_injected(path: Path, data: Dict[str, Any]) -> None:
+    try:
+        data["injected"] = True
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+        tmp.replace(path)
+    except OSError:
+        pass
+
+
 def handle_user_prompt_submit(input_data: Dict[str, Any], config: Dict[str, Any]):
     """Inject pending per-turn Codex assessments as additionalContext.
 
-    Phase 1.8：drain 改成掃 companion-assessment-{sid}-t*.json glob，
-    依 turn_index 排序，未 inject 的依序合併注入（最多 3 件以控 token）。
+    Phase 1.8：drain 掃 companion-assessment-{sid}-t*.json，依 turn_index 排序。
+    Sprint 3 Phase 4.4：依 codex 回的 delivery 路由：
+      delivery=ignore → 標 injected 略過注入（codex 自判此 turn 不打擾）
+      delivery=inject → 注入文字並加 confidence + applies_until 標籤
     """
     session_id = input_data.get("session_id", "")
     if not session_id:
@@ -302,15 +326,15 @@ def handle_user_prompt_submit(input_data: Dict[str, Any], config: Dict[str, Any]
             continue
         assessment = data.get("assessment") or {}
         if not assessment or assessment.get("status") == "error":
-            # Mark error assessments injected so they don't pile up forever
-            try:
-                data["injected"] = True
-                tmp = path.with_suffix(".tmp")
-                tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-                tmp.replace(path)
-            except OSError:
-                pass
+            _mark_injected(path, data)  # 錯誤 assessment 標掉避免堆積
             continue
+
+        # Sprint 3 Phase 4.4：delivery=ignore 直接標掉、不注入
+        delivery = str(assessment.get("delivery", "inject")).lower()
+        if delivery == "ignore":
+            _mark_injected(path, data)
+            continue
+
         turn_index = int(data.get("turn_index", 0))
         atype = data.get("type", assessment.get("_assessment_type", "review"))
         pending.append((turn_index, atype, path, data))
@@ -333,29 +357,33 @@ def handle_user_prompt_submit(input_data: Dict[str, Any], config: Dict[str, Any]
         type_label = type_label_map.get(atype, "Review")
         severity = assessment.get("severity", "low")
         status = assessment.get("status", "ok")
-        summary = assessment.get("summary", "")
-        action = assessment.get("recommended_action", "")
-        corrective = assessment.get("corrective_prompt", "")
+        confidence = str(assessment.get("confidence", "medium")).lower()
+        conf_label = _CONFIDENCE_LABEL.get(confidence, "中信心")
+        applies = str(assessment.get("applies_until", "next_prompt")).lower()
+        applies_label = _APPLIES_LABEL.get(applies, "限本輪")
 
-        lines = [
-            f"[Codex Companion: {type_label} t{turn_index}] status={status} severity={severity}"
-        ]
+        summary = assessment.get("summary", "")
+        evidence = assessment.get("evidence", "")
+        corrective = assessment.get("corrective_prompt", "") or assessment.get("recommended_action", "")
+
+        header = (
+            f"[Codex Companion: {type_label} t{turn_index}] "
+            f"status={status} severity={severity} "
+            f"confidence={confidence}({conf_label}) applies={applies_label}"
+        )
+        lines = [header]
         if summary:
             lines.append(f"摘要：{summary}")
-        if action:
-            lines.append(f"建議：{action}")
+        if evidence:
+            lines.append(f"事證：{evidence}")
         if corrective:
-            lines.append(f"修正提示：{corrective}")
+            lines.append(f"建議：{corrective}")
         blocks.append("\n".join(lines))
 
-        # Mark injected
-        try:
-            data["injected"] = True
-            tmp = path.with_suffix(".tmp")
-            tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-            tmp.replace(path)
-        except OSError:
-            pass
+        _mark_injected(path, data)
+
+    if not blocks:
+        _output_nothing()
 
     context_text = "\n\n".join(blocks)
     # Token budget guard: ~600 chars Chinese ≈ 300 tokens per block，整體 cap 1800
@@ -423,11 +451,15 @@ def handle_post_tool_use(input_data: Dict[str, Any], config: Dict[str, Any]):
 
 
 def handle_stop(input_data: Dict[str, Any], config: Dict[str, Any]):
-    """Run heuristic soft gate + trigger async turn audit.
+    """Run heuristic soft gate + score-gated async turn audit.
 
     Phase 1.3：last_assistant_tail 三層 fallback。
     Phase 1.4：tail 當 stop_text 傳入 triggered_results。
-    Phase 1.5：trigger context 改送 {user_goal_hint, last_assistant_tail, verification_signals}。
+    Phase 1.5：trigger context 帶 user_goal_hint / last_assistant_tail。
+    Sprint 3 Phase 3.2：
+      (a) 算 score < score_threshold → 跳過 codex turn_audit
+      (b) 同 turn_index + turn_audit 已落盤 assessment → dedup skip
+      (c) max_audits_per_session 上限保護
     """
     port = config.get("service_port", 3850)
     session_id = input_data.get("session_id", "")
@@ -444,37 +476,33 @@ def handle_stop(input_data: Dict[str, Any], config: Dict[str, Any]):
         "last_assistant_tail": last_assistant_tail,
     })
 
-    # Run synchronous heuristic checks (no LLM, < 10ms)
-    soft_gate_config = config.get("soft_gate", {})
+    # ── 共用：讀 guardian + companion state，組 merged_state ─────────────
+    guardian_state_path = WORKFLOW_DIR / f"state-{session_id}.json"
+    try:
+        guardian_state = json.loads(guardian_state_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        guardian_state = {}
 
+    comp_state_path = WORKFLOW_DIR / f"companion-state-{session_id}.json"
+    try:
+        comp_state = json.loads(comp_state_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        comp_state = {}
+
+    merged_state = {
+        "modified_files": guardian_state.get("modified_files", []),
+        "accessed_files": guardian_state.get("accessed_files", []),
+        "tool_trace": comp_state.get("tool_trace", []),
+        "last_assistant_tail": last_assistant_tail,
+    }
+    turn_index_post = int(comp_state.get("turn_index", 0))
+
+    # ── Sprint 2：heuristic soft gate（BLOCK 權只屬 confident_completion）─
+    soft_gate_config = config.get("soft_gate", {})
     if soft_gate_config.get("completion_evidence", True):
         try:
             import heuristics
-
-            guardian_state_path = WORKFLOW_DIR / f"state-{session_id}.json"
-            try:
-                guardian_state = json.loads(guardian_state_path.read_text(encoding="utf-8"))
-            except (json.JSONDecodeError, OSError):
-                guardian_state = {}
-
-            try:
-                comp_state_path = WORKFLOW_DIR / f"companion-state-{session_id}.json"
-                comp_state = json.loads(comp_state_path.read_text(encoding="utf-8"))
-            except (json.JSONDecodeError, OSError):
-                comp_state = {}
-
-            merged_state = {
-                "modified_files": guardian_state.get("modified_files", []),
-                "accessed_files": guardian_state.get("accessed_files", []),
-                "tool_trace": comp_state.get("tool_trace", []),
-            }
-
-            # Phase 1.4：把 stop_text 傳入 triggered_results
-            # Sprint 2：BLOCK 權收斂到 confident_completion_without_evidence；
-            # 其他規則一律 advisory。門檻由 config.soft_gate.block_severity_threshold 控制
-            # （預設 "high"，即只有 confident_completion 會 BLOCK）。
             results = heuristics.triggered_results(merged_state, stop_text=last_assistant_tail)
-
             if results:
                 threshold = soft_gate_config.get("block_severity_threshold", "high")
                 if heuristics.severity_at_or_above(results, threshold):
@@ -483,18 +511,36 @@ def handle_stop(input_data: Dict[str, Any], config: Dict[str, Any]):
                         f"Codex Companion 軟閘：偵測到高風險缺漏。\n{detail}\n"
                         "請補充驗證或修正後再收尾。"
                     )
-
         except Exception:
             pass  # Heuristics failure → degrade gracefully
 
-    # Phase 1.5: trigger context 帶上下文
-    user_goal_hint = ""
+    # ── Sprint 3 Phase 3.2：score gate / dedup / cap ─────────────────────
+    score_threshold = int(config.get("score_threshold", 4))
+    max_audits = int(config.get("max_audits_per_session", 30))
+
     try:
-        guardian_state_path = WORKFLOW_DIR / f"state-{session_id}.json"
-        guardian_state = json.loads(guardian_state_path.read_text(encoding="utf-8"))
-        user_goal_hint = (guardian_state.get("user_goal_hint") or guardian_state.get("user_intent") or "")[:500]
-    except (json.JSONDecodeError, OSError):
-        pass
+        sys.path.insert(0, str(COMPANION_DIR))
+        import scorer
+        score = scorer.compute_turn_score(merged_state, stop_text=last_assistant_tail)
+    except Exception:
+        score = 99  # 算分失敗安全預設：不抑制觸發，避免漏審查
+
+    if score < score_threshold:
+        _output_nothing()
+
+    # Dedup：同 turn_index + turn_audit 已落盤 → skip
+    dedup_path = WORKFLOW_DIR / f"companion-assessment-{session_id}-t{turn_index_post}-turn_audit.json"
+    if dedup_path.exists():
+        _output_nothing()
+
+    # max_audits_per_session cap：已落盤的 *.json 數量達上限 → skip
+    existing = list(WORKFLOW_DIR.glob(f"companion-assessment-{session_id}-t*.json"))
+    if len(existing) >= max_audits:
+        _output_nothing()
+
+    # ── trigger turn_audit ───────────────────────────────────────────────
+    user_goal_hint = (guardian_state.get("user_goal_hint")
+                      or guardian_state.get("user_intent") or "")[:500]
 
     _http_post(port, "/trigger", {
         "session_id": session_id,
@@ -502,6 +548,7 @@ def handle_stop(input_data: Dict[str, Any], config: Dict[str, Any]):
         "context": {
             "user_goal_hint": user_goal_hint,
             "last_assistant_tail": last_assistant_tail,
+            "turn_score": score,
             "verification_signals": {
                 "stop_text_len": len(last_assistant_tail),
                 "stop_text_source": "fallback_layered",

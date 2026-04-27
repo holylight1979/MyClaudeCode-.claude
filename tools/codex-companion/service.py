@@ -26,18 +26,12 @@ SERVICE_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SERVICE_DIR))
 sys.path.insert(0, str(Path.home() / ".claude" / "hooks"))
 
-import re
-
 import state as companion_state
+import heuristics as _heur  # 共用 _ARCH_FILE_RE，避免三處 regex drift
 
 # Service-side checkpoint detection (Phase 0.5: hook trusts response.should_trigger_checkpoint)
 _PLAN_TOOLS = {"ExitPlanMode", "EnterPlanMode"}
 _WRITE_TOOLS = {"Edit", "Write"}
-_ARCH_FILE_RE = re.compile(
-    r"(?:bridge|provider|adapter|factory|service|client|transport|middleware|gateway)"
-    r"(?:\.py|\.ts|\.js|\.rs)$",
-    re.IGNORECASE,
-)
 
 
 def _detect_checkpoint(tool_name: str, file_path: str) -> Optional[str]:
@@ -45,11 +39,16 @@ def _detect_checkpoint(tool_name: str, file_path: str) -> Optional[str]:
 
     Phase 1.5: 砍 quick_plan 啟發式（連續 read-only 後首次 Edit）。
     只保留：(1) 顯式 ExitPlanMode/EnterPlanMode → plan_review
-            (2) 結構性檔案 Edit/Write → architecture_review
+            (2) 結構性檔案 Edit/Write → architecture_review，
+                **且** `_config.soft_gate.architecture_review` 為 true 才觸發
+                （Sprint 3 fix：原本忽略 config 開關，導致 architecture_review=false
+                時仍會打 codex）
     """
     if tool_name in _PLAN_TOOLS:
         return "plan_review"
-    if tool_name in _WRITE_TOOLS and file_path and _ARCH_FILE_RE.search(file_path):
+    if (tool_name in _WRITE_TOOLS and file_path
+            and _heur._ARCH_FILE_RE.search(file_path)
+            and _config.get("soft_gate", {}).get("architecture_review", False)):
         return "architecture_review"
     return None
 
@@ -113,7 +112,11 @@ def _run_assessment(
     assessment_type: str,
     context: Dict[str, Any],
 ):
-    """Run Codex assessment in background thread. Result written to per-turn file."""
+    """Run Codex assessment in background thread. Result written to per-turn file.
+
+    Sprint 3 Phase 4.3：state 內已有的 last_assistant_tail / turn_index 由 service
+    端注入 extra_context，避免 assessor 再次 IO 讀 state（已被 daemon thread 隔離）。
+    """
     try:
         mod = _get_assessor()
         if mod is None:
@@ -129,12 +132,19 @@ def _run_assessment(
         st = companion_state.read_state(session_id) or {}
         cwd = st.get("cwd", context.get("cwd", ""))
 
+        # Sprint 3：合併 service-side state 已知欄位到 extra_context
+        # context 內已有的鍵不覆蓋（hook 端可能傳更新版）
+        merged_context = dict(context or {})
+        merged_context.setdefault("turn_index", turn_index)
+        if "last_assistant_tail" not in merged_context:
+            merged_context["last_assistant_tail"] = st.get("last_assistant_tail", "")
+
         result = mod.run_assessment(
             assessment_type=assessment_type,
             session_id=session_id,
             tool_trace=st.get("tool_trace", []),
             cwd=cwd,
-            extra_context=context,
+            extra_context=merged_context,
             config=_config,
         )
         result["_turn_index"] = turn_index

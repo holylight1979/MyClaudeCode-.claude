@@ -73,21 +73,48 @@ def _summarize_modified_files(trace: List[Dict[str, Any]]) -> str:
 
 
 def _extract_arch_files(trace: List[Dict[str, Any]]) -> str:
-    """Extract structural files from trace."""
-    import re
-    arch_re = re.compile(
-        r"(?:bridge|provider|adapter|factory|service|client|transport|middleware|gateway)"
-        r"(?:\.py|\.ts|\.js|\.rs)$",
-        re.IGNORECASE,
-    )
+    """Extract structural files from trace.
+
+    Sprint 3：共用 heuristics._ARCH_FILE_RE 避免 service / assessor / heuristics
+    三處 regex drift。
+    """
+    import heuristics as _heur
     paths = set()
     for t in trace:
         p = t.get("path", "")
-        if p and arch_re.search(p):
+        if p and _heur._ARCH_FILE_RE.search(p):
             paths.add(p)
     if not paths:
         return "(none)"
     return "\n".join(f"- {p}" for p in sorted(paths))
+
+
+def _extract_verification_evidence(trace: List[Dict[str, Any]]) -> str:
+    """Sprint 3 Phase 4.3：從 tool_trace 抽 verify cmd 事證給 codex prompt。
+
+    撈取 Bash + 命中 heuristics._VERIFY_CMD_RE 的 input 行。
+    若出現過 `[FAILED] ` prefix（hook 端 failure 偵測），保留以提示 codex。
+    """
+    try:
+        import heuristics
+        verify_re = heuristics._VERIFY_CMD_RE
+    except Exception:
+        return "(none found)"
+
+    hits: List[str] = []
+    for i, t in enumerate(trace, 1):
+        if t.get("tool") != "Bash":
+            continue
+        cmd = t.get("input", "") or ""
+        if not verify_re.search(cmd):
+            continue
+        out = t.get("output_summary", "") or ""
+        outcome = "FAILED" if out.startswith("[FAILED]") else "ok"
+        hits.append(f"#{i} [{outcome}] {cmd[:120]}")
+
+    if not hits:
+        return "(none found)"
+    return "\n".join(hits[-5:])  # 最近 5 條足夠
 
 
 def _run_codex(prompt_text: str, cwd: str, config: Dict[str, Any]) -> str:
@@ -190,16 +217,32 @@ def _parse_assessment(raw: str) -> Dict[str, Any]:
                 break
         text = "\n".join(lines[start:end]).strip()
 
+    def _apply_defaults(d: Dict[str, Any]) -> Dict[str, Any]:
+        """Sprint 3：補 schema v2 預設值；舊 codex 回 recommended_action 也吃。"""
+        d.setdefault("status", "ok")
+        d.setdefault("severity", "low")
+        d.setdefault("category", "unknown")
+        d.setdefault("summary", "")
+        d.setdefault("evidence", "")
+        # delivery 預設策略：嚴重度 medium 以上才 inject，否則 ignore（保守）
+        if "delivery" not in d:
+            sev = str(d.get("severity", "low")).lower()
+            d["delivery"] = "inject" if sev in ("medium", "high") else "ignore"
+        d.setdefault("confidence", "medium")
+        d.setdefault("applies_until", "next_prompt")
+        # turn_index 由 service 補 _turn_index，這裡先補 0 占位
+        d.setdefault("turn_index", 0)
+        # 舊欄位 recommended_action 視為 corrective_prompt 的別名
+        if "corrective_prompt" not in d and d.get("recommended_action"):
+            d["corrective_prompt"] = d["recommended_action"]
+        d.setdefault("corrective_prompt", "")
+        return d
+
     # Try JSON parse
     try:
         parsed = json.loads(text)
         if isinstance(parsed, dict):
-            # Validate required fields
-            parsed.setdefault("status", "ok")
-            parsed.setdefault("severity", "low")
-            parsed.setdefault("category", "unknown")
-            parsed.setdefault("summary", "")
-            return parsed
+            return _apply_defaults(parsed)
     except json.JSONDecodeError:
         pass
 
@@ -210,17 +253,19 @@ def _parse_assessment(raw: str) -> Dict[str, Any]:
         try:
             parsed = json.loads(json_match.group())
             if isinstance(parsed, dict) and "status" in parsed:
-                return parsed
+                return _apply_defaults(parsed)
         except json.JSONDecodeError:
             pass
 
     # Fallback: wrap raw text as summary
-    return {
+    return _apply_defaults({
         "status": "ok",
         "severity": "low",
         "category": "unknown",
         "summary": text[:500],
-    }
+        "delivery": "ignore",  # 解析失敗不主動干擾
+        "confidence": "low",
+    })
 
 
 # ─── Public API ──────────────────────────────────────────────────────────────
@@ -237,11 +282,22 @@ def run_assessment(
     """Run a Codex assessment and return structured result.
 
     assessment_type: "plan_review" | "turn_audit" | "architecture_review"
+
+    Sprint 3 Phase 4.3：turn_audit 額外傳 turn_index + last_assistant_tail
+    + verification_evidence + heuristic_summary。前者由 service 從 state 讀並
+    放進 extra_context；後兩者由 assessor 從 trace 即時抽取（避免 stale state）。
     """
     trace_str = _summarize_tool_trace(tool_trace)
     modified_str = _summarize_modified_files(tool_trace)
 
+    turn_index = int(extra_context.get("turn_index", 0))
+    last_assistant_tail = extra_context.get("last_assistant_tail", "") or ""
+    if last_assistant_tail and len(last_assistant_tail) > 1500:
+        last_assistant_tail = last_assistant_tail[:1500] + "…(截斷)"
+
     # Import heuristics for flag context
+    flags_str = "None"
+    heuristic_summary = "None"
     try:
         import heuristics
         # Build a pseudo guardian-compatible state for heuristics
@@ -253,10 +309,14 @@ def run_assessment(
                 if t.get("tool") in ("Edit", "Write") and t.get("path")
             ],
         }
-        flags = heuristics.triggered_results(heur_state)
-        flags_str = heuristics.format_for_context(flags) if flags else "None"
+        flags = heuristics.triggered_results(heur_state, stop_text=last_assistant_tail)
+        if flags:
+            heuristic_summary = heuristics.format_for_context(flags)
+            flags_str = heuristic_summary
     except Exception:
-        flags_str = "None"
+        pass
+
+    verification_evidence = _extract_verification_evidence(tool_trace)
 
     # Build prompt based on type
     if assessment_type == "plan_review":
@@ -265,12 +325,14 @@ def run_assessment(
             plan_content=extra_context.get("plan_content", trace_str),
             files_examined=extra_context.get("files_examined", ""),
             heuristic_flags=flags_str,
+            turn_index=turn_index,
         )
     elif assessment_type == "architecture_review":
         prompt = prompts.build_architecture_review_prompt(
             cwd=cwd,
             arch_files=_extract_arch_files(tool_trace),
             tool_trace=trace_str,
+            turn_index=turn_index,
         )
     else:
         # Default: turn_audit
@@ -279,9 +341,13 @@ def run_assessment(
             tool_trace=trace_str,
             modified_files=modified_str,
             heuristic_flags=flags_str,
+            turn_index=turn_index,
+            last_assistant_tail=last_assistant_tail,
+            verification_evidence=verification_evidence,
+            heuristic_summary=heuristic_summary,
         )
 
-    _log(f"Prompt built for {assessment_type}: {len(prompt)} chars")
+    _log(f"Prompt built for {assessment_type} (t{turn_index}): {len(prompt)} chars")
 
     raw = _run_codex(prompt, cwd, config)
     result = _parse_assessment(raw)

@@ -143,6 +143,8 @@
     "codex_binary": "C:/Users/holylight/AppData/Roaming/npm/codex.cmd",
     "model": "",
     "assessment_timeout": 60,
+    "score_threshold": 4,
+    "max_audits_per_session": 30,
     "soft_gate": {
       "completion_evidence": true,
       "architecture_review": false,

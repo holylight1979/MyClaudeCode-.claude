@@ -148,11 +148,19 @@ Session Ready
 - cleanup-old-files.py — 環境清理
 
 ### Codex Companion（port 3850）
-- service.py — HTTP daemon。`/event` 內建 checkpoint 偵測（Phase 0.5：response 帶回 `should_trigger_checkpoint` 給 hook，避免 hook 再讀 state file）；`stop` 事件 +turn_index 並寫 `last_assistant_tail`
-- assessor.py — 組 prompt → `codex exec` → parse JSON 結果（model 為空時不傳 `-m`，由 `~/.codex/config.toml` 決定；**不傳 `-s`** 沿用 user config 預設沙盒，避免 Windows `CreateProcessWithLogonW` 1385 失敗）
-- prompts.py — plan review / turn audit / architecture review 模板，含 `SANDBOX_CONSTRAINT` 紅線（禁 git/edit/write/rm；只允許讀取）
+- service.py — HTTP daemon。`/event` 內建 checkpoint 偵測（Phase 0.5：response 帶回 `should_trigger_checkpoint` 給 hook，避免 hook 再讀 state file）；`stop` 事件 +turn_index 並寫 `last_assistant_tail`；Sprint 3：`_run_assessment` 把 `turn_index` + state 內 `last_assistant_tail` 注入 extra_context 給 assessor，避免 daemon thread 重複 IO
+- assessor.py — 組 prompt → `codex exec` → parse JSON 結果（model 為空時不傳 `-m`，由 `~/.codex/config.toml` 決定；**不傳 `-s`** 沿用 user config 預設沙盒，避免 Windows `CreateProcessWithLogonW` 1385 失敗）；Sprint 3：新增 `_extract_verification_evidence` 從 trace 即時抽 verify cmd 摘要（含 `[FAILED]` 標記）+ `_parse_assessment` 對新 schema 欄位（delivery / confidence / evidence / applies_until / turn_index）補預設值並向下相容舊 `recommended_action`
+- prompts.py — plan review / turn audit / architecture review 模板，含 `SANDBOX_CONSTRAINT` 紅線（禁 git/edit/write/rm；只允許讀取）；Sprint 3 OUTPUT_SCHEMA v2 砍 `recommended_action`、改 `delivery: ignore\|inject` + `confidence` + `evidence` + `applies_until` + `turn_index`；TURN_AUDIT 模板新增 Last Assistant Reply Tail / Verification Evidence Found / Heuristic Triggered (Reference Only) 三段；codex 徹底失去 BLOCK 權（advisory only）
 - state.py — per-session 狀態 + per-turn assessment cache（Phase 1.6/1.7：schema 加 `turn_index`、`last_assistant_tail`；assessment 改 `companion-assessment-{sid}-t{N}-{type}.json`），**module-level `threading.Lock`** 包覆所有 read-modify-write，防 service main thread 與 assessment worker thread 並發 race
 - heuristics.py — 規則式軟閘（缺驗證/完成缺證據/架構變更/空轉，< 10ms，無 LLM）
+- scorer.py — Sprint 3 turn-level risk scoring（五因子加權 0-10：`write_footprint(0-2)` + `verification_gap(0-3)` + `structural_risk(0-2)` + `completion_claim(0-2)` + `analysis_loop(0-1)`）；Stop hook 觸發 codex turn_audit 前算分，< `score_threshold` 即跳過以省互動干擾；純啟發式重用 heuristics 的判斷函數，< 5ms
+
+**Sprint 3 Score Gate + Advisory Schema（hooks/codex_companion.py + tools/codex-companion/scorer.py）**：
+- handle_stop 三閘門：(a) score < `config.codex_companion.score_threshold`（預設 4）→ skip codex；(b) 同 turn_index + turn_audit 已落盤 assessment → dedup skip；(c) 累積 assessment 數達 `max_audits_per_session`（預設 30）→ skip。算分失敗 fallback `score=99` 不抑制觸發，避免漏審查
+- merged_state 在 Stop handler 內建一次給 heuristic gate 與 scorer 共用（不重複 IO）
+- handle_user_prompt_submit drain 依 codex 回的 `delivery` 路由：`ignore` 標 injected 不打擾、`inject` 注入 header 含 `confidence=high(高信心) applies=限本輪` 標籤 + 事證行 + 建議行
+- workflow/config.json `codex_companion` 區新增 `score_threshold: 4` / `max_audits_per_session: 30`
+- 對應 plan v5 Phase 3 + Phase 4：`plans/whimsical-zooming-sedgewick.md`
 
 **Sprint 2 規則重構與 BLOCK 收斂（tools/codex-companion/heuristics.py）**：
 - BLOCK 權收斂到單一規則 `confident_completion_without_evidence`（high）；missing_verification / architecture_change / spinning 一律降為 `low` advisory，只走 inject 不走 block

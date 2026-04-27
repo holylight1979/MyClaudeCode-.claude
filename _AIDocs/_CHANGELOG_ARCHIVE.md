@@ -6,6 +6,7 @@
 
 | 日期 | 變更 | 涉及檔案 |
 |------|------|---------|
+| 2026-04-17 | **Atom 寫入防呆 + feedback 目錄整理 + atom_promote 合併** — AUTO-DRAFT tag / Atom-Write Guard / feedback/ 子資料夾 / merge_to_preferences。[log](DevHistory/session-logs/2026-04-17-atom-write-guards.md) | `hooks/wg_hot_cache.py`, `hooks/workflow-guardian.py`, `hooks/wg_iteration.py`, `tools/workflow-guardian-mcp/server.js`, `memory/feedback/` |
 | 2026-04-16 | **V4.1 GA** `v4.1.0` — 清除 rc2 blocker（ollama_client / user-extract-worker / prompt regex 三處根因）P=1.000 R=0.480。[log](DevHistory/session-logs/2026-04-16-v41-ga.md) | `tools/ollama_client.py`, `hooks/user-extract-worker.py`, `tests/integration/test_e2e_user_extract.py`, `workflow/config.json` |
 | 2026-04-16 | **V4.1 P4 Session 評價機制** `v4.1.0-rc2` — `wg_session_evaluator.py` 5 維度評分 + Agent 多 Role 模擬 + `/memory-session-score`。[log](DevHistory/session-logs/2026-04-16-v41-p4.md) | `hooks/wg_session_evaluator.py`(新), `hooks/user-extract-worker.py`, `commands/memory-session-score.md`(新), `tools/memory-session-score.py`(新) |
 | 2026-04-16 | **V4.1 P3 UX Commands** `v4.1.0-rc1` — `/memory-peek` + `/memory-undo` + 每日推送 [F18] + 隱私體檢 [F21]。[log](DevHistory/session-logs/2026-04-16-v41-p3.md) | `commands/memory-peek.md`(新), `commands/memory-undo.md`(新), `tools/memory-peek.py`(新), `tools/memory-undo.py`(新), `tools/init-roles.py` |
