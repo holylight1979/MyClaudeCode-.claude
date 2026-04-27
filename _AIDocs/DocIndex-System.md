@@ -148,13 +148,18 @@ Session Ready
 - cleanup-old-files.py — 環境清理
 
 ### Codex Companion（port 3850）
-- service.py — HTTP daemon（接收 hook 事件、觸發 async Codex assessment）
+- service.py — HTTP daemon。`/event` 內建 checkpoint 偵測（Phase 0.5：response 帶回 `should_trigger_checkpoint` 給 hook，避免 hook 再讀 state file）；`stop` 事件 +turn_index 並寫 `last_assistant_tail`
 - assessor.py — 組 prompt → `codex exec` → parse JSON 結果（model 為空時不傳 `-m`，由 `~/.codex/config.toml` 決定；**不傳 `-s`** 沿用 user config 預設沙盒，避免 Windows `CreateProcessWithLogonW` 1385 失敗）
 - prompts.py — plan review / turn audit / architecture review 模板，含 `SANDBOX_CONSTRAINT` 紅線（禁 git/edit/write/rm；只允許讀取）
-- state.py — per-session 狀態 + assessment cache，**module-level `threading.Lock`** 防 service main thread 與 assessment worker thread 並發 race
-- prompts.py — plan review / turn audit / architecture review 模板
+- state.py — per-session 狀態 + per-turn assessment cache（Phase 1.6/1.7：schema 加 `turn_index`、`last_assistant_tail`；assessment 改 `companion-assessment-{sid}-t{N}-{type}.json`），**module-level `threading.Lock`** 包覆所有 read-modify-write，防 service main thread 與 assessment worker thread 並發 race
 - heuristics.py — 規則式軟閘（缺驗證/完成缺證據/架構變更/空轉，< 10ms，無 LLM）
-- state.py — per-session 狀態 + assessment cache（原子寫入）
+
+**Sprint 1 補資訊管道（hooks/codex_companion.py）**：
+- PostToolUse 從 `tool_response` 取 stdout/stderr 截 300 字 → `tool_output_summary`，失敗訊號（`error`/`exit_code != 0`/`stderr`/`is_error`）→ `[FAILED]` prefix（不依賴 PostToolUseFailure 事件）
+- Stop 文本三層 fallback：`input_data["last_assistant_message"]` → 自寫 jsonl tail parser（無長度過濾）→ `wg_evasion.get_last_assistant_text()` 兜底
+- Stop 觸發 turn_audit context 帶 `{user_goal_hint, last_assistant_tail, verification_signals}`
+- UserPromptSubmit drain 改 glob `companion-assessment-{sid}-t*.json`，依 turn_index 排序，最多注入 3 件
+- 砍 quick_plan 啟發式：`_detect_checkpoint` 移到 service 內，只保留 `ExitPlanMode/EnterPlanMode → plan_review` 與結構性檔名 `→ architecture_review`
 
 ### 其他
 - read-excel.py（openpyxl+xlrd）| unity-yaml-tool.py | rag-engine.py（CLI wrapper）

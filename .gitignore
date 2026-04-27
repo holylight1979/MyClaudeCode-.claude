@@ -31,6 +31,11 @@ workflow/extract-worker.log
 workflow/hot_cache.json
 workflow/vector_ready.flag
 
+# ─── Codex Companion runtime state ────────────────────────
+workflow/companion-state-*.json
+workflow/companion-assessment-*.json
+workflow/companion.pid
+
 # ─── Runtime logs (atom-debug, hook output) ───────────────
 Logs/
 

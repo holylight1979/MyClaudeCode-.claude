@@ -26,7 +26,32 @@ SERVICE_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SERVICE_DIR))
 sys.path.insert(0, str(Path.home() / ".claude" / "hooks"))
 
+import re
+
 import state as companion_state
+
+# Service-side checkpoint detection (Phase 0.5: hook trusts response.should_trigger_checkpoint)
+_PLAN_TOOLS = {"ExitPlanMode", "EnterPlanMode"}
+_WRITE_TOOLS = {"Edit", "Write"}
+_ARCH_FILE_RE = re.compile(
+    r"(?:bridge|provider|adapter|factory|service|client|transport|middleware|gateway)"
+    r"(?:\.py|\.ts|\.js|\.rs)$",
+    re.IGNORECASE,
+)
+
+
+def _detect_checkpoint(tool_name: str, file_path: str) -> Optional[str]:
+    """Determine if this tool use triggers a checkpoint.
+
+    Phase 1.5: 砍 quick_plan 啟發式（連續 read-only 後首次 Edit）。
+    只保留：(1) 顯式 ExitPlanMode/EnterPlanMode → plan_review
+            (2) 結構性檔案 Edit/Write → architecture_review
+    """
+    if tool_name in _PLAN_TOOLS:
+        return "plan_review"
+    if tool_name in _WRITE_TOOLS and file_path and _ARCH_FILE_RE.search(file_path):
+        return "architecture_review"
+    return None
 
 # Lazy import assessor (may not exist during early development)
 _assessor = None
@@ -82,12 +107,17 @@ def _remove_pid():
 # ─── Assessment Worker ───────────────────────────────────────────────────────
 
 
-def _run_assessment(session_id: str, assessment_type: str, context: Dict[str, Any]):
-    """Run Codex assessment in background thread. Result written to file."""
+def _run_assessment(
+    session_id: str,
+    turn_index: int,
+    assessment_type: str,
+    context: Dict[str, Any],
+):
+    """Run Codex assessment in background thread. Result written to per-turn file."""
     try:
         mod = _get_assessor()
         if mod is None:
-            companion_state.write_assessment(session_id, {
+            companion_state.write_assessment(session_id, turn_index, assessment_type, {
                 "status": "error",
                 "severity": "low",
                 "category": "system",
@@ -107,13 +137,17 @@ def _run_assessment(session_id: str, assessment_type: str, context: Dict[str, An
             extra_context=context,
             config=_config,
         )
+        result["_turn_index"] = turn_index
 
-        companion_state.write_assessment(session_id, result)
-        _log(f"Assessment completed: {session_id[:8]} type={assessment_type} status={result.get('status')}")
+        companion_state.write_assessment(session_id, turn_index, assessment_type, result)
+        _log(
+            f"Assessment completed: {session_id[:8]} t{turn_index} "
+            f"type={assessment_type} status={result.get('status')}"
+        )
 
     except Exception as e:
         _log(f"Assessment error: {e}")
-        companion_state.write_assessment(session_id, {
+        companion_state.write_assessment(session_id, turn_index, assessment_type, {
             "status": "error",
             "severity": "low",
             "category": "system",
@@ -122,10 +156,15 @@ def _run_assessment(session_id: str, assessment_type: str, context: Dict[str, An
 
 
 def _trigger_assessment(session_id: str, assessment_type: str, context: Dict[str, Any]):
-    """Spawn background thread for assessment. Non-blocking."""
-    key = f"{session_id}:{assessment_type}"
+    """Spawn background thread for assessment. Non-blocking.
 
-    # Don't pile up duplicate assessments
+    Dedup key: session_id:turn_index:type — same turn+type already running → skip.
+    """
+    st = companion_state.read_state(session_id) or {}
+    turn_index = int(st.get("turn_index", 0))
+
+    key = f"{session_id}:{turn_index}:{assessment_type}"
+
     existing = _pending_assessments.get(key)
     if existing and existing.is_alive():
         _log(f"Assessment already running: {key}")
@@ -135,7 +174,7 @@ def _trigger_assessment(session_id: str, assessment_type: str, context: Dict[str
 
     t = threading.Thread(
         target=_run_assessment,
-        args=(session_id, assessment_type, context),
+        args=(session_id, turn_index, assessment_type, context),
         daemon=True,
         name=f"assessment-{key}",
     )
@@ -217,12 +256,20 @@ class CompanionHandler(BaseHTTPRequestHandler):
             self._send_json({"error": "session_id required"}, 400)
             return
 
-        assessment = companion_state.read_assessment(session_id)
-        if assessment is None:
+        pending = companion_state.list_pending_assessments(session_id)
+        if not pending:
             self._send_json({"status": "none"})
             return
 
-        self._send_json({"status": "available", "assessment": assessment})
+        # Return earliest pending (lowest turn_index) — debugging helper only
+        first = pending[0]
+        self._send_json({
+            "status": "available",
+            "turn_index": first["turn_index"],
+            "type": first["type"],
+            "assessment": first["data"].get("assessment"),
+            "pending_count": len(pending),
+        })
 
     def _handle_status(self):
         self._send_json({
@@ -252,7 +299,11 @@ class CompanionHandler(BaseHTTPRequestHandler):
             self._send_json({"error": "not found"}, 404)
 
     def _handle_event(self):
-        """Accept hook event — fire-and-forget accumulation."""
+        """Accept hook event — fire-and-forget accumulation.
+
+        Phase 0.5: 對 tool_use 事件，回傳 should_trigger_checkpoint 給 hook，
+        避免 hook 端再讀 state file 做檢測。
+        """
         body = self._read_body()
         session_id = body.get("session_id", "")
         if not session_id:
@@ -260,23 +311,32 @@ class CompanionHandler(BaseHTTPRequestHandler):
             return
 
         event_type = body.get("type", "unknown")
+        should_trigger: Optional[str] = None
 
         if event_type == "session_start":
             companion_state.ensure_state(session_id, body.get("cwd", ""))
         elif event_type == "session_end":
             # Don't cleanup immediately — assessment might still be writing
             pass
+        elif event_type == "stop":
+            # Stop event：turn_index +1，並紀錄 last_assistant_tail（hook 已透三層 fallback 取得）
+            tail = body.get("last_assistant_tail", "")
+            if tail:
+                companion_state.update_last_assistant_tail(session_id, tail)
+            companion_state.increment_turn(session_id)
         else:
-            # Append tool/event to trace
+            tool_name = body.get("tool_name", "")
+            file_path = body.get("file_path", "")
             companion_state.append_event(session_id, {
                 "type": event_type,
-                "tool": body.get("tool_name", ""),
+                "tool": tool_name,
                 "input": body.get("tool_input_summary", ""),
                 "output_summary": body.get("tool_output_summary", ""),
-                "path": body.get("file_path", ""),
+                "path": file_path,
             })
+            should_trigger = _detect_checkpoint(tool_name, file_path)
 
-        self._send_json({"ok": True})
+        self._send_json({"ok": True, "should_trigger_checkpoint": should_trigger})
 
     def _handle_trigger(self):
         """Trigger async Codex assessment."""

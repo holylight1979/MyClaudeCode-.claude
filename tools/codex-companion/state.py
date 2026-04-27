@@ -31,10 +31,6 @@ def _state_path(session_id: str) -> Path:
     return WORKFLOW_DIR / f"companion-state-{session_id}.json"
 
 
-def _assessment_path(session_id: str) -> Path:
-    return WORKFLOW_DIR / f"companion-assessment-{session_id}.json"
-
-
 def _atomic_write(path: Path, data: Dict[str, Any]) -> None:
     """Write JSON atomically via .tmp + rename."""
     tmp = path.with_suffix(".tmp")
@@ -53,8 +49,31 @@ def new_state(session_id: str, cwd: str) -> Dict[str, Any]:
         "checkpoints_triggered": [],
         "assessments_requested": 0,
         "assessments_completed": 0,
+        "turn_index": 0,
+        "last_assistant_tail": "",
         "last_updated": _now_iso(),
     }
+
+
+def increment_turn(session_id: str) -> int:
+    """Increment turn_index and return new value. Thread-safe."""
+    with _state_lock:
+        st = read_state(session_id)
+        if st is None:
+            st = new_state(session_id, "")
+        st["turn_index"] = int(st.get("turn_index", 0)) + 1
+        write_state(session_id, st)
+        return st["turn_index"]
+
+
+def update_last_assistant_tail(session_id: str, text: str) -> None:
+    """Persist last assistant tail for assessor context. Thread-safe."""
+    with _state_lock:
+        st = read_state(session_id)
+        if st is None:
+            st = new_state(session_id, "")
+        st["last_assistant_tail"] = (text or "")[:2000]
+        write_state(session_id, st)
 
 
 def read_state(session_id: str) -> Optional[Dict[str, Any]]:
@@ -113,18 +132,32 @@ def record_checkpoint(session_id: str, checkpoint_type: str) -> None:
         write_state(session_id, st)
 
 
-# --- Assessment cache ---
+# --- Assessment cache (per-turn-id) ---
 
-def write_assessment(session_id: str, assessment: Dict[str, Any]) -> None:
-    """Write assessment result for pickup by UserPromptSubmit hook. Thread-safe."""
+def _assessment_turn_path(session_id: str, turn_index: int, assessment_type: str) -> Path:
+    return WORKFLOW_DIR / f"companion-assessment-{session_id}-t{turn_index}-{assessment_type}.json"
+
+
+def write_assessment(
+    session_id: str,
+    turn_index: int,
+    assessment_type: str,
+    assessment: Dict[str, Any],
+) -> None:
+    """Write assessment result for pickup by UserPromptSubmit hook. Thread-safe.
+
+    Per-turn-id naming: companion-assessment-{sid}-t{N}-{type}.json
+    """
     with _state_lock:
         data = {
             "session_id": session_id,
+            "turn_index": turn_index,
+            "type": assessment_type,
             "assessment": assessment,
             "created_at": _now_iso(),
             "injected": False,
         }
-        _atomic_write(_assessment_path(session_id), data)
+        _atomic_write(_assessment_turn_path(session_id, turn_index, assessment_type), data)
 
         # Also update state counter (within same lock to prevent race with append_event)
         st = read_state(session_id)
@@ -133,23 +166,35 @@ def write_assessment(session_id: str, assessment: Dict[str, Any]) -> None:
             write_state(session_id, st)
 
 
-def read_assessment(session_id: str) -> Optional[Dict[str, Any]]:
-    """Read pending assessment. Returns None if no assessment or already injected."""
-    path = _assessment_path(session_id)
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return None
+def list_pending_assessments(session_id: str) -> List[Dict[str, Any]]:
+    """List all not-yet-injected assessments for a session, sorted by turn_index ASC.
 
-    if data.get("injected", False):
-        return None
+    Each entry: {"path": Path, "turn_index": int, "type": str, "data": dict}
+    """
+    pending = []
+    pattern = f"companion-assessment-{session_id}-t*.json"
+    for path in WORKFLOW_DIR.glob(pattern):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        if data.get("injected", False):
+            continue
+        assessment = data.get("assessment", {})
+        if not assessment or assessment.get("status") == "error":
+            continue
+        pending.append({
+            "path": path,
+            "turn_index": int(data.get("turn_index", 0)),
+            "type": data.get("type", assessment.get("_assessment_type", "review")),
+            "data": data,
+        })
+    pending.sort(key=lambda x: (x["turn_index"], x["type"]))
+    return pending
 
-    return data.get("assessment")
 
-
-def mark_assessment_injected(session_id: str) -> None:
-    """Mark assessment as injected so it won't be re-injected."""
-    path = _assessment_path(session_id)
+def mark_assessment_path_injected(path: Path) -> None:
+    """Mark a specific assessment file as injected."""
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
         data["injected"] = True
@@ -159,8 +204,10 @@ def mark_assessment_injected(session_id: str) -> None:
 
 
 def cleanup(session_id: str) -> None:
-    """Remove state and assessment files for a session."""
-    for path in [_state_path(session_id), _assessment_path(session_id)]:
+    """Remove state and per-turn assessment files for a session."""
+    paths: List[Path] = [_state_path(session_id)]
+    paths.extend(WORKFLOW_DIR.glob(f"companion-assessment-{session_id}-t*.json"))
+    for path in paths:
         try:
             path.unlink(missing_ok=True)
         except OSError:
