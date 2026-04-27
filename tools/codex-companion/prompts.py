@@ -4,6 +4,13 @@ All prompts instruct Codex to output structured JSON.
 Placeholders use {name} format for str.format().
 """
 
+SANDBOX_CONSTRAINT = """\
+【硬性沙盒約束】本任務純讀取與分析。禁止任何 git/edit/write/rm/mv/mkdir/touch \
+/cp 等修改型指令；禁止呼叫 npm install/pip install 等下載安裝指令。\
+僅允許 cat/grep/rg/Get-Content/Get-ChildItem/Select-String 等讀取指令。\
+違反即任務失敗。
+"""
+
 OUTPUT_SCHEMA = """\
 You MUST respond with a single JSON object (no markdown fences, no extra text):
 {
@@ -17,6 +24,8 @@ You MUST respond with a single JSON object (no markdown fences, no extra text):
 """
 
 PLAN_REVIEW = """\
+{sandbox_constraint}
+
 You are a code review companion. An AI agent (Claude) has just created an implementation plan. \
 Your job is to find gaps, missing steps, questionable assumptions, and risks that the agent may have overlooked.
 
@@ -44,6 +53,8 @@ Your job is to find gaps, missing steps, questionable assumptions, and risks tha
 """
 
 TURN_AUDIT = """\
+{sandbox_constraint}
+
 You are a code review companion. An AI agent (Claude) has just completed a work turn. \
 Your job is to evaluate whether the work was thorough, whether shortcuts were taken, \
 and whether the results have sufficient evidence.
@@ -72,6 +83,8 @@ and whether the results have sufficient evidence.
 """
 
 ARCHITECTURE_REVIEW = """\
+{sandbox_constraint}
+
 You are a code review companion. An AI agent (Claude) has created or modified structural files \
 (bridge, provider, adapter, service, client, etc.). Your job is to evaluate the design decision.
 
@@ -102,6 +115,7 @@ def build_plan_review_prompt(
     heuristic_flags: str = "None",
 ) -> str:
     return PLAN_REVIEW.format(
+        sandbox_constraint=SANDBOX_CONSTRAINT,
         user_goal=user_goal or "(not captured)",
         plan_content=plan_content or "(no plan content available)",
         files_examined=files_examined or "(none)",
@@ -117,6 +131,7 @@ def build_turn_audit_prompt(
     heuristic_flags: str = "None",
 ) -> str:
     return TURN_AUDIT.format(
+        sandbox_constraint=SANDBOX_CONSTRAINT,
         cwd=cwd or "(unknown)",
         tool_trace=tool_trace or "(no trace)",
         modified_files=modified_files or "(none)",
@@ -131,6 +146,7 @@ def build_architecture_review_prompt(
     tool_trace: str,
 ) -> str:
     return ARCHITECTURE_REVIEW.format(
+        sandbox_constraint=SANDBOX_CONSTRAINT,
         cwd=cwd or "(unknown)",
         arch_files=arch_files or "(none)",
         tool_trace=tool_trace or "(no trace)",

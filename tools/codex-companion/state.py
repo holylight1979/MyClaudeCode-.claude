@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import threading
 import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -18,6 +19,8 @@ from typing import Any, Dict, List, Optional
 WORKFLOW_DIR = Path.home() / ".claude" / "workflow"
 
 _TZ = timezone(timedelta(hours=8))
+
+_state_lock = threading.Lock()
 
 
 def _now_iso() -> str:
@@ -68,58 +71,66 @@ def write_state(session_id: str, state: Dict[str, Any]) -> None:
 
 
 def ensure_state(session_id: str, cwd: str = "") -> Dict[str, Any]:
-    """Read existing state or create new."""
-    st = read_state(session_id)
-    if st is None:
-        st = new_state(session_id, cwd)
-        write_state(session_id, st)
+    """Read existing state or create new. Thread-safe via _state_lock."""
+    with _state_lock:
+        st = read_state(session_id)
+        if st is None:
+            st = new_state(session_id, cwd)
+            write_state(session_id, st)
     return st
 
 
 def append_event(session_id: str, event: Dict[str, Any]) -> Dict[str, Any]:
-    """Append a tool/event record to session state. Returns updated state."""
-    st = ensure_state(session_id)
-    trace = st.setdefault("tool_trace", [])
+    """Append a tool/event record to session state. Thread-safe."""
+    with _state_lock:
+        st = read_state(session_id)
+        if st is None:
+            st = new_state(session_id, "")
+        trace = st.setdefault("tool_trace", [])
 
-    # Keep trace bounded to avoid unbounded growth
-    MAX_TRACE = 200
-    if len(trace) >= MAX_TRACE:
-        trace[:] = trace[-(MAX_TRACE // 2):]
+        # Keep trace bounded to avoid unbounded growth
+        MAX_TRACE = 200
+        if len(trace) >= MAX_TRACE:
+            trace[:] = trace[-(MAX_TRACE // 2):]
 
-    event["timestamp"] = _now_iso()
-    trace.append(event)
-    write_state(session_id, st)
+        event["timestamp"] = _now_iso()
+        trace.append(event)
+        write_state(session_id, st)
     return st
 
 
 def record_checkpoint(session_id: str, checkpoint_type: str) -> None:
-    """Record that a checkpoint was triggered."""
-    st = ensure_state(session_id)
-    st.setdefault("checkpoints_triggered", []).append({
-        "type": checkpoint_type,
-        "at": _now_iso(),
-    })
-    st["assessments_requested"] = st.get("assessments_requested", 0) + 1
-    write_state(session_id, st)
+    """Record that a checkpoint was triggered. Thread-safe."""
+    with _state_lock:
+        st = read_state(session_id)
+        if st is None:
+            st = new_state(session_id, "")
+        st.setdefault("checkpoints_triggered", []).append({
+            "type": checkpoint_type,
+            "at": _now_iso(),
+        })
+        st["assessments_requested"] = st.get("assessments_requested", 0) + 1
+        write_state(session_id, st)
 
 
 # --- Assessment cache ---
 
 def write_assessment(session_id: str, assessment: Dict[str, Any]) -> None:
-    """Write assessment result for pickup by UserPromptSubmit hook."""
-    data = {
-        "session_id": session_id,
-        "assessment": assessment,
-        "created_at": _now_iso(),
-        "injected": False,
-    }
-    _atomic_write(_assessment_path(session_id), data)
+    """Write assessment result for pickup by UserPromptSubmit hook. Thread-safe."""
+    with _state_lock:
+        data = {
+            "session_id": session_id,
+            "assessment": assessment,
+            "created_at": _now_iso(),
+            "injected": False,
+        }
+        _atomic_write(_assessment_path(session_id), data)
 
-    # Also update state counter
-    st = read_state(session_id)
-    if st:
-        st["assessments_completed"] = st.get("assessments_completed", 0) + 1
-        write_state(session_id, st)
+        # Also update state counter (within same lock to prevent race with append_event)
+        st = read_state(session_id)
+        if st:
+            st["assessments_completed"] = st.get("assessments_completed", 0) + 1
+            write_state(session_id, st)
 
 
 def read_assessment(session_id: str) -> Optional[Dict[str, Any]]:

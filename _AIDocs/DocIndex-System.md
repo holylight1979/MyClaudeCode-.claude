@@ -149,7 +149,9 @@ Session Ready
 
 ### Codex Companion（port 3850）
 - service.py — HTTP daemon（接收 hook 事件、觸發 async Codex assessment）
-- assessor.py — 組 prompt → `codex exec` → parse JSON 結果（model 為空時不傳 `-m`，由 `~/.codex/config.toml` 決定）
+- assessor.py — 組 prompt → `codex exec` → parse JSON 結果（model 為空時不傳 `-m`，由 `~/.codex/config.toml` 決定；**不傳 `-s`** 沿用 user config 預設沙盒，避免 Windows `CreateProcessWithLogonW` 1385 失敗）
+- prompts.py — plan review / turn audit / architecture review 模板，含 `SANDBOX_CONSTRAINT` 紅線（禁 git/edit/write/rm；只允許讀取）
+- state.py — per-session 狀態 + assessment cache，**module-level `threading.Lock`** 防 service main thread 與 assessment worker thread 並發 race
 - prompts.py — plan review / turn audit / architecture review 模板
 - heuristics.py — 規則式軟閘（缺驗證/完成缺證據/架構變更/空轉，< 10ms，無 LLM）
 - state.py — per-session 狀態 + assessment cache（原子寫入）
