@@ -154,6 +154,13 @@ Session Ready
 - state.py — per-session 狀態 + per-turn assessment cache（Phase 1.6/1.7：schema 加 `turn_index`、`last_assistant_tail`；assessment 改 `companion-assessment-{sid}-t{N}-{type}.json`），**module-level `threading.Lock`** 包覆所有 read-modify-write，防 service main thread 與 assessment worker thread 並發 race
 - heuristics.py — 規則式軟閘（缺驗證/完成缺證據/架構變更/空轉，< 10ms，無 LLM）
 
+**Sprint 2 規則重構與 BLOCK 收斂（tools/codex-companion/heuristics.py）**：
+- BLOCK 權收斂到單一規則 `confident_completion_without_evidence`（high）；missing_verification / architecture_change / spinning 一律降為 `low` advisory，只走 inject 不走 block
+- 三條件齊備才 BLOCK：`has_claim` + `state_change`（trace 有 Edit/Write 或 modified_files 非空）+ `no_verify_evidence`（trace 無 verify cmd 且 stop_text 無驗證敘述）；任一缺席即放行
+- Sprint 1 教訓 fallback：trace 為空但 `last_assistant_tail` 含驗證敘述（pytest 通過 / X/Y PASS / build 成功 / 驗證通過）視為弱證據放行，避免 companion-state 被擾動時誤觸 BLOCK
+- 新增 `severity_at_or_above(results, threshold)` API；hook 端讀 `config.codex_companion.soft_gate.block_severity_threshold`（預設 `"high"`）做門檻比較
+- 舊名 `check_completion_without_evidence` 保留為新規則的 alias，不破壞既有呼叫
+
 **Sprint 1 補資訊管道（hooks/codex_companion.py）**：
 - PostToolUse 從 `tool_response` 取 stdout/stderr 截 300 字 → `tool_output_summary`，失敗訊號（`error`/`exit_code != 0`/`stderr`/`is_error`）→ `[FAILED]` prefix（不依賴 PostToolUseFailure 事件）
 - Stop 文本三層 fallback：`input_data["last_assistant_message"]` → 自寫 jsonl tail parser（無長度過濾）→ `wg_evasion.get_last_assistant_text()` 兜底

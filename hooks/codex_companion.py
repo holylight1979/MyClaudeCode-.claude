@@ -470,11 +470,14 @@ def handle_stop(input_data: Dict[str, Any], config: Dict[str, Any]):
             }
 
             # Phase 1.4：把 stop_text 傳入 triggered_results
+            # Sprint 2：BLOCK 權收斂到 confident_completion_without_evidence；
+            # 其他規則一律 advisory。門檻由 config.soft_gate.block_severity_threshold 控制
+            # （預設 "high"，即只有 confident_completion 會 BLOCK）。
             results = heuristics.triggered_results(merged_state, stop_text=last_assistant_tail)
 
             if results:
-                max_sev = heuristics.max_severity(results)
-                if max_sev == "high":
+                threshold = soft_gate_config.get("block_severity_threshold", "high")
+                if heuristics.severity_at_or_above(results, threshold):
                     detail = heuristics.format_for_context(results)
                     _output_block(
                         f"Codex Companion 軟閘：偵測到高風險缺漏。\n{detail}\n"

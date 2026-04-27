@@ -145,7 +145,8 @@
     "assessment_timeout": 60,
     "soft_gate": {
       "completion_evidence": true,
-      "architecture_review": false
+      "architecture_review": false,
+      "block_severity_threshold": "high"
     }
   },
   "docdrift": {
