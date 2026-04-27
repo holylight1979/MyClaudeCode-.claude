@@ -12,14 +12,16 @@ Usage:
     python journal-aggregate.py --cleanup    # 僅清理過期日誌
 """
 
+import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 # Windows cp950 → UTF-8
@@ -28,21 +30,117 @@ for stream in (sys.stdout, sys.stderr):
         stream.reconfigure(encoding="utf-8")
 
 CLAUDE_DIR = Path.home() / ".claude"
-JOURNALS_DIR = CLAUDE_DIR / "journals"
+DEFAULT_JOURNALS_DIR = CLAUDE_DIR / "journals"
 WORKFLOW_DIR = CLAUDE_DIR / "workflow"
 RETENTION_DAYS = 60
 
-_obsidian_env = os.environ.get("CLAUDE_JOURNAL_OBSIDIAN_DIR")
-OBSIDIAN_BASE = Path(_obsidian_env) if _obsidian_env else None
-OBSIDIAN_SUBDIR = {"daily": "日報", "weekly": "週報", "monthly": "月報"}
+def _load_env_from_settings(name: str) -> str | None:
+    """Fallback：os.environ 沒有時，從 ~/.claude/settings*.json 的 env 區段讀。"""
+    for fn in ("settings.local.json", "settings.json"):
+        p = Path.home() / ".claude" / fn
+        if not p.exists():
+            continue
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+            v = data.get("env", {}).get(name)
+            if v:
+                return v
+        except (json.JSONDecodeError, OSError):
+            pass
+    return None
+
+
+def _env(name: str, default: str | None = None) -> str | None:
+    """環境變數讀取：os.environ → settings*.json env → default。"""
+    v = os.environ.get(name)
+    if v:
+        return v
+    v = _load_env_from_settings(name)
+    return v if v is not None else default
+
+
+def _resolve_journal_dirs() -> list[Path]:
+    """日誌儲存路徑解析。優先序：
+    1. CLAUDE_JOURNAL_DIRS（新，多路徑 pathsep 分隔，第一個為主、其餘複製）
+    2. CLAUDE_JOURNAL_OBSIDIAN_DIR（向後相容，視為單一主路徑）
+    3. ~/.claude/journals/（預設 fallback）
+    """
+    multi = _env("CLAUDE_JOURNAL_DIRS")
+    if multi:
+        dirs: list[Path] = []
+        seen: set[str] = set()
+        for p in multi.split(os.pathsep):
+            p = p.strip()
+            if p and p not in seen:
+                seen.add(p)
+                dirs.append(Path(p))
+        if dirs:
+            return dirs
+    legacy = _env("CLAUDE_JOURNAL_OBSIDIAN_DIR")
+    if legacy:
+        return [Path(legacy)]
+    return [DEFAULT_JOURNALS_DIR]
+
+
+JOURNAL_DIRS = _resolve_journal_dirs()
+JOURNAL_SUBDIR = {"daily": "日報", "weekly": "週報", "monthly": "月報"}
+JOURNALS_DIR = JOURNAL_DIRS[0]  # 主要儲存（向後相容變數名）
 
 VCS_TIMEOUT = 10
-MAX_FILES_LIST = 30  # 修改檔案清單上限
 
 _WEEKDAY_NAMES = ["一", "二", "三", "四", "五", "六", "日"]
 
 # Episodic 知識行中屬於統計類的 pattern（日誌中跳過）
 _STAT_PATTERNS = ("閱讀 ", "閱讀區域", "版控查詢", "覆轍信號", "引用 atoms")
+
+# HTML/XML 標籤 + 註解（避免 catclaw_cli_bridge 訊息標頭未閉合 tag 汙染 markdown 渲染）
+_HTML_RE = re.compile(r"<!--.*?-->|<[^>]+>", re.DOTALL)
+
+# 「我的增補」heading：重產時整段內容（heading 之後到下一個 heading 之前）保留
+KEEPOUT_HEADING = "### 我的增補"
+_KEEPOUT_RE = re.compile(
+    r"(^" + re.escape(KEEPOUT_HEADING) + r"\s*\n)(.*?)(?=^##\s|^###\s|\Z)",
+    re.MULTILINE | re.DOTALL,
+)
+
+
+def _strip_html(s: str) -> str:
+    """移除 HTML/XML tag 與註解，壓縮空白。
+    殘留的孤立 `<`（未閉合 tag/註解）視為汙染，從該位置截掉到結尾。"""
+    if not s:
+        return s
+    s = _HTML_RE.sub("", s)
+    idx = s.find("<")
+    if idx >= 0:
+        s = s[:idx]
+    return re.sub(r"\s+", " ", s).strip()
+
+
+def _extract_keepout(path: Path) -> str | None:
+    """從既有檔抽出『### 我的增補』 heading 之後到下個 heading 之前的全部內容。
+    清掉舊版的 `<!-- ai-keepout:start/end -->` 標記殘留（一次性遷移）。"""
+    if not path.exists():
+        return None
+    try:
+        existing = path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    m = _KEEPOUT_RE.search(existing)
+    if not m:
+        return None
+    body = re.sub(r"<!--\s*ai-keepout:(?:start|end)\s*-->\s*\n?", "", m.group(2))
+    return body
+
+
+def _apply_keepout(content: str, preserved: str | None) -> str:
+    """把保留內容塞回新 content 的『### 我的增補』段（取代預設空段）。"""
+    if preserved is None:
+        return content
+    return _KEEPOUT_RE.sub(
+        lambda m: m.group(1) + preserved,
+        content,
+        count=1,
+    )
 
 
 # ── Episodic Atoms ──────────────────────────────────────────────
@@ -72,10 +170,10 @@ def _parse_episodic(stem: str, content: str) -> dict:
     if m:
         info["workspace"] = m.group(1)
 
-    # 摘要
+    # 摘要（清掉 HTML/XML tag，避免渲染汙染）
     m = re.search(r"## 摘要\s*\n(.+?)(?=\n## |\Z)", content, re.DOTALL)
     if m:
-        info["summary"] = m.group(1).strip()
+        info["summary"] = _strip_html(m.group(1))
 
     # 知識
     m = re.search(r"## 知識\s*\n(.+?)(?=\n## |\Z)", content, re.DOTALL)
@@ -261,7 +359,7 @@ def _llm_summary(proj_data: list, active_days: int | None = None) -> str:
         return ""
 
     # 直接用本地 backend，不試遠端（避免 timeout 拖長 journal 產出）
-    model = os.environ.get("CLAUDE_JOURNAL_LLM_MODEL", "qwen3:1.7b")
+    model = _env("CLAUDE_JOURNAL_LLM_MODEL", "qwen3:1.7b")
     local_backend = OllamaBackend(
         name="local", base_url="http://127.0.0.1:11434", auth=None,
         llm_model=model, embedding_model=None, priority=1,
@@ -349,15 +447,27 @@ def _strip_preamble(text: str) -> str:
 def _build_summary(proj_data: list, grand_sessions: int, grand_prompts: int,
                    grand_files: int, grand_commits: int,
                    active_days: int | None = None) -> list[str]:
-    lines = ["## 總結", ""]
+    lines: list[str] = ["## 總覽", ""]
 
-    # LLM 速覽（Ollama 不在則跳過）
+    # ── 自動分析（LLM）─────────────────────────────────
+    lines.append("### 自動分析")
+    lines.append("")
     llm_text = _llm_summary(proj_data, active_days)
     if llm_text:
         lines.append(llm_text)
-        lines.append("")
+    else:
+        lines.append("_（無自動分析；本地 Ollama 不可達或本期無資料）_")
+    lines.append("")
 
-    # 統計數字
+    # ── 我的增補（重產時整段保留：heading 之後到下個 heading 之前）──
+    lines.append(KEEPOUT_HEADING)
+    lines.append("")
+    lines.append("")
+
+    # ── 統計 ──────────────────────────────────────────
+    lines.append("### 統計")
+    lines.append("")
+
     stats = [
         f"{len(proj_data)} 專案",
         f"{grand_sessions} sessions",
@@ -372,27 +482,31 @@ def _build_summary(proj_data: list, grand_sessions: int, grand_prompts: int,
 
     # 結構事實列
     for item in proj_data:
-        if len(item) == 4:
-            _key, g, commits, _vcs = item
-        else:
+        if len(item) != 4:
             continue
+        _key, g, commits, _vcs = item
         unique_files = len({f for s in g["sessions"] for f in s["modified_files"]})
         lines.append(_project_summary_line(g["project"], g["sessions"], commits, unique_files))
+    lines.append("")
+
+    # 統計表
+    if active_days is not None:
+        lines.append("| Sessions | Prompts | 改檔 | Commits | 活躍天數 |")
+        lines.append("|:--:|:--:|:--:|:--:|:--:|")
+        lines.append(
+            f"| {grand_sessions} | {grand_prompts} | {grand_files} | "
+            f"{grand_commits} | {active_days} |"
+        )
+    else:
+        lines.append("| Sessions | Prompts | 改檔 | Commits |")
+        lines.append("|:--:|:--:|:--:|:--:|")
+        lines.append(f"| {grand_sessions} | {grand_prompts} | {grand_files} | {grand_commits} |")
     lines.append("")
     return lines
 
 
 def _intent_str(intent: dict) -> str:
     return " ".join(f"{k}({v})" for k, v in sorted(intent.items(), key=lambda x: -x[1]) if v > 0)
-
-
-def _rel_path(p: str, base: str) -> str:
-    if not base:
-        return p
-    try:
-        return str(Path(p).relative_to(base)).replace("\\", "/")
-    except (ValueError, OSError):
-        return p.replace("\\", "/")
 
 
 def _clean_knowledge(k: str) -> str:
@@ -439,31 +553,13 @@ def _build_project_block(project: str, cwd: str, sessions: list[dict],
             lines.append(f"- `{cid}` {msg}")
         lines.append("")
 
-    # 修改檔案 (deduped, relative)
-    files_set: list[str] = []
-    seen = set()
-    for s in sessions:
-        for fp in s["modified_files"]:
-            rel = _rel_path(fp, cwd)
-            if rel not in seen:
-                seen.add(rel)
-                files_set.append(rel)
-    if files_set:
-        shown = files_set[:MAX_FILES_LIST]
-        more = len(files_set) - len(shown)
-        lines.append(f"**修改檔案 ({len(files_set)})**")
-        for fp in shown:
-            lines.append(f"- `{fp}`")
-        if more > 0:
-            lines.append(f"- … 還有 {more} 個")
-        lines.append("")
-
-    # Episodic 摘要 (若有)
+    # Episodic 摘要 (若有；strip HTML 避免 Obsidian 渲染汙染)
     if atoms:
         for a in atoms:
-            if a.get("summary"):
-                lines.append(f"**摘要**")
-                lines.append(a["summary"])
+            cleaned = _strip_html(a.get("summary", ""))
+            if cleaned:
+                lines.append("**摘要**")
+                lines.append(cleaned)
                 lines.append("")
                 break
 
@@ -484,8 +580,8 @@ def _build_project_block(project: str, cwd: str, sessions: list[dict],
                 knowledge.append(ck)
     if knowledge:
         lines.append(f"**知識 ({len(knowledge)})**")
-        for k in knowledge[:15]:
-            lines.append(f"- {k}")
+        for k in knowledge:
+            lines.append(f"- {_strip_html(k)}")
         lines.append("")
 
     return lines
@@ -494,9 +590,6 @@ def _build_project_block(project: str, cwd: str, sessions: list[dict],
 def build_journal(target_date: str) -> str:
     atoms = scan_episodic(target_date)
     states = scan_states(target_date)
-
-    if not atoms and not states:
-        return f"# {target_date} 工作日誌\n\n> 當天無記錄。\n"
 
     # 以 cwd（或 workspace fallback）分組
     by_proj: dict[str, dict] = defaultdict(lambda: {
@@ -514,6 +607,17 @@ def build_journal(target_date: str) -> str:
         if not g["project"]:
             g["project"] = a["workspace"]
         g["atoms"].append(a)
+
+    # VCS-only fallback：在沒 atom/state 的 cwd 中找有 commits 的
+    existing_cwds = {g["cwd"] for g in by_proj.values() if g["cwd"]}
+    vcs_only = _vcs_only_projects(target_date, existing_cwds)
+    for cwd, _commits, _vcs in vcs_only:
+        g = by_proj[cwd]
+        g["project"] = _project_name(cwd)
+        g["cwd"] = cwd
+
+    if not by_proj:
+        return f"# {target_date} 工作日誌\n\n> 當天無記錄。\n"
 
     # Commits + 統計
     proj_data = []
@@ -533,10 +637,6 @@ def build_journal(target_date: str) -> str:
     lines = [f"# {target_date} 工作日誌", ""]
     lines.extend(_build_summary(proj_data, total_sessions, total_prompts,
                                 total_files, total_commits))
-    lines.append("| Sessions | Prompts | 改檔 | Commits |")
-    lines.append("|:--:|:--:|:--:|:--:|")
-    lines.append(f"| {total_sessions} | {total_prompts} | {total_files} | {total_commits} |")
-    lines.append("")
 
     for _key, g, commits, vcs in proj_data:
         lines.append("---")
@@ -563,14 +663,34 @@ def _build_period_lines(start: str, end: str) -> tuple[list[str], bool]:
     ep_by_date = scan_episodic_range(start, end)
     st_by_date = scan_states_range(start, end)
 
-    all_dates = sorted(set(list(ep_by_date.keys()) + list(st_by_date.keys())))
+    # VCS-only 日期：候選 cwd 中當天有 commits、但沒 atom/state
+    vcs_only_cwds: set[str] = set()
+    vcs_only_dates: set[str] = set()
+    existing_dates = set(ep_by_date.keys()) | set(st_by_date.keys())
+    existing_cwds: set[str] = set()
+    for s_list in st_by_date.values():
+        for s in s_list:
+            if s["cwd"]:
+                existing_cwds.add(s["cwd"])
+    for cwd in _historical_cwds():
+        if cwd in existing_cwds:
+            continue
+        for d in _iter_dates(start, end):
+            commits, _vcs = commits_for(cwd, d)
+            if commits:
+                vcs_only_cwds.add(cwd)
+                vcs_only_dates.add(d)
+
+    all_dates = sorted(existing_dates | vcs_only_dates)
     if not all_dates:
         return [], False
 
-    return _render_period(all_dates, ep_by_date, st_by_date), True
+    return _render_period(all_dates, ep_by_date, st_by_date, vcs_only_cwds), True
 
 
-def _render_period(all_dates: list[str], ep_by_date: dict, st_by_date: dict) -> list[str]:
+def _render_period(all_dates: list[str], ep_by_date: dict, st_by_date: dict,
+                   vcs_only_cwds: set[str] | None = None) -> list[str]:
+    vcs_only_cwds = vcs_only_cwds or set()
     # 以 cwd（fallback workspace）分組，跨整個區間
     by_proj: dict[str, dict] = defaultdict(lambda: {
         "project": "", "cwd": "", "sessions": [], "atoms": [],
@@ -591,6 +711,16 @@ def _render_period(all_dates: list[str], ep_by_date: dict, st_by_date: dict) -> 
                 g["project"] = a["workspace"]
             g["atoms"].append(a)
             g["dates"].add(d)
+
+    # 補入 VCS-only cwd（之後 commits_for 會逐日查）
+    for cwd in vcs_only_cwds:
+        g = by_proj[cwd]
+        g["project"] = _project_name(cwd)
+        g["cwd"] = cwd
+        for d in all_dates:
+            commits, _vcs = commits_for(cwd, d)
+            if commits:
+                g["dates"].add(d)
 
     # 各專案彙整 commits（區間內每天 commits 的聯集）
     proj_data = []
@@ -625,16 +755,10 @@ def _render_period(all_dates: list[str], ep_by_date: dict, st_by_date: dict) -> 
     # 排序：有 commit 的優先
     proj_data.sort(key=lambda x: (-len(x[2]), -sum(s["prompts"] for s in x[1]["sessions"])))
 
-    # ── 總結 ──
+    # ── 總覽（含 自動分析 / 我的增補 / 統計 + 統計表）──
     lines: list[str] = []
     lines.extend(_build_summary(proj_data, grand_sessions, grand_prompts,
                                 grand_files, grand_commits, active_days=len(all_dates)))
-
-    # ── 總覽表 ──
-    lines.append("| Sessions | Prompts | 改檔 | Commits | 活躍天數 |")
-    lines.append("|:--:|:--:|:--:|:--:|:--:|")
-    lines.append(f"| {grand_sessions} | {grand_prompts} | {grand_files} | {grand_commits} | {len(all_dates)} |")
-    lines.append("")
 
     # ── 各專案 ──
     for _key, g, commits, vcs in proj_data:
@@ -657,11 +781,21 @@ def _render_period(all_dates: list[str], ep_by_date: dict, st_by_date: dict) -> 
             for s in sorted(day_states, key=lambda x: x["start"]):
                 parts.append(f"{s['project']} {s['prompts']}p")
             lines.append(f"- **{d} ({wd})** · " + " | ".join(parts))
-        else:
-            day_atoms = ep_by_date.get(d, [])
-            if day_atoms:
-                parts = [f"{a['workspace']} {a['files_mod_n']}f" for a in day_atoms]
-                lines.append(f"- **{d} ({wd})** · " + " | ".join(parts))
+            continue
+        day_atoms = ep_by_date.get(d, [])
+        if day_atoms:
+            parts = [f"{a['workspace']} {a['files_mod_n']}f" for a in day_atoms]
+            lines.append(f"- **{d} ({wd})** · " + " | ".join(parts))
+            continue
+        # VCS-only fallback
+        parts = []
+        for _, g, _, _ in proj_data:
+            if d in g["dates"] and g["cwd"]:
+                day_commits, _ = commits_for(g["cwd"], d)
+                if day_commits:
+                    parts.append(f"{g['project']} {len(day_commits)}c")
+        if parts:
+            lines.append(f"- **{d} ({wd})** · " + " | ".join(parts))
     lines.append("")
 
     return lines
@@ -706,27 +840,111 @@ def _iter_dates(start: str, end: str):
         cur += timedelta(days=1)
 
 
+def _historical_cwds() -> set[str]:
+    """收集候選 repo cwd：環境變數 + 當前 state + 歷史 journals 解析。"""
+    cwds: set[str] = set()
+
+    env_roots = _env("CLAUDE_JOURNAL_VCS_ROOTS", "") or ""
+    for r in env_roots.split(os.pathsep):
+        r = r.strip()
+        if r:
+            cwds.add(r)
+
+    if WORKFLOW_DIR.exists():
+        for f in WORKFLOW_DIR.glob("state-*.json"):
+            try:
+                data = json.loads(f.read_text(encoding="utf-8"))
+                cwd = data.get("session", {}).get("cwd", "")
+                if cwd:
+                    cwds.add(cwd)
+            except (json.JSONDecodeError, KeyError, TypeError, OSError):
+                pass
+
+    pattern = re.compile(r"`([A-Za-z]:[\\/][^`]+|/[^`]+)`\s*·\s*(git|svn)")
+    primary = JOURNAL_DIRS[0]
+    scan_dirs: list[Path] = []
+    if primary.exists():
+        scan_dirs.append(primary)  # 平鋪舊檔
+        for sub in JOURNAL_SUBDIR.values():
+            d = primary / sub
+            if d.exists():
+                scan_dirs.append(d)
+    for d in scan_dirs:
+        for f in d.glob("*.md"):
+            try:
+                for m in pattern.finditer(f.read_text(encoding="utf-8")):
+                    cwds.add(m.group(1))
+            except OSError:
+                pass
+
+    return cwds
+
+
+def _vcs_only_projects(target_date: str, exclude_cwds: set[str]) -> list[tuple[str, list[tuple[str, str]], str]]:
+    """在沒 atom/state 的 cwd 中找出當天有 commits 的，回傳 [(cwd, commits, vcs)]。"""
+    out = []
+    for cwd in _historical_cwds():
+        if cwd in exclude_cwds:
+            continue
+        commits, vcs = commits_for(cwd, target_date)
+        if commits:
+            out.append((cwd, commits, vcs))
+    return out
+
+
 def has_records(target_date: str) -> bool:
-    return bool(scan_episodic(target_date)) or bool(scan_states(target_date))
+    if scan_episodic(target_date) or scan_states(target_date):
+        return True
+    for cwd in _historical_cwds():
+        commits, _ = commits_for(cwd, target_date)
+        if commits:
+            return True
+    return False
 
 
-# ── Obsidian Mirror ─────────────────────────────────────────────
+# ── Journal Write (Multi-target) ────────────────────────────────
 
-def mirror_to_obsidian(content: str, filename: str, kind: str) -> Path | None:
-    if OBSIDIAN_BASE is None:
+def _path_for(kind: str, filename: str, base: Path | None = None) -> Path | None:
+    """取得 (base|JOURNAL_DIRS[0]) / 子目錄 / filename 的完整路徑。kind 不認得回 None。"""
+    sub = JOURNAL_SUBDIR.get(kind)
+    if not sub:
         return None
-    sub = OBSIDIAN_SUBDIR.get(kind)
-    if sub is None or not OBSIDIAN_BASE.parent.exists():
-        return None
-    target_dir = OBSIDIAN_BASE / sub
+    return (base or JOURNAL_DIRS[0]) / sub / filename
+
+
+def write_journal(content: str, filename: str, kind: str) -> list[Path]:
+    """寫入 JOURNAL_DIRS[0] 為主，其餘 dirs 用 shutil.copy2 複製過去。
+    若既有檔含 `<!-- ai-keepout:start -->...<!-- ai-keepout:end -->` 區塊，
+    內容會被原樣保留塞回新 content。
+    回傳實際寫入成功的所有路徑（[0] 是 primary）。"""
+    sub = JOURNAL_SUBDIR.get(kind)
+    if not sub:
+        return []
+    written: list[Path] = []
+    primary = JOURNAL_DIRS[0] / sub / filename
+    preserved = _extract_keepout(primary)
+    content = _apply_keepout(content, preserved)
     try:
-        target_dir.mkdir(parents=True, exist_ok=True)
-        target = target_dir / filename
-        target.write_text(content, encoding="utf-8")
-        return target
+        primary.parent.mkdir(parents=True, exist_ok=True)
+        primary.write_text(content, encoding="utf-8")
+        written.append(primary)
     except OSError as e:
-        print(f"[WARN] Obsidian 鏡射失敗: {e}", file=sys.stderr)
-        return None
+        print(f"[ERROR] 主路徑寫入失敗 ({primary}): {e}", file=sys.stderr)
+        return []
+
+    for base in JOURNAL_DIRS[1:]:
+        if not base.parent.exists():
+            print(f"[WARN] 跳過不存在的鏡射 base: {base}", file=sys.stderr)
+            continue
+        try:
+            target_dir = base / sub
+            target_dir.mkdir(parents=True, exist_ok=True)
+            target = target_dir / filename
+            shutil.copy2(primary, target)
+            written.append(target)
+        except OSError as e:
+            print(f"[WARN] 複製失敗 ({base}): {e}", file=sys.stderr)
+    return written
 
 
 # ── VCS Commits ─────────────────────────────────────────────────
@@ -747,18 +965,20 @@ def _find_repo_root(cwd_str: str) -> tuple[Path, str] | None:
 
 
 def _resolve_author(repo_root: Path, vcs: str) -> str:
-    env_override = os.environ.get("CLAUDE_JOURNAL_AUTHOR")
+    env_override = _env("CLAUDE_JOURNAL_AUTHOR")
     if env_override:
         return env_override
     if vcs == "git":
         try:
             r = subprocess.run(
                 ["git", "-C", str(repo_root), "config", "user.name"],
-                capture_output=True, text=True, timeout=VCS_TIMEOUT,
+                capture_output=True, timeout=VCS_TIMEOUT,
             )
-            if r.returncode == 0 and r.stdout.strip():
-                return r.stdout.strip()
-        except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+            if r.returncode == 0:
+                name = r.stdout.decode("utf-8", errors="replace").strip()
+                if name:
+                    return name
+        except (subprocess.TimeoutExpired, FileNotFoundError, OSError, UnicodeDecodeError):
             pass
     return os.environ.get("USERNAME") or os.environ.get("USER") or ""
 
@@ -769,33 +989,55 @@ def _git_commits(repo_root: Path, date: str, author: str) -> list[tuple[str, str
             ["git", "-C", str(repo_root), "log",
              f"--since={date} 00:00:00", f"--until={date} 23:59:59",
              f"--author={author}", "--pretty=format:%h|%s"],
-            capture_output=True, text=True, timeout=VCS_TIMEOUT,
+            capture_output=True, timeout=VCS_TIMEOUT,
         )
         if r.returncode != 0:
             return []
-        return [tuple(line.split("|", 1)) for line in r.stdout.splitlines() if "|" in line]
-    except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+        out = r.stdout.decode("utf-8", errors="replace")
+        return [tuple(line.split("|", 1)) for line in out.splitlines() if "|" in line]
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError, UnicodeDecodeError):
         return []
 
 
 def _svn_commits(repo_root: Path, date: str, author: str) -> list[tuple[str, str]]:
-    next_day = (datetime.strptime(date, "%Y-%m-%d") + timedelta(days=1)).strftime("%Y-%m-%d")
+    # 用較寬的 UTC 範圍抓回後依本地時區過濾，避免 SVN client 對 {date} 的時區歧義
+    target = datetime.strptime(date, "%Y-%m-%d")
+    prev_day = (target - timedelta(days=1)).strftime("%Y-%m-%d")
+    next_day = (target + timedelta(days=1)).strftime("%Y-%m-%d")
     try:
         r = subprocess.run(
             ["svn", "log", "--xml", "--non-interactive",
-             "-r", f"{{{date}}}:{{{next_day}}}"],
-            capture_output=True, text=True, timeout=VCS_TIMEOUT, cwd=str(repo_root),
+             "-r", f"{{{prev_day}}}:{{{next_day}T23:59:59Z}}"],
+            capture_output=True, timeout=VCS_TIMEOUT, cwd=str(repo_root),
         )
         if r.returncode != 0:
             return []
-        tree = ET.fromstring(r.stdout)
-    except (subprocess.TimeoutExpired, FileNotFoundError, OSError, ET.ParseError):
+        xml_text = r.stdout.decode("utf-8", errors="replace")
+        tree = ET.fromstring(xml_text)
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError, ET.ParseError, UnicodeDecodeError):
         return []
+
+    # 本地時區偏移：依當前系統 timezone 計算
+    now = datetime.now()
+    utc_now = datetime.now(timezone.utc).replace(tzinfo=None)
+    tz_offset = now - utc_now
+    target_local_start = target
+    target_local_end = target + timedelta(days=1)
 
     out: list[tuple[str, str]] = []
     for entry in tree.findall("logentry"):
         a = entry.find("author")
         if a is None or (a.text or "").strip() != author:
+            continue
+        date_node = entry.find("date")
+        if date_node is None or not date_node.text:
+            continue
+        try:
+            utc_dt = datetime.fromisoformat(date_node.text[:19])
+        except ValueError:
+            continue
+        local_dt = utc_dt + tz_offset
+        if not (target_local_start <= local_dt < target_local_end):
             continue
         rev = entry.get("revision", "?")
         msg_node = entry.find("msg")
@@ -820,22 +1062,97 @@ def commits_for(cwd_str: str, date: str) -> tuple[list[tuple[str, str]], str | N
     return _svn_commits(repo_root, date, author), "svn"
 
 
+# ── Migration ───────────────────────────────────────────────────
+
+def _kind_for_filename(name: str) -> str | None:
+    """從檔名推斷 kind：week-* / month-* / YYYY-MM-DD."""
+    if name.startswith("week-"):
+        return "weekly"
+    if name.startswith("month-"):
+        return "monthly"
+    if re.match(r"\d{4}-\d{2}-\d{2}\.md$", name):
+        return "daily"
+    return None
+
+
+def _file_hash(p: Path) -> str:
+    h = hashlib.md5()
+    h.update(p.read_bytes())
+    return h.hexdigest()
+
+
+def _migrate_one(src: Path, dst: Path) -> str:
+    """搬一個檔案。回傳: moved/duplicate/conflict/skipped。"""
+    if not src.is_file():
+        return "skipped"
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    if dst.exists():
+        try:
+            if _file_hash(src) == _file_hash(dst):
+                src.unlink()
+                return "duplicate"
+        except OSError:
+            return "skipped"
+        bak = src.with_suffix(src.suffix + ".conflict")
+        try:
+            src.rename(bak)
+        except OSError:
+            return "skipped"
+        return "conflict"
+    try:
+        shutil.move(str(src), str(dst))
+    except OSError:
+        return "skipped"
+    return "moved"
+
+
+def migrate_legacy_layout() -> dict:
+    """把平鋪舊檔搬進子目錄（日報/週報/月報），且把非主路徑的舊位置（DEFAULT_JOURNALS_DIR）
+    搬到 JOURNAL_DIRS[0]。冪等。回傳統計。"""
+    stats = {"moved": 0, "duplicate": 0, "conflict": 0, "skipped": 0}
+    primary = JOURNAL_DIRS[0]
+    sources: list[Path] = []
+    if primary.exists():
+        sources.append(primary)
+    if DEFAULT_JOURNALS_DIR.exists() and DEFAULT_JOURNALS_DIR.resolve() != primary.resolve():
+        sources.append(DEFAULT_JOURNALS_DIR)
+
+    for src_dir in sources:
+        for f in list(src_dir.glob("*.md")):
+            kind = _kind_for_filename(f.name)
+            if not kind:
+                continue
+            dst = primary / JOURNAL_SUBDIR[kind] / f.name
+            if f.resolve() == dst.resolve():
+                continue
+            stats[_migrate_one(f, dst)] += 1
+    return stats
+
+
 # ── Cleanup ─────────────────────────────────────────────────────
 
 def cleanup() -> int:
-    if not JOURNALS_DIR.exists():
-        return 0
     cutoff = datetime.now() - timedelta(days=RETENTION_DAYS)
     removed = 0
-    for f in JOURNALS_DIR.glob("*.md"):
-        m = re.match(r"(\d{4}-\d{2}-\d{2})", f.name)
-        if m:
-            try:
-                if datetime.strptime(m.group(1), "%Y-%m-%d") < cutoff:
-                    f.unlink()
-                    removed += 1
-            except ValueError:
-                pass
+    targets: list[Path] = []
+    for base in JOURNAL_DIRS:
+        if not base.exists():
+            continue
+        for sub in JOURNAL_SUBDIR.values():
+            d = base / sub
+            if d.exists():
+                targets.append(d)
+        targets.append(base)  # 平鋪舊檔
+    for d in targets:
+        for f in d.glob("*.md"):
+            m = re.match(r"(\d{4}-\d{2}-\d{2})", f.name)
+            if m:
+                try:
+                    if datetime.strptime(m.group(1), "%Y-%m-%d") < cutoff:
+                        f.unlink()
+                        removed += 1
+                except ValueError:
+                    pass
     return removed
 
 
@@ -882,29 +1199,31 @@ def main():
         print(f"清理 {n} 份過期日誌 (>{RETENTION_DAYS} 天)")
         return
 
-    JOURNALS_DIR.mkdir(parents=True, exist_ok=True)
+    # 路徑可見：讓使用者/AI 知道實際儲存位置
+    paths_str = " | ".join(str(p) for p in JOURNAL_DIRS)
+    print(f"[INFO] 日誌路徑: {paths_str}", file=sys.stderr)
+
+    # 一次性遷移（冪等）：平鋪舊檔 / DEFAULT_JOURNALS_DIR 搬到 JOURNAL_DIRS[0]/子目錄
+    mig = migrate_legacy_layout()
+    if any(mig.values()):
+        print(f"[OK] 遷移: moved={mig['moved']} dup={mig['duplicate']} "
+              f"conflict={mig['conflict']} skipped={mig['skipped']}", file=sys.stderr)
 
     if mode == "weekly":
         journal = build_weekly(target)
         _, _, iso_y, iso_w = _week_range(target)
         fname = f"week-{iso_y}-W{iso_w:02d}.md"
-        out = JOURNALS_DIR / fname
-        out.write_text(journal, encoding="utf-8")
+        written = write_journal(journal, fname, "weekly")
         print(journal)
-        print(f"\n---\n[OK] 已存檔: {out}")
-        mirrored = mirror_to_obsidian(journal, fname, "weekly")
-        if mirrored:
-            print(f"[OK] Obsidian: {mirrored}")
+        for w in written:
+            print(f"[OK] 已存檔: {w}")
     elif mode == "monthly":
         journal, label = build_monthly(month_arg)
         fname = f"month-{label}.md"
-        out = JOURNALS_DIR / fname
-        out.write_text(journal, encoding="utf-8")
+        written = write_journal(journal, fname, "monthly")
         print(journal)
-        print(f"\n---\n[OK] 已存檔: {out}")
-        mirrored = mirror_to_obsidian(journal, fname, "monthly")
-        if mirrored:
-            print(f"[OK] Obsidian: {mirrored}")
+        for w in written:
+            print(f"[OK] 已存檔: {w}")
     elif mode == "range":
         if len(range_dates) != 2:
             print("用法：range YYYY-MM-DD YYYY-MM-DD", file=sys.stderr)
@@ -918,23 +1237,23 @@ def main():
                 continue
             journal = build_journal(d)
             fname = f"{d}.md"
-            out = JOURNALS_DIR / fname
-            out.write_text(journal, encoding="utf-8")
-            mirrored = mirror_to_obsidian(journal, fname, "daily")
-            mirror_str = f" → {mirrored}" if mirrored else ""
-            print(f"[OK] {d}: {out}{mirror_str}")
+            written = write_journal(journal, fname, "daily")
+            if not written:
+                tail = ""
+            elif len(written) == 1:
+                tail = f" → {written[0]}"
+            else:
+                tail = f" → {written[0]} (+{len(written)-1} 處)"
+            print(f"[OK] {d}:{tail}")
             produced += 1
         print(f"\n[OK] 區間 {start} ~ {end}：產生 {produced} 份日報，跳過 {skipped} 個無記錄日")
     else:
         journal = build_journal(target)
         fname = f"{target}.md"
-        out = JOURNALS_DIR / fname
-        out.write_text(journal, encoding="utf-8")
+        written = write_journal(journal, fname, "daily")
         print(journal)
-        print(f"\n---\n[OK] 已存檔: {out}")
-        mirrored = mirror_to_obsidian(journal, fname, "daily")
-        if mirrored:
-            print(f"[OK] Obsidian: {mirrored}")
+        for w in written:
+            print(f"[OK] 已存檔: {w}")
 
     n = cleanup()
     if n:

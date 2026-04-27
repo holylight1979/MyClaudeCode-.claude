@@ -1,6 +1,6 @@
 # 原子記憶系統 — 全檔案索引
 
-> 由 `/read-project` 產出，最近同步：2026-04-15（V4 Phase 6 收尾）。
+> 由 `/read-project` 產出，最近同步：2026-04-27（journal 總覽版面 + heading-bounded keepout + git/svn UTF-8 decode）。
 > 目標：讓 Claude Code AI 能了解自己，以利後續升級、迭代、進化。
 
 ---
@@ -186,6 +186,7 @@ Session Ready
 - read-excel.py（openpyxl+xlrd）| unity-yaml-tool.py | rag-engine.py（CLI wrapper）
 - gdoc-harvester/（Playwright 網頁收割 + dashboard）
 - workflow-guardian-mcp/server.js（MCP stdio + dashboard port 3848，含「已知專案」分頁）
+- journal-aggregate.py — `/journal` 後端：彙整來源 = episodic atoms + workflow state + VCS commits（git/svn）；模式 daily/weekly/monthly/range；`has_records()` 三來源檢查（含 VCS fallback）；VCS log 抓 bytes + UTF-8 decode（避開 cp950 中文 commit message 解碼失敗）；SVN xml 取較寬區間後依本地時區重歸日（避開 SVN 對 `{date}` 的時區歧義）；候選 cwd 來源 = `CLAUDE_JOURNAL_VCS_ROOTS` env + 當前 state files + 歷史 journals 解析；儲存路徑 `CLAUDE_JOURNAL_DIRS`（多路徑 pathsep 分隔，第一個為主、其餘 `shutil.copy2` 複製）→ 向後相容 `CLAUDE_JOURNAL_OBSIDIAN_DIR` → 預設 `~/.claude/journals/`；子目錄結構固定 `日報/週報/月報`；啟動冪等遷移（平鋪舊檔依檔名前綴歸位，hash 同視為重複刪 source、hash 異改名 `.conflict` 保留）；所有 `CLAUDE_JOURNAL_*` env 走統一 `_env()` helper（`os.environ` → `~/.claude/settings*.json` → default）；輸出版面 `## 總覽`（`### 自動分析` LLM 段 + `### 我的增補` 以 heading 邊界界定範圍，重產時自動保留該 heading 之後到下個 heading 之前的全部使用者內容 + `### 統計`）；`_strip_html()` 清掉 episodic 摘要中的 catclaw_cli_bridge `<channel>` 等標籤、未閉合 tag 從第一個 `<` 截到底，避免 Obsidian 渲染汙染；知識區塊完整列出不縮減。
 
 ## 7. 記憶層
 
