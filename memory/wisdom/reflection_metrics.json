@@ -3,33 +3,33 @@
   "metrics": {
     "first_approach_accuracy": {
       "single_file": {
-        "correct": 359,
-        "total": 373
+        "correct": 361,
+        "total": 376
       },
       "multi_file": {
         "correct": 3,
-        "total": 12
+        "total": 13
       },
       "architecture": {
-        "correct": 1,
-        "total": 15
+        "correct": 2,
+        "total": 19
       }
     },
     "over_engineering_rate": {
       "user_reverted_or_simplified": 0,
-      "total_suggestions": 429
+      "total_suggestions": 437
     },
     "silence_accuracy": {
-      "held_back_ok": 362,
-      "held_back_missed": 23
+      "held_back_ok": 364,
+      "held_back_missed": 25
     }
   },
   "blind_spots": [
-    "multi_file 首次正確率 25%",
-    "architecture 首次正確率 7%"
+    "multi_file 首次正確率 23%",
+    "architecture 首次正確率 11%"
   ],
   "arch_sensitivity_elevated": true,
-  "last_reflection": "2026-04-24T02:29:32.038891+00:00",
+  "last_reflection": "2026-04-27T05:54:32.487039+00:00",
   "v41_extraction": {
     "total_written": 0,
     "total_rejected": 0,
@@ -1143,7 +1143,220 @@
           "trust": 1.0,
           "weighted_total": 0.85
         }
+      },
+      {
+        "session_id": "829ac046-1658-4feb-a4b6-4c61ce62c511",
+        "ts": "2026-04-26T03:49:09.155736+00:00",
+        "prompt_count": 0,
+        "extract_triggered": 0,
+        "extract_written": 0,
+        "dedup_hit": 0,
+        "rejected_24h": 0,
+        "avg_l2_conf": 0.0,
+        "token_used": 0,
+        "scores": {
+          "density": 0.0,
+          "precision_proxy": 1.0,
+          "novelty": 1.0,
+          "cost_efficiency": 1.0,
+          "trust": 1.0,
+          "weighted_total": 0.85
+        }
+      },
+      {
+        "session_id": "497dd82e-e5cf-40ce-96d1-25aac5a1da2a",
+        "ts": "2026-04-27T01:30:58.526919+00:00",
+        "prompt_count": 1,
+        "extract_triggered": 0,
+        "extract_written": 0,
+        "dedup_hit": 0,
+        "rejected_24h": 0,
+        "avg_l2_conf": 0.0,
+        "token_used": 0,
+        "scores": {
+          "density": 0.0,
+          "precision_proxy": 1.0,
+          "novelty": 1.0,
+          "cost_efficiency": 1.0,
+          "trust": 1.0,
+          "weighted_total": 0.85
+        }
+      },
+      {
+        "session_id": "afd5cd64-894c-49b6-a4d7-5eda7e4e40f2",
+        "ts": "2026-04-27T01:48:32.853866+00:00",
+        "prompt_count": 5,
+        "extract_triggered": 0,
+        "extract_written": 0,
+        "dedup_hit": 0,
+        "rejected_24h": 0,
+        "avg_l2_conf": 0.0,
+        "token_used": 0,
+        "scores": {
+          "density": 0.0,
+          "precision_proxy": 1.0,
+          "novelty": 1.0,
+          "cost_efficiency": 1.0,
+          "trust": 1.0,
+          "weighted_total": 0.85
+        }
+      },
+      {
+        "session_id": "3fc5969f-1762-47f3-a62b-4eb127a9b57b",
+        "ts": "2026-04-27T02:07:51.825266+00:00",
+        "prompt_count": 2,
+        "extract_triggered": 1,
+        "extract_written": 0,
+        "dedup_hit": 0,
+        "rejected_24h": 0,
+        "avg_l2_conf": 0.0,
+        "token_used": 265,
+        "scores": {
+          "density": 0.4621,
+          "precision_proxy": 1.0,
+          "novelty": 1.0,
+          "cost_efficiency": 0.0,
+          "trust": 1.0,
+          "weighted_total": 0.7693
+        }
+      },
+      {
+        "session_id": "738c7cde-5263-4510-b24c-0f34b2e14cd4",
+        "ts": "2026-04-27T02:07:59.746319+00:00",
+        "prompt_count": 0,
+        "extract_triggered": 0,
+        "extract_written": 0,
+        "dedup_hit": 0,
+        "rejected_24h": 0,
+        "avg_l2_conf": 0.0,
+        "token_used": 0,
+        "scores": {
+          "density": 0.0,
+          "precision_proxy": 1.0,
+          "novelty": 1.0,
+          "cost_efficiency": 1.0,
+          "trust": 1.0,
+          "weighted_total": 0.85
+        }
+      },
+      {
+        "session_id": "3fc5969f-1762-47f3-a62b-4eb127a9b57b",
+        "ts": "2026-04-27T02:08:31.270880+00:00",
+        "prompt_count": 2,
+        "extract_triggered": 0,
+        "extract_written": 0,
+        "dedup_hit": 0,
+        "rejected_24h": 0,
+        "avg_l2_conf": 0.0,
+        "token_used": 0,
+        "scores": {
+          "density": 0.0,
+          "precision_proxy": 1.0,
+          "novelty": 1.0,
+          "cost_efficiency": 1.0,
+          "trust": 1.0,
+          "weighted_total": 0.85
+        }
+      },
+      {
+        "session_id": "8d3791c7-ceb4-4349-a217-c6c108df91c7",
+        "ts": "2026-04-27T02:49:49.919446+00:00",
+        "prompt_count": 3,
+        "extract_triggered": 1,
+        "extract_written": 0,
+        "dedup_hit": 0,
+        "rejected_24h": 0,
+        "avg_l2_conf": 0.0,
+        "token_used": 70,
+        "scores": {
+          "density": 0.3215,
+          "precision_proxy": 1.0,
+          "novelty": 1.0,
+          "cost_efficiency": 0.7083,
+          "trust": 1.0,
+          "weighted_total": 0.8545
+        }
+      },
+      {
+        "session_id": "8d3791c7-ceb4-4349-a217-c6c108df91c7",
+        "ts": "2026-04-27T03:05:45.574969+00:00",
+        "prompt_count": 6,
+        "extract_triggered": 0,
+        "extract_written": 0,
+        "dedup_hit": 0,
+        "rejected_24h": 0,
+        "avg_l2_conf": 0.0,
+        "token_used": 0,
+        "scores": {
+          "density": 0.0,
+          "precision_proxy": 1.0,
+          "novelty": 1.0,
+          "cost_efficiency": 1.0,
+          "trust": 1.0,
+          "weighted_total": 0.85
+        }
+      },
+      {
+        "session_id": "1a242ce6-d0bc-4552-bfe2-f12fe278a3d2",
+        "ts": "2026-04-27T04:07:45.393125+00:00",
+        "prompt_count": 2,
+        "extract_triggered": 0,
+        "extract_written": 0,
+        "dedup_hit": 0,
+        "rejected_24h": 0,
+        "avg_l2_conf": 0.0,
+        "token_used": 0,
+        "scores": {
+          "density": 0.0,
+          "precision_proxy": 1.0,
+          "novelty": 1.0,
+          "cost_efficiency": 1.0,
+          "trust": 1.0,
+          "weighted_total": 0.85
+        }
+      },
+      {
+        "session_id": "a4727232-084a-4d87-9df8-b9468b770d25",
+        "ts": "2026-04-27T05:54:32.457587+00:00",
+        "prompt_count": 17,
+        "extract_triggered": 0,
+        "extract_written": 0,
+        "dedup_hit": 0,
+        "rejected_24h": 0,
+        "avg_l2_conf": 0.0,
+        "token_used": 0,
+        "scores": {
+          "density": 0.0,
+          "precision_proxy": 1.0,
+          "novelty": 1.0,
+          "cost_efficiency": 1.0,
+          "trust": 1.0,
+          "weighted_total": 0.85
+        }
       }
     ]
+  },
+  "codex_companion": {
+    "sessions": [
+      {
+        "session_id": "1a242ce6-d0bc-4552-bfe2-f12fe278a3d2",
+        "ts": "2026-04-27T04:07:44+00:00",
+        "audits_skipped_by_score": 1,
+        "audits_total_attempted": 0,
+        "empty_returns": 0,
+        "sandbox_failures": 0,
+        "behavior_gap_blocks": 4,
+        "quality_gap_advises": 1
+      }
+    ],
+    "phase6_trigger_state": {
+      "last_fired": [
+        "C3"
+      ],
+      "last_check_S_count": 1,
+      "last_check_A_count": 30,
+      "last_check_ts": "2026-04-27T05:52:20+00:00",
+      "last_trigger_ts": "2026-04-27T05:52:20+00:00"
+    }
   }
 }

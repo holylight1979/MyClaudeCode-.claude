@@ -6,7 +6,7 @@
 - Last-used: 2026-04-26
 - Confirmations: 0
 - ReadHits: 0
-- Related: feedback-codex-collaboration, feedback-research-first, feedback-fix-on-discovery, decisions
+- Related: feedback-codex-collaboration, feedback-research-first, feedback-fix-on-discovery, decisions, feedback-codex-companion-model, feedback-pre-completion-test-discipline
 
 ## 知識
 
@@ -28,6 +28,9 @@
 - [臨] 涉及 spawn 子程序、跨進程通訊、外部 binary 呼叫 → 必做 smoke
 - [臨] 純 Python lib import / 純檔案讀寫 → 可省 smoke（單元測試足夠）
 - [臨] 沙盒/權限/環境變數相關 → 必做 smoke（最容易踩平台特定坑）
+
+### 真實根因分層現象（2026-04-27 Sprint 0 觀察）
+- [臨] 「致命根因」常是分層失敗：第一層修了下一層才暴露。本案例 plan v5 假設根因是 sandbox 1385，Sprint 0 移除 `-s read-only` 後 log 才揭出更早的 PATH 失敗（npm global bin 不在 service 子程序 PATH 中）。**經驗**：根因修補後立即重跑 e2e + 看 log，不要假設一修就完；做 smoke 時要為「修了之後仍失敗」的 next 層失敗訊號做準備
 
 ## 行動
 

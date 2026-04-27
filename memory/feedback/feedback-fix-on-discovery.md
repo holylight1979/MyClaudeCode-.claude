@@ -8,7 +8,7 @@
 - Confirmations: 0
 - ReadHits: 2
 - Created-at: 2026-04-16
-- Related: feedback-handoff-self-sufficient, workflow-rules, preferences
+- Related: feedback-handoff-self-sufficient, workflow-rules, preferences, feedback-end-to-end-smoke, feedback-pre-completion-test-discipline
 
 ## 知識
 

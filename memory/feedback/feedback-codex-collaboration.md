@@ -6,7 +6,7 @@
 - Last-used: 2026-04-26
 - Confirmations: 0
 - ReadHits: 0
-- Related: feedback-codex-companion-model, decisions, feedback-research-first
+- Related: feedback-codex-companion-model, decisions, feedback-research-first, feedback-end-to-end-smoke
 
 ## 知識
 

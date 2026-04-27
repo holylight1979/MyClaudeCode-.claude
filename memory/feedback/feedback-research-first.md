@@ -7,6 +7,8 @@
 - Confirmations: 0
 - ReadHits: 22
 
+- Related: feedback-codex-collaboration, feedback-end-to-end-smoke
+
 ## 知識
 
 - [固] 修復同一技術問題連續失敗時，必須主動搜尋網路知識來驗證/推翻推論

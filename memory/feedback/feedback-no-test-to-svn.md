@@ -7,6 +7,8 @@
 - Confirmations: 0
 - ReadHits: 12
 
+- Related: feedback-pre-completion-test-discipline
+
 ## 知識
 
 - [固] 測試用、新手作業、練習用途的程式碼不可以上傳 SVN repo（除非使用者明確指示特定檔案、指定要上傳）

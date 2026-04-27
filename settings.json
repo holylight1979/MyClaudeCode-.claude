@@ -48,7 +48,17 @@
       "Bash(mv \"c:/Users/holylight/.claude/projects/c--tmp/memory/hyper-v-切換完整機制與檢測陷阱.md\" \"c:/tmp/.claude/memory/\")",
       "Bash(mv \"c:/Users/holylight/.claude/projects/c--tmp/memory/hypervtoggle-工具位置與用途.md\" \"c:/tmp/.claude/memory/\")",
       "Bash(mv \"c:/Users/holylight/.claude/projects/c--tmp/memory/windows-內建-c-編譯-cscexe-實用配方.md\" \"c:/tmp/.claude/memory/\")",
-      "Bash(mv \"c:/Users/holylight/.claude/projects/c--tmp/memory/MEMORY.md\" \"c:/tmp/.claude/memory/\")"
+      "Bash(mv \"c:/Users/holylight/.claude/projects/c--tmp/memory/MEMORY.md\" \"c:/tmp/.claude/memory/\")",
+      "Bash(rm -f c:/Users/holylight/.claude/workflow/companion-assessment-smoke-after.json)",
+      "Bash(curl -s -X POST http://127.0.0.1:3850/trigger -H \"Content-Type: application/json\" -d '{\"session_id\":\"smoke-after\",\"type\":\"turn_audit\",\"context\":{}}')",
+      "Bash(curl -s -X POST http://127.0.0.1:3850/shutdown)",
+      "Bash(python -c \"import subprocess, sys; subprocess.Popen\\([sys.executable, 'c:/Users/holylight/.claude/tools/codex-companion/service.py'], stderr=open\\('c:/Users/holylight/.claude/Logs/codex-companion.log', 'a', encoding='utf-8'\\), stdout=subprocess.DEVNULL, creationflags=0x08000000|0x00000008|0x01000000\\)\")",
+      "Bash(rm -f c:/Users/holylight/.claude/workflow/companion-assessment-smoke-after2.json)",
+      "Bash(curl -s -X POST http://127.0.0.1:3850/trigger -H \"Content-Type: application/json\" -d '{\"session_id\":\"smoke-after2\",\"type\":\"turn_audit\",\"context\":{}}')",
+      "Bash(rm -f /c/Users/holylight/.claude/tests/regression/test_v4_atoms_unchanged.py)",
+      "Bash(rm -f /c/Users/holylight/.claude/tests/fixtures/v4_atoms_baseline.jsonl)",
+      "Bash(rm -rf /c/Users/holylight/.claude/tests/regression/__pycache__)",
+      "Bash(rmdir /c/Users/holylight/.claude/tests/regression)"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [
@@ -65,7 +75,8 @@
       "C:\\Users\\holylight\\.claude\\tests",
       "c:\\tmp\\docs-progg\\.claude\\memory\\shared\\_pending_review",
       "C:\\Users\\holylight\\.claude\\journals",
-      "C:\\Users\\holylight\\.claude\\tools"
+      "C:\\Users\\holylight\\.claude\\tools",
+      "c:\\Users\\holylight\\.claude\\.claude\\memory"
     ]
   },
   "hooks": {

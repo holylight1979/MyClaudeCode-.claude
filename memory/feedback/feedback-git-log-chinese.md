@@ -4,9 +4,9 @@
 - Author: holylight
 - Confidence: [臨]
 - Trigger: git, commit, log, message, 上GIT, 上版, push
-- Last-used: 2026-04-23
+- Last-used: 2026-04-27
 - Confirmations: 0
-- ReadHits: 8
+- ReadHits: 12
 - Created-at: 2026-04-16
 - Related: preferences, workflow-rules
 
