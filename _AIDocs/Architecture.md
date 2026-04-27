@@ -34,6 +34,7 @@
 | `wg_episodic.py` | ~860 | episodic 生成 / 衝突偵測 / 品質回饋 |
 | `wg_iteration.py` | ~450 | 自我迭代 / 震盪 / 衰減 / 晉升 / 覆轍 |
 | `wg_evasion.py` | ~177 | Evasion Guard + Test-Fail Gate + ScanReport Gate（2026-04-17/2026-04-23） |
+| `wg_codex_companion_phase6.py` | ~155 | Codex Companion Phase 6 自觸發 hook（2026-04-27 Sprint 5.5）：SessionStart 對 [plans/sprint5-eval-2026-04-27.md](../plans/sprint5-eval-2026-04-27.md) §四 C1-C5 跑 if-check，命中且未在 dedup `last_fired` 集合內則 inject；條件純樣本累積驅動、不依賴時間，user 不必主動記「一週後回來看」 |
 | `extract-worker.py` | ~690 | SessionEnd 萃取子程序（共用 `lib/ollama_extract_core.py`） |
 | `lib/ollama_extract_core.py` | ~190 | 萃取共用核心（budget tracker / ack_then_clear） |
 | `quick-extract.py` | ~155 | Stop async 快篩 |

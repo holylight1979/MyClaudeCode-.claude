@@ -222,6 +222,7 @@ def _metrics_path(session_id: str) -> Path:
 
 _METRIC_KEYS = (
     "audits_skipped_by_score",
+    "audits_total_attempted",  # Sprint 5.5 B1：Phase 6 §四 C3 ratio 分母用
     "empty_returns",
     "sandbox_failures",
     "behavior_gap_blocks",

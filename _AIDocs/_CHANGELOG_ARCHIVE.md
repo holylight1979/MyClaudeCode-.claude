@@ -6,6 +6,7 @@
 
 | 日期 | 變更 | 涉及檔案 |
 |------|------|---------|
+| 2026-04-17 | **_CHANGELOG 自動滾動 + Architecture 索引化** — PostToolUse auto-roll + 8 pytest；Architecture 413→150 行（-64%），7 DevHistory 子檔。[log](DevHistory/session-logs/2026-04-17-changelog-and-architecture.md) | `tools/changelog-roll.py`(新), `commands/changelog-roll.md`(新), `tests/test_changelog_roll.py`(新), `workflow/config.json`, `hooks/workflow-guardian.py`, `_AIDocs/Architecture.md`(rewrite), `_AIDocs/DevHistory/*`(7 新+1 擴) |
 | 2026-04-17 | **Evasion Guard + Test-Fail Gate** — Bash 測試失敗偵測 + Stop 完成宣告攔截 + UPS 退避舉證要求，51 pytest。[log](DevHistory/session-logs/2026-04-17-evasion-guard.md) | `hooks/wg_evasion.py`(新), `hooks/workflow-guardian.py`, `settings.json`, `tests/test_evasion_guard.py`(新) |
 | 2026-04-17 | **Atom 寫入防呆 + feedback 目錄整理 + atom_promote 合併** — AUTO-DRAFT tag / Atom-Write Guard / feedback/ 子資料夾 / merge_to_preferences。[log](DevHistory/session-logs/2026-04-17-atom-write-guards.md) | `hooks/wg_hot_cache.py`, `hooks/workflow-guardian.py`, `hooks/wg_iteration.py`, `tools/workflow-guardian-mcp/server.js`, `memory/feedback/` |
 | 2026-04-16 | **V4.1 GA** `v4.1.0` — 清除 rc2 blocker（ollama_client / user-extract-worker / prompt regex 三處根因）P=1.000 R=0.480。[log](DevHistory/session-logs/2026-04-16-v41-ga.md) | `tools/ollama_client.py`, `hooks/user-extract-worker.py`, `tests/integration/test_e2e_user_extract.py`, `workflow/config.json` |

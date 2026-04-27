@@ -571,6 +571,18 @@ def handle_session_start(input_data: Dict[str, Any], config: Dict[str, Any]) -> 
     except Exception as e:
         print(f"[mcp-health] Check error: {e}", file=sys.stderr)
 
+    # ── Sprint 5.5 B2：Phase 6 自觸發 hook ──────────────────────────
+    # 對 plans/sprint5-eval-2026-04-27.md §四 C1-C5 跑 if-check，命中且未
+    # 在 dedup last_fired 集合內 → inject 提醒到 SessionStart
+    # 設計用意：user 不必主動記「一週後回來看」，條件到自然會被推醒
+    try:
+        from wg_codex_companion_phase6 import get_session_start_inject
+        phase6_inject = get_session_start_inject()
+        if phase6_inject:
+            lines.append(phase6_inject)
+    except Exception as e:
+        print(f"[phase6-trigger] Check error: {e}", file=sys.stderr)
+
     # CRITICAL: write state before any output so subsequent hooks can read it.
     write_state(session_id, state)
 

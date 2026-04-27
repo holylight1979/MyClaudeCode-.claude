@@ -581,6 +581,15 @@ def handle_stop(input_data: Dict[str, Any], config: Dict[str, Any]):
     user_goal_hint = (guardian_state.get("user_goal_hint")
                       or guardian_state.get("user_intent") or "")[:500]
 
+    # Sprint 5.5 B1：score gate 通過、所有 dedup/cap 也過、即將送 /trigger 前 +1
+    # 此鍵作為 Phase 6 §四 C3「audits_skipped_by_score / audits_total_attempted > 0.7」
+    # 的分母。語意：實際送出去的 codex audit 次數
+    try:
+        import state as companion_state
+        companion_state.increment_metric(session_id, "audits_total_attempted")
+    except Exception:
+        pass
+
     _http_post(port, "/trigger", {
         "session_id": session_id,
         "type": "turn_audit",
