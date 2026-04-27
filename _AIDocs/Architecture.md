@@ -10,7 +10,7 @@
 | Hook | 觸發時機 | 用途 |
 |------|---------|------|
 | `UserPromptSubmit` | 使用者送出訊息 | RECALL 記憶檢索 + intent 分類（含 handoff）+ Context Budget 監控 + Wisdom 情境分類 + Failures 偵測 + Evasion 注入 |
-| `PreToolUse` (Write) | Write 工具呼叫前 | Atom Format Gate：阻擋 `{project}/.claude/memory/*.md` 但不符原子格式的寫入 |
+| `PreToolUse` (Write) | Write 工具呼叫前 | (1) Atom Format Gate：阻擋 `/.claude/memory/*.md` 不符原子格式的寫入；(2) Atom Confidence Gate（2026-04-27）：新建 atom 的 frontmatter `Confidence:` 與內文 `- [固]/- [觀]` 標籤必須全為 `[臨]`，鏡射 MCP `atom_write` mode=create 規則（[server.js:1109-1117](../tools/workflow-guardian-mcp/server.js)）封堵 Write tool 繞過路徑 |
 | `PostToolUse` (Edit/Write/Bash) | 工具呼叫後 | 追蹤修改檔案 + 增量索引 + Read Tracking + Test-Fail 偵測（Bash）+ _CHANGELOG auto-roll |
 | `PreCompact` | Context 壓縮前 | 快照 state |
 | `Stop` | 對話結束前 | Sync 閘門 + Fix Escalation + TestFailGate（阻擋完成宣告）+ Evasion Detection |
@@ -38,7 +38,7 @@
 | `extract-worker.py` | ~690 | SessionEnd 萃取子程序（共用 `lib/ollama_extract_core.py`） |
 | `lib/ollama_extract_core.py` | ~190 | 萃取共用核心（budget tracker / ack_then_clear） |
 | `quick-extract.py` | ~155 | Stop async 快篩 |
-| `wisdom_engine.py` | ~177 | 反思引擎 + Fix Escalation |
+| `wisdom_engine.py` | ~190 | 反思引擎 + Fix Escalation（2026-04-27：`track_retry` 對 `/plans/`、`/_staging/`、檔名命中 `is_plan_filename` 規劃詞的路徑豁免，計畫迭代不誤計入 retry_count） |
 
 ### 輔助 Hook 腳本
 

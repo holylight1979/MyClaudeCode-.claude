@@ -1328,18 +1328,41 @@ def handle_user_prompt_submit(
         output_nothing()
 
 
+_CONFIDENCE_FRONTMATTER_RE = re.compile(r"^- Confidence:\s*(\[[臨觀固]\])", re.MULTILINE)
+_SOLID_INLINE_RE = re.compile(r"^- \[固\]", re.MULTILINE)
+_OBSERVED_INLINE_RE = re.compile(r"^- \[觀\]", re.MULTILINE)
+
+
+def _scan_atom_confidence(content: str) -> Dict[str, Any]:
+    """Parse confidence signals from atom content. Used by PreToolUse gate."""
+    fm = _CONFIDENCE_FRONTMATTER_RE.search(content)
+    return {
+        "frontmatter": fm.group(1) if fm else None,
+        "solid_inline": bool(_SOLID_INLINE_RE.search(content)),
+        "observed_inline": bool(_OBSERVED_INLINE_RE.search(content)),
+    }
+
+
 def _check_memory_atom_format(
     tool_name: str, tool_input: Dict[str, Any]
 ) -> Optional[str]:
-    """Project-layer memory write must follow atom format.
+    """Memory write must follow atom format AND new atoms must start at [臨].
 
     Returns deny reason string, or None to allow.
     Only checks Write tool targeting {project}/.claude/memory/*.md outside
     of _staging/ and _* index files.
+
+    Two gates:
+    (1) Format gate — content must look like an atom (frontmatter hits ≥3)
+    (2) Confidence gate — for NEW atoms (file does not yet exist), Confidence
+        frontmatter and inline tags must all be [臨]. Mirrors the MCP
+        atom_write mode=create rule (server.js:1109-1117) so the Write tool
+        cannot bypass the semantic contract.
     """
     if tool_name != "Write":
         return None
-    file_path = tool_input.get("file_path", "").replace("\\", "/")
+    file_path_raw = tool_input.get("file_path", "")
+    file_path = file_path_raw.replace("\\", "/")
     if "/.claude/memory/" not in file_path or not file_path.endswith(".md"):
         return None
     if "/_staging/" in file_path:
@@ -1354,22 +1377,52 @@ def _check_memory_atom_format(
     # V4: 角色宣告檔（personal/{user}/role.md、roles/{r}/role.md）非 atom，豁免。
     if fname == "role.md" and ("/personal/" in file_path or "/roles/" in file_path):
         return None
-    content = tool_input.get("content", "")[:300]
+    full_content = tool_input.get("content", "")
+    content_head = full_content[:300]
     required = [
         "- Scope:", "- Confidence:", "- Trigger:",
         "- Last-used:", "- Confirmations:", "- ReadHits:",
     ]
-    hits = sum(1 for r in required if r in content)
-    if hits >= 3:
-        return None
-    return (
-        f"[Guardian:AtomFormat] 偵測到寫入 {file_path}\n"
-        f"但內容不符合原子格式（缺少 Scope/Confidence/Trigger 等 frontmatter，僅 {hits}/5 命中）。\n"
-        "請改用 atom_write MCP（自動產生標準 frontmatter + 索引登記 + 去重檢查）：\n"
-        "  mcp__workflow-guardian__atom_write(scope=\"project\", project_cwd=\"...\", ...)\n"
-        "如為臨時暫存，請寫入 _staging/ 子目錄（自由格式允許）。\n"
-        "如為索引/變更日誌，請以 _ 開頭命名（如 _NOTES.md）。"
-    )
+    hits = sum(1 for r in required if r in content_head)
+    if hits < 3:
+        return (
+            f"[Guardian:AtomFormat] 偵測到寫入 {file_path}\n"
+            f"但內容不符合原子格式（缺少 Scope/Confidence/Trigger 等 frontmatter，僅 {hits}/5 命中）。\n"
+            "請改用 atom_write MCP（自動產生標準 frontmatter + 索引登記 + 去重檢查）：\n"
+            "  mcp__workflow-guardian__atom_write(scope=\"shared\", project_cwd=\"...\", ...)\n"
+            "如為臨時暫存，請寫入 _staging/ 子目錄（自由格式允許）。\n"
+            "如為索引/變更日誌，請以 _ 開頭命名（如 _NOTES.md）。"
+        )
+
+    # Confidence gate: only for NEW atoms (Write to a non-existent path is a "create").
+    # Existing files: Write is a full-overwrite that may legitimately preserve a
+    # promoted [固]/[觀] confidence; rely on append/replace MCP path for those.
+    try:
+        is_new = not Path(file_path_raw).exists()
+    except OSError:
+        is_new = True
+    if is_new:
+        sig = _scan_atom_confidence(full_content)
+        fm = sig["frontmatter"]
+        if fm and fm != "[臨]":
+            return (
+                f"[Guardian:AtomConfidence] 新 atom {fname} frontmatter Confidence={fm}，"
+                "違反語意契約：新 atom 必須以 [臨] 起始（[觀]/[固] 反映跨 session 穩定度，"
+                "首寫無法主張）。\n"
+                "請改用 atom_write MCP（mode=create，confidence='[臨]'）。"
+            )
+        if sig["solid_inline"] or sig["observed_inline"]:
+            tags = []
+            if sig["solid_inline"]:
+                tags.append("[固]")
+            if sig["observed_inline"]:
+                tags.append("[觀]")
+            return (
+                f"[Guardian:AtomConfidence] 新 atom {fname} 內文含 {'/'.join(tags)} "
+                "標籤，違反語意契約：新 atom 的知識行也必須以 [臨] 起始，待跨 session 確認後再晉升。\n"
+                "請改用 atom_write MCP（mode=create，knowledge 各行 prefix 為 '[臨]'）。"
+            )
+    return None
 
 
 _CHANGELOG_TABLE_DATA_RE = re.compile(r"^\|\s*\d{4}-\d{2}-\d{2}\s*\|")

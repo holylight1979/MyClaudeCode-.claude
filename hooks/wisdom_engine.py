@@ -181,10 +181,32 @@ def reflect(state: Dict[str, Any]) -> None:
     _save_json(REFLECTION_PATH, metrics)
 
 
+def _is_plan_iteration_path(norm_path: str) -> bool:
+    """計畫迭代路徑：plans/、_staging/、檔名命中 plan/draft/roadmap/wip 等規劃詞。
+
+    這些檔案的多次編輯是「計畫演化」而非「錯誤修復重試」，不應計入 retry。
+    （feedback-fix-escalation 規則的初衷是抓「同一錯誤改第 2 次」，計畫迭代與此無關。）
+    """
+    if "/plans/" in norm_path or "/_staging/" in norm_path:
+        return True
+    try:
+        from wg_content_classify import is_plan_filename
+    except ImportError:
+        return False
+    fname = norm_path.rsplit("/", 1)[-1] if "/" in norm_path else norm_path
+    return is_plan_filename(fname)
+
+
 def track_retry(state: Dict[str, Any], file_path: str) -> None:
-    """PostToolUse: count repeated edits to the same file as retries."""
-    edits = state.get("modified_files", [])
+    """PostToolUse: count repeated edits to the same file as retries.
+
+    Plan-type files are excluded — multiple edits to a plan are iteration,
+    not error retry, and should not trigger Fix Escalation Protocol.
+    """
     norm = file_path.replace("\\", "/")
+    if _is_plan_iteration_path(norm):
+        return
+    edits = state.get("modified_files", [])
     count = sum(1 for m in edits if m.get("path", "").replace("\\", "/") == norm)
     if count >= 2:
         state["wisdom_retry_count"] = state.get("wisdom_retry_count", 0) + 1
