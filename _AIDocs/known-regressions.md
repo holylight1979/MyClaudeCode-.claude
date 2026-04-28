@@ -111,3 +111,78 @@ tests/test_heuristics.py::test_max_severity_high_only_from_confident_completion
 ### 加入 follow_up_issues.md
 
 本項追加為議題 #8（codex_companion-silent-mode-test-realign）。
+
+---
+
+## REG-003 · Vector DB 精密化用法（拆庫 + chunking 粒度）
+
+| 欄位 | 內容 |
+|------|------|
+| 首次提案 | 2026-04-28（memory cleanup follow_up #1） |
+| 範圍 | 單一 `atom_chunks.lance`（181MB，混合所有 atom + episodic）改為按 scope/用途拆分 |
+| 不修風險 | **低**：Wave 3b probe burst 已驗證命中率 87.6%，當前單庫設計可用；屬效能優化非功能 regression |
+
+### 待研究面向
+
+- 按 scope 拆庫：global / shared / role / personal 各自獨立 lance
+- 按用途拆庫：atom（高頻檢索）/ episodic（低頻長尾）/ wisdom（特殊）各自獨立
+- chunking 粒度：目前檔案級 chunk，是否該降到段落級或句子級
+- 每個 atom 的 chunk 上限——防止單檔污染整庫
+- top_k 召回策略：跨庫 union vs 單庫獨立
+- embedding 模型：目前 nomic-embed-text，單人環境是否該替換為更輕量
+
+### 需先知道的事實
+
+當前實際 chunk 數、embedding 模型、單次查詢延遲、命中率（若有 metrics）。
+
+### 修補路徑
+
+入口檔：`tools/memory-vector-service/{indexer.py, searcher.py, config.py}`。需先寫 chunk-level metrics 採樣才能評估拆庫實質收益。
+
+---
+
+## REG-004 · Vector 路徑寫死根因 commit 追溯（議題 #2 殘留）
+
+| 欄位 | 內容 |
+|------|------|
+| 首次提案 | 2026-04-28（memory cleanup follow_up #2） |
+| 範圍 | `workflow-guardian.py` 的 `vs_script` 從何時起寫死為錯路徑 `tools/vector-service.py`（真檔在 `tools/memory-vector-service/service.py`） |
+| 處理進度 | Wave 3a 已修補路徑 + 加 health-gate flag + 觀察儀表；Wave 3b probe burst 驗證 REVIVE。**剩餘**：未追完 commit 引入點 |
+| 不修風險 | **零**：路徑已修，本項僅為防再犯文件溯源；屬考古研究非功能修補 |
+
+### 修補路徑
+
+`git log -- hooks/workflow-guardian.py` 加 `-S 'vector-service.py'` 找首次出現 commit。
+
+---
+
+## REG-005 · Atom 注入機制重構（議題 #3）
+
+| 欄位 | 內容 |
+|------|------|
+| 首次提案 | 2026-04-28（memory cleanup follow_up #3，從 plan v1 §二 矛盾 #4 帶過來） |
+| 範圍 | `wg_atoms.py:_strip_atom_for_injection` 改寫為「摘要優先 + token budget + hot/cold 分級」；`SECTION_INJECT_THRESHOLD` 從 300 降至 200；Related 擴散加 activation-aware 過濾 |
+| 不修風險 | **中**：當前 trigger 命中即全文注入，特別是 vector 失能時降級到 atom 全注入；現況 vector 已 REVIVE 但 section_hints 召回品質仍受 ranked min_score 偏寬鬆影響（議題 #6） |
+
+### 前置條件
+
+(a) atom 注入機制 3 源不一致已先解決（atom frontmatter `Trigger` / `_ATOM_INDEX.md` / `MEMORY.md` 三者統一真相源）；(b) 議題 #6 ranked min_score 校準完成。
+
+### 修補路徑
+
+入口：`hooks/wg_atoms.py`、`hooks/wg_intent.py`、`memory/_ATOM_INDEX.md` 表格規格。
+
+---
+
+## REG-006 · Hook 萃取管線重複疑慮（議題 #4）
+
+| 欄位 | 內容 |
+|------|------|
+| 首次提案 | 2026-04-28（memory cleanup follow_up #4，考古學者 C3 帶過來） |
+| 範圍 | `quick-extract.py` vs `extract-worker.py` vs `user-extract-worker.py` 三條管線並存，疑似職責重複 |
+| 不修風險 | **低**：三條管線目前各自運作，Mechanic 稽核已確認多數 hook 不是死檔而是 dispatcher 依賴或 worker；本項僅為「合併簡化」研究而非 broken behavior |
+
+### 修補路徑
+
+追完整 trace：`settings.json` 掛載點 → `workflow-guardian.py` import 鏈 → 各 worker spawn 點。判斷三者是否可合併為單一 worker + 旗標切換。
+

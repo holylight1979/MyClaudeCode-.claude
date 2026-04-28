@@ -1,7 +1,7 @@
 # Failures — 踩坑記錄與失敗模式
 
 > 跨專案累積的環境陷阱、假設錯誤、靜默失敗、認知偏差、誤診案例
-> 最近更新：2026-04-01
+> 最近更新：2026-04-28
 
 ---
 
@@ -15,3 +15,4 @@
 | 4 | cognitive-patterns.md | 認知偏差案例（過度工程、代理指標） | 過度工程, 代理指標, proxy metric, AI看不懂, AI在打轉, 品質回饋 |
 | 5 | misdiagnosis-verify-first.md | 誤診案例 + 驗證優先原則 | 誤診, 驗證優先, verify first, 診斷失敗, 先射箭再畫靶, 假設錯誤就規劃, 過度規劃, 沒驗證就動手 |
 | 6 | vectordb-silent-failure-2026-04.md | VectorDB 12 天假陽性 — 路徑寫死 + flag 無 gate；Wave 3a 修補 + Wave 3b REVIVE 決策 | vector, lance, silent failure, vector_ready, flag, 假陽性, bg subprocess, DEVNULL, probe burst |
+| 7 | codex-windows-sandbox-1385.md | Codex `-s read-only` 在 Windows 因 `[windows] sandbox = "elevated"` 觸發 `CreateProcessWithLogonW failed: 1385`；修補 = `-c 'windows.sandbox="unelevated"'` | codex, sandbox, 1385, CreateProcessWithLogonW, windows, elevated, unelevated, logon type |
