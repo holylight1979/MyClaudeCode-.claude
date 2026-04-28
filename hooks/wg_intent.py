@@ -21,6 +21,12 @@ from typing import Any, Dict, List, Optional, Tuple
 from wg_paths import CLAUDE_DIR, WORKFLOW_DIR
 from wg_core import _atom_debug_error
 
+# ─── Vector ranked-sections floor (議題 #6, 2026-04-28) ──────────────────────
+# 校準依據：_AIDocs/DevHistory/vector-threshold-calibration-2026-04.md
+# 0.55 平衡點：bucket-A 命中 1.00 不損；bucket-C avg_hits 5.53→1.50（噪音劑量降 73%）。
+# 原寫死 0.50 cap 過寬鬆（C hit_rate 73%）。
+_RANKED_FLOOR = 0.55
+
 # ─── Vector Observation Log (Wave 3a 2026-04-28) ─────────────────────────────
 # 4-day sampling for vector subsystem decision (revive / retire / gray).
 # Main-hook entry points write here via RotatingFileHandler. The SessionStart
@@ -430,7 +436,7 @@ def _semantic_search(
         use_sections = True
         params_dict = _add_identity({
             "q": prompt, "top_k": top_k,
-            "min_score": min(min_score, 0.50),
+            "min_score": min(min_score, _RANKED_FLOOR),
             "intent": intent,
             "max_sections": 3,
         })
@@ -446,7 +452,7 @@ def _semantic_search(
                 use_sections = False
                 params_dict = _add_identity({
                     "q": prompt, "top_k": top_k,
-                    "min_score": min(min_score, 0.50),
+                    "min_score": min(min_score, _RANKED_FLOOR),
                     "intent": intent,
                 })
                 params = urllib.parse.urlencode(params_dict)
