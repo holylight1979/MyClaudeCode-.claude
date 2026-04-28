@@ -71,7 +71,10 @@
       "Bash(rm ~/.claude/plans/memory-cleanup-2026-04-27/_session_lock_wave3prep_a.txt)",
       "Bash(git -C ~/.claude status --short -- plans/memory-cleanup-2026-04-27/)",
       "Bash(taskkill //PID 34662 //F)",
-      "Bash(taskkill //PID 34660 //F)"
+      "Bash(taskkill //PID 34660 //F)",
+      "Bash(cp ~/.claude/plans/memory-cleanup-2026-04-27/synthesis_and_plan_v2.md ~/.claude/_AIDocs/DevHistory/memory-cleanup-2026-04/synthesis.md)",
+      "Bash(cp ~/.claude/plans/memory-cleanup-2026-04-27/follow_up_issues.md ~/.claude/_AIDocs/DevHistory/memory-cleanup-2026-04/follow-up-issues.md)",
+      "Bash(cp ~/.claude/plans/memory-cleanup-2026-04-27/multi_agent_protocol.md ~/.claude/_AIDocs/DevHistory/multi-agent-cleanup-protocol.md)"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [
@@ -168,6 +171,16 @@
       },
       {
         "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import runpy,pathlib;runpy.run_path(str(pathlib.Path.home()/'.claude/hooks/workflow-guardian.py'),run_name='__main__')\"",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",

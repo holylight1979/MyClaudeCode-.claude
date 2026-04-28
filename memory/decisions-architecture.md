@@ -5,7 +5,7 @@
 - Trigger: 架構, hooks, pipeline, guardian, SessionStart, hot cache, extract-worker, vector service
 - Last-used: 2026-04-28
 - Confirmations: 0
-- ReadHits: 0
+- ReadHits: 4
 - Related: decisions, toolchain-ollama, feedback-pointer-atom
 
 ## 印象

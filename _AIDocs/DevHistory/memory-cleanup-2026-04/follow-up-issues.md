@@ -142,8 +142,8 @@
 
 | Atom | 規則 | 判別 | 已 hook 化? | 建議動作 |
 |------|------|------|-----------|---------|
-| feedback-memory-path | 「禁止寫 `~/.claude/projects/{slug}/memory/`」 | yes/yes/yes | **部分**（atom_write MCP 透過 scope 路由） | PreToolUse hook 偵測 Write 路徑命中模式 → 阻擋 + 提示用 MCP |
-| feedback-no-test-to-svn | 「測試碼不上 SVN」 | yes/yes/yes | **未** | PreToolUse Bash 偵測 `svn commit` 含 `test/` `tests/` `__tests__/` → 阻擋 |
+| feedback-memory-path | 「禁止寫 `~/.claude/projects/{slug}/memory/`」 | yes/yes/yes | **已**（PreToolUse `wg_pretool_guards.check_memory_path_block`, 2026-04-28） | — |
+| feedback-no-test-to-svn | 「測試碼不上 SVN」 | yes/yes/yes | **已**（PreToolUse `wg_pretool_guards.check_svn_test_block`, 2026-04-28） | — |
 | feedback-global-install | 「MCP/skill 安裝路徑規則」 | yes/yes/可能 | **未** | 待評估具體規則 |
 | feedback-fix-on-discovery | 「順手修補清單檢核」 | yes/yes/yes | **已**（ScanReport Gate `wg_evasion.py` 2026-04-23） | — |
 | feedback-fix-escalation | Fix Escalation 6-agent 會議 | yes/yes/yes | **已**（`wisdom_engine.py:track_retry`） | — |
@@ -153,6 +153,16 @@
 ### 處理優先級
 
 中。本項屬「降低 token 消耗的絕對原則」落實 — 收益隨 session 數累積。建議 Wave 6 收尾後新開 session 處理「強候選」（feedback-memory-path、feedback-no-test-to-svn）。
+
+### 2026-04-28 處理紀錄
+
+2 條強候選已落地（[plans/stage-f-transient-bachman.md](../../../plans/stage-f-transient-bachman.md)）：
+- `feedback-memory-path` → `hooks/wg_pretool_guards.py:check_memory_path_block` (PreToolUse Write/Edit)
+- `feedback-no-test-to-svn` → `hooks/wg_pretool_guards.py:check_svn_test_block` (PreToolUse Bash)
+- 測試：`tests/test_pretool_path_block.py` + `tests/test_pretool_bash_block.py`（25/25 PASS）
+- atom 補「## 已 hook 化」段；hook 訊息指回 atom 補語境（hook 不取代 atom）
+
+**其餘 5 條由本議題後續評估**（不限制下個 session）：feedback-global-install / preferences「上GIT」/ workflow-rules「執驗上P」/ 已 hook 化的 fix-on-discovery + fix-escalation。
 
 ---
 

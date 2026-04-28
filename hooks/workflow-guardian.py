@@ -132,6 +132,15 @@ except ImportError:
 
 # V2.22: Use shared content classifier (was inline _AIDOCS_TEMP_PATTERNS)
 from wg_content_classify import is_plan_filename, is_plan_content
+
+# 2026-04-28: PreToolUse 路徑/指令防呆（[固] 級規則程式碼化）。
+# import 失敗自動降級為 no-op，避免單一 typo 拖垮 Write/Bash 路徑。
+try:
+    from wg_pretool_guards import check_memory_path_block, check_svn_test_block
+except ImportError:
+    def check_memory_path_block(*_a, **_k): return None
+    def check_svn_test_block(*_a, **_k): return None
+
 _SUPERSEDES_RE = re.compile(r"^- Supersedes:\s*(.+)", re.MULTILINE)
 
 # ─── Project Delegate Hook (V2.21) ───────────────────────────────────────────
@@ -1526,6 +1535,30 @@ def handle_pre_tool_use(input_data: Dict[str, Any], config: Dict[str, Any]) -> N
     tool_input = input_data.get("tool_input", {})
 
     deny_reason = _check_memory_atom_format(tool_name, tool_input)
+    if deny_reason:
+        output_json({
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "deny",
+                "permissionDecisionReason": deny_reason,
+            }
+        })
+        return
+
+    # 2026-04-28: Memory Path Block (Write/Edit) — feedback-memory-path 規則程式碼化
+    deny_reason = check_memory_path_block(tool_name, tool_input)
+    if deny_reason:
+        output_json({
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "deny",
+                "permissionDecisionReason": deny_reason,
+            }
+        })
+        return
+
+    # 2026-04-28: SVN Test Block (Bash) — feedback-no-test-to-svn 規則程式碼化
+    deny_reason = check_svn_test_block(tool_name, tool_input)
     if deny_reason:
         output_json({
             "hookSpecificOutput": {

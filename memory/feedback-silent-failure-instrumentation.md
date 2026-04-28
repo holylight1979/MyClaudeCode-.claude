@@ -6,7 +6,7 @@
 - Trigger: silent failure, probe burst, log 採樣, observation log, hook 鏈觀察, always-loaded, fallback 未覺察, 灰色地帶
 - Last-used: 2026-04-28
 - Confirmations: 0
-- ReadHits: 0
+- ReadHits: 3
 - Created-at: 2026-04-28
 - Related: feedback-bg-subprocess-stderr, feedback-no-plan-bound-hook, feedback-end-to-end-smoke
 

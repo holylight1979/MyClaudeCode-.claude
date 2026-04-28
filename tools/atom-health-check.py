@@ -20,10 +20,12 @@ import argparse
 import json
 import re
 from datetime import datetime, timedelta
+from difflib import SequenceMatcher
 from pathlib import Path
 
 MEMORY_ROOT = Path.home() / ".claude" / "memory"
 GLOBAL_MEMORY_ROOT = Path.home() / ".claude" / "memory"
+AIDOCS_ROOT = Path.home() / ".claude" / "_AIDocs"
 EXTRA_SCAN_ROOTS: list[Path] = []  # populated from CLI; searched as fallback for ref resolution
 SKIP_FILES = {"MEMORY.md", "SPEC_Atomic_Memory_System.md", "_ATOM_INDEX.md"}
 SKIP_DIRS = {"_distant", "_staging", "_vectordb", "episodic", "_reference", "templates"}
@@ -32,6 +34,17 @@ SKIP_DIRS = {"_distant", "_staging", "_vectordb", "episodic", "_reference", "tem
 # - decisions / decisions-architecture / spec：全域決策與規範 hub
 # - feedback-pointer-atom：指標型 atom 設計原則 meta-rule，被多個 atoms 引用作為設計依據
 CENTRAL_HUBS = {"decisions", "decisions-architecture", "spec", "feedback-pointer-atom"}
+
+# Shadow detection: atom 段落抄 _AIDocs md 子段落 → warning
+SHADOW_THRESHOLD_DEFAULT = 0.7
+SHADOW_SECTIONS = ("印象", "知識")
+SHADOW_MIN_LEN = 80  # 太短的段落比對結果不可信 (e.g. "(none)" 或單句)
+NOISE_LINE_PATTERNS = [
+    re.compile(r'^\s*[-*]?\s*.*?→\s*_AIDocs/[^\s]+\.md.*$'),  # pointer 行
+    re.compile(r'^\s*@_AIDocs/.*$'),                           # @import 行
+    re.compile(r'^\s*_AIDocs/[^\s]+\.md\s*$'),                 # 純路徑行
+    re.compile(r'^\s*>\s*$'),                                  # 空 blockquote
+]
 
 
 def parse_memory_index(root: Path) -> dict[str, str]:

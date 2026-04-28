@@ -5,8 +5,8 @@
 - Trigger: 寫 atom, atom 設計, 縮影, atom 顆粒, 指標型, atom 重構, atom 規則
 - Last-used: 2026-04-28
 - Confirmations: 0
-- ReadHits: 0
-- Related: feedback-memory-path, decisions
+- ReadHits: 5
+- Related: feedback-memory-path, decisions, decisions-architecture, feedback-codex-companion-model
 
 ## 印象
 
@@ -20,6 +20,8 @@
 - **縮影 atom**：抄 _AIDocs/ md 子段落 → 雙重維護 + 過時即 drift + ReadHits 通常 0（系統需要詳情會直接讀 md）
 - **混型 atom**：同檔混「知識/印象/行動」三段 → 顆粒過粗，命中時注入冗餘
 - **代 hook atom**：「固」級邏輯寫成 atom 規則 → 應 hook 化
+  - 已落地範例（2026-04-28）：feedback-memory-path / feedback-no-test-to-svn → `hooks/wg_pretool_guards.py`
+  - hook 化後 atom 仍保留作 LLM 提示錨點（hook 訊息指回 atom）— 不是「刪 atom 改 hook」二選一
 
 ## 行動
 

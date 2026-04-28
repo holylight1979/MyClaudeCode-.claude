@@ -6,7 +6,7 @@
 - Last-used: 2026-04-26
 - Confirmations: 0
 - ReadHits: 0
-- Related: feedback-codex-collaboration, feedback-research-first, feedback-fix-on-discovery, decisions, feedback-codex-companion-model, feedback-pre-completion-test-discipline
+- Related: feedback-codex-collaboration, feedback-research-first, feedback-fix-on-discovery, decisions, feedback-codex-companion-model, feedback-pre-completion-test-discipline, feedback-silent-failure-instrumentation
 
 ## 知識
 

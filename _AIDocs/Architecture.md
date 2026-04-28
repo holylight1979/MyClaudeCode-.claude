@@ -10,7 +10,8 @@
 | Hook | 觸發時機 | 用途 |
 |------|---------|------|
 | `UserPromptSubmit` | 使用者送出訊息 | RECALL 記憶檢索 + intent 分類（含 handoff）+ Context Budget 監控 + Wisdom 情境分類 + Failures 偵測 + Evasion 注入 |
-| `PreToolUse` (Write) | Write 工具呼叫前 | (1) Atom Format Gate：阻擋 `/.claude/memory/*.md` 不符原子格式的寫入；(2) Atom Confidence Gate（2026-04-27）：新建 atom 的 frontmatter `Confidence:` 與內文 `- [固]/- [觀]` 標籤必須全為 `[臨]`，鏡射 MCP `atom_write` mode=create 規則（[server.js:1109-1117](../tools/workflow-guardian-mcp/server.js)）封堵 Write tool 繞過路徑 |
+| `PreToolUse` (Write/Edit) | Write/Edit 工具呼叫前 | (1) Atom Format Gate：阻擋 `/.claude/memory/*.md` 不符原子格式的寫入；(2) Atom Confidence Gate（2026-04-27）：新建 atom 的 frontmatter `Confidence:` 與內文 `- [固]/- [觀]` 標籤必須全為 `[臨]`，鏡射 MCP `atom_write` mode=create 規則（[server.js:1109-1117](../tools/workflow-guardian-mcp/server.js)）封堵 Write tool 繞過路徑；(3) **Memory Path Block（2026-04-28）**：阻擋寫入 `~/.claude/projects/{slug}/memory/`（原子記憶專案自治層覆寫此路徑），對應 atom `feedback-memory-path` |
+| `PreToolUse` (Bash) | Bash 工具呼叫前 | **SVN Test Block（2026-04-28）**：阻擋 `svn commit/ci` 含 `tests?/` `__tests__/` 路徑或 `*Test.<ext>` 檔案（r10854 教訓），對應 atom `feedback-no-test-to-svn` |
 | `PostToolUse` (Edit/Write/Bash) | 工具呼叫後 | 追蹤修改檔案 + 增量索引 + Read Tracking + Test-Fail 偵測（Bash）+ _CHANGELOG auto-roll |
 | `PreCompact` | Context 壓縮前 | 快照 state |
 | `Stop` | 對話結束前 | Sync 閘門 + Fix Escalation + TestFailGate（阻擋完成宣告）+ Evasion Detection |
@@ -34,6 +35,7 @@
 | `wg_episodic.py` | ~860 | episodic 生成 / 衝突偵測 / 品質回饋 |
 | `wg_iteration.py` | ~450 | 自我迭代 / 震盪 / 衰減 / 晉升 / 覆轍 |
 | `wg_evasion.py` | ~177 | Evasion Guard + Test-Fail Gate + ScanReport Gate（2026-04-17/2026-04-23） |
+| `wg_pretool_guards.py` | ~75 | PreToolUse 路徑/指令防呆（path-block + svn-test-block, 2026-04-28）— [固] 級規則程式碼化，純函式無 IO/state |
 | `extract-worker.py` | ~690 | SessionEnd 萃取子程序（共用 `lib/ollama_extract_core.py`） |
 | `lib/ollama_extract_core.py` | ~190 | 萃取共用核心（budget tracker / ack_then_clear） |
 | `quick-extract.py` | ~155 | Stop async 快篩 |

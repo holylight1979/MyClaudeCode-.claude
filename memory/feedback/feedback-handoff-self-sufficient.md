@@ -5,7 +5,7 @@
 - Trigger: 下 session, 續接, 交接, 下次繼續, next-phase, handoff, 下個 claude, resume prompt
 - Last-used: 2026-04-28
 - Confirmations: 0
-- ReadHits: 4
+- ReadHits: 6
 - Related: workflow-rules, feedback-fix-on-discovery
 
 ## 知識
