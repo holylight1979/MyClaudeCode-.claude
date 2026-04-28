@@ -1,6 +1,6 @@
 # 範圍敏感值不寫入 atom
 
-- Trigger: GUID, 硬編碼, 環境相依, 範圍敏感, hash, fileID, 端口, 絕對路徑
+- Trigger: GUID硬編碼, 環境相依, 範圍敏感, fileID, 端口硬編碼, 硬編碼路徑
 - Scope: global
 - Confidence: [固]
 - Last-used: 2026-04-11

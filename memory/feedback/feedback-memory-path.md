@@ -2,11 +2,11 @@
 
 - Scope: global
 - Confidence: [固]
-- Trigger: 寫入記憶, 暫存, _staging, memory path, 寫atom, 寫檔案, Write memory
+- Trigger: 寫入記憶, _staging, memory path, 寫atom, Write memory, 記憶路徑
 - Last-used: 2026-04-28
 - Confirmations: 0
-- ReadHits: 38
-- Related: decisions
+- ReadHits: 42
+- Related: decisions, feedback-pointer-atom
 
 ## 知識
 
@@ -20,3 +20,10 @@
 
 - 寫入任何 memory/atom/_staging 檔案前，先確認目標路徑符合上述規則
 - 內建 auto memory 的 YAML frontmatter 格式也已被覆寫（改用原子記憶格式），見 `rules/memory-system.md`
+
+## 已 hook 化
+
+- Hook: `hooks/wg_pretool_guards.py:check_memory_path_block` (PreToolUse Write/Edit, 2026-04-28)
+- 偵測條件：file_path 命中 `[/\\]\.claude[/\\]projects[/\\][^/\\]+[/\\]memory[/\\]`（precise scope: `projects/{slug}/memory/` 單層；archived 多層路徑不擋）
+- 動作：deny + 訊息指回本檔
+- 本 atom 仍保留：作 LLM 提示來源 + hook 訊息錨點（hook 不取代 atom）

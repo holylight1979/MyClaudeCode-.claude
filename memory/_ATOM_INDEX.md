@@ -30,3 +30,6 @@
 | feedback-silent-failure-instrumentation | memory/feedback-silent-failure-instrumentation.md | silent failure, probe burst, log 採樣, observation log, hook 鏈觀察, always-loaded, fallback 未覺察, 灰色地帶 |
 | feedback-codex-companion-model | memory/feedback/feedback-codex-companion-model.md | codex, codex companion, codex_binary, codex CLI, codex model, gpt-5, gpt-5-codex, gpt-5.4, gpt-5.5, model 升級, codex 升級, npm i codex | global |
 | feedback-pointer-atom | memory/feedback/feedback-pointer-atom.md | 寫 atom, atom 設計, 縮影, atom 顆粒, 指標型, atom 重構, atom 規則 | global |
+| feedback-codex-collaboration | memory/feedback/feedback-codex-collaboration.md | codex, codex exec, gpt-5, codex companion, second opinion, 第二觀點, 雙 LLM, 大師會議, 異議審查 | global |
+| feedback-end-to-end-smoke | memory/feedback/feedback-end-to-end-smoke.md | 上線, 部署, 整合測試, smoke test, 系統驗證, hook 系統, 子程序整合, codex 整合, ollama 整合, mcp 整合, daemon 啟動 | global |
+| feedback-pre-completion-test-discipline | memory/feedback/feedback-pre-completion-test-discipline.md | 宣告完成, 收尾, 測試失敗, TestFailGate, ScanReport, known regression, pre-existing, xfail, REG-001 | global |

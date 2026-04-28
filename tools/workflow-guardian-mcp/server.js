@@ -1023,6 +1023,20 @@ function triggerVectorReindex() {
   } catch {}
 }
 
+/** Regenerate MEMORY.md from _ATOM_INDEX (fire and forget).
+ *  Only touches global memory — project layers don't have sync-memory-index hookup yet. */
+function syncMemoryIndex() {
+  try {
+    const script = path.join(TOOLS_DIR, "sync-memory-index.py");
+    if (!fs.existsSync(script)) return;
+    const cp = require("child_process").spawn("python", [script, "--write"], {
+      windowsHide: true, detached: true, stdio: "ignore",
+    });
+    cp.on("error", () => {});
+    cp.unref();
+  } catch {}
+}
+
 /** Parse atom metadata from file content. Returns {confidence, confirmations, ...} */
 function parseAtomMeta(content) {
   const meta = {};
@@ -1180,6 +1194,7 @@ async function toolAtomWrite(id, args) {
 
     appendToIndex(baseDir, slug, relPath, triggers);
     triggerVectorReindex();
+    if (scopeLabel === "global") syncMemoryIndex();
 
     return sendToolResult(id,
       `Created atom: ${slug}.md (${confidence}, scope=${scopeLabel})\n` +
@@ -1273,6 +1288,7 @@ async function toolAtomWrite(id, args) {
 
     appendToIndex(baseDir, slug, relPath, triggers);
     triggerVectorReindex();
+    if (scopeLabel === "global") syncMemoryIndex();
 
     return sendToolResult(id,
       `Replaced atom: ${slug}.md (${confidence}, preserved conf=${confirmations} rh=${readhits}, author=${prevAuthor})\n` +

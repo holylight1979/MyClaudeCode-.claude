@@ -2,10 +2,10 @@
 
 - Scope: global
 - Confidence: [臨]
-- Trigger: 決策, 選項, 選擇, 工具選型, 技術選單, 要不要, 建議優選, 白話, 給使用者選
-- Last-used: 2026-04-15
+- Trigger: 工具選型, 技術選單, 建議優選, 給使用者選, 技術選項
+- Last-used: 2026-04-28
 - Confirmations: 0
-- ReadHits: 7
+- ReadHits: 8
 - Related: preferences, feedback-no-outsource-rigor, feedback-humanist-decision-framing
 
 ## 知識

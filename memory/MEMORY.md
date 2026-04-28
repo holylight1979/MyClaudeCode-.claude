@@ -4,16 +4,16 @@
 
 | Atom | 說明 |
 |------|------|
-| preferences | 使用者偏好、縮寫指令 |
-| decisions | 全域核心決策（晉升/品質機制/Fix Escalation） |
-| decisions-architecture | 架構決策（hooks/pipeline/guardian/SessionStart） |
-| workflow-rules | 工作流程、大型任務 SOP |
-| workflow-icld | ICLD 閉環開發 |
-| workflow-svn | SVN 操作配方 |
-| toolchain | 環境設定、工具鏈 |
-| toolchain-ollama | Ollama 萃取配置 |
-| feedback-* | 行為校正（19 個含 handoff、fix-on-discovery、no-plan-bound-hook、bg-subprocess-stderr、silent-failure-instrumentation 等） |
-| gdoc-harvester | Google Docs 收割 |
+| preferences | 使用者偏好（補充） |
+| decisions | 全域決策 |
+| workflow-rules | 工作流規則（全域） |
+| workflow-icld | 增量式閉環開發（ICLD） |
+| workflow-svn | SVN 工作流規則 |
+| toolchain | 工具鏈實戰記憶 |
+| toolchain-ollama | Ollama Dual-Backend 實戰記憶 |
+| decisions-architecture | 架構決策 |
+| gdoc-harvester | gdoc-harvester — Web Harvester 收割工具經驗 |
+| feedback-* | 行為校正（20 個含 research, fix-escalation, no-test-to-svn, global-install, memory-path 等） |
 
 > **知識庫查閱**：
 | 知識庫 | 路徑 | 涵蓋主題 |

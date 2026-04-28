@@ -2,7 +2,7 @@
 
 - Scope: global
 - Confidence: [固]
-- Trigger: 試錯, trial-and-error, 不熟悉, API試錯, 框架不熟, 搜尋策略, research
+- Trigger: 試錯, trial-and-error, API試錯, 框架不熟, 搜尋策略
 - Last-used: 2026-04-10
 - Confirmations: 0
 - ReadHits: 22

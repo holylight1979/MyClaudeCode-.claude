@@ -2,10 +2,10 @@
 
 - Scope: global
 - Confidence: [臨]
-- Trigger: 縝密, 規範, 角度, 漏掉, 沒看到, max thinking, high thinking, 外包思考, 自主, 角色縝密, 我有沒有漏, 還有什麼, rigor
+- Trigger: 縝密, 漏掉, 沒看到, max thinking, high thinking, 外包思考, 角色縝密, 我有沒有漏, rigor
 - Last-used: 2026-04-28
 - Confirmations: 0
-- ReadHits: 5
+- ReadHits: 6
 - Related: feedback-decision-no-tech-menu, preferences
 
 ## 知識

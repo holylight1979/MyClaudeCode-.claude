@@ -2,10 +2,10 @@
 
 - Scope: global
 - Confidence: [固]
-- Trigger: 上SVN, svn commit, 測試碼, 新手作業, 練習, 不可上傳
+- Trigger: 上SVN, svn commit, 測試碼不上傳, 新手作業, 不可上傳
 - Last-used: 2026-04-28
 - Confirmations: 0
-- ReadHits: 13
+- ReadHits: 15
 
 - Related: feedback-pre-completion-test-discipline
 
@@ -22,4 +22,11 @@
 
 - 執行同步前，檢查異動清單中是否有測試/練習/新手作業檔案
 - 可疑檔案不自動加入，先向使用者確認
+
+## 已 hook 化
+
+- Hook: `hooks/wg_pretool_guards.py:check_svn_test_block` (PreToolUse Bash, 2026-04-28)
+- 偵測條件：command 同時含 `svn (commit|ci)` 與（`tests?/`、`__tests__/`、或 `*Test.{cs,py,js,ts,tsx,jsx,go,java}`）
+- 動作：deny + 訊息指回本檔；繞過方法（指定單檔不用 glob / 使用者明確指示）也寫在 deny 訊息內
+- 本 atom 仍保留：r10854 教訓敘事 + LLM 提示錨點
 

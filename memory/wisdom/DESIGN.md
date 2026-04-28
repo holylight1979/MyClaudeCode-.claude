@@ -2,7 +2,6 @@
 
 - Scope: global
 - Confidence: [固]
-- Trigger: wisdom engine, DESIGN, 情境分類, silence_accuracy, over_engineering, Bayesian, reflection, arch_sensitivity
 - Last-used: 2026-03-13
 - Confirmations: 0
 - ReadHits: 0
