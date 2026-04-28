@@ -20,3 +20,4 @@
 | 13 | session-logs/ | _CHANGELOG 每條 entry 對應的完整實作紀錄（`{date}-{slug}.md`） | session log, 變更記錄詳情 |
 | 14 | multi-agent-cleanup-protocol.md | 多大師協作流程通用版（CC ≥ Codex 席次設計、防 Codex 幻覺、Windows sandbox 修復、Phase 4 audit 重派、收尾 checklist） | multi-agent, codex, 大師, 協作, sandbox, audit, 監督執行 |
 | 15 | memory-cleanup-2026-04/ | Memory cleanup 計畫歸檔（synthesis / follow-up issues / 8 大師報告精華） | cleanup, vector, atom, token 浪費, silent failure, 2026-04 |
+| 16 | atomic-memory-evolution/ | 原子記憶 V2/V3 設計史與研究文件（搬自 memory/_reference/，2026-04-28 Stage F5 重審後）：origin / decisions-history / self-iteration / SPEC × 2 / v21 research / v3 design + insights | atom 演化, V2, V3, SPEC, research, 設計史, atomic memory origin |

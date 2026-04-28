@@ -186,3 +186,29 @@ tests/test_heuristics.py::test_max_severity_high_only_from_confident_completion
 
 追完整 trace：`settings.json` 掛載點 → `workflow-guardian.py` import 鏈 → 各 worker spawn 點。判斷三者是否可合併為單一 worker + 旗標切換。
 
+---
+
+## REG-007 · IDENTITY.md 設計理由段永久 BLOCK（Wave 4b Stage F1 重審 2026-04-28）
+
+| 欄位 | 內容 |
+|------|------|
+| 首次裁決 | 2026-04-28 Wave 4b：F1 dryrun 雙稽核 PASS、執行後**使用者於 session 內顯式還原** |
+| 重審結論 | 2026-04-28 Stage F 重審：**永久 BLOCK 確認** — vector REVIVE 不改變 always-load 必要性 |
+| 範圍 | `IDENTITY.md:62-65`「### 設計理由（給未來 AI 看）」段（4 行 + 標題） |
+| Token 成本 | ~65 tokens/turn（always-load 入口） |
+
+### BLOCK 理由（永久）
+
+1. **不是縮影**：該段不在任何 `_AIDocs/` md 中（搜尋確認）；屬「給未來 AI 看的行動指引本體」，不是 md 知識的縮抄
+2. **行動本體屬性**：內容為「為什麼用具體禁語清單而非抽象形容詞」的設計理由 — 這是**行動類 atom 的「為什麼」說明**，移走 always-load 後 AI 看不到 → 易違反硬規則
+3. **使用者顯式裁決**：~65 tokens/turn 成本可接受（已驗證 path 3+ 「印象 vs 縮影」框架下，這段是印象本體不是縮影）
+4. **Vector REVIVE 不影響**：本段 BLOCK 理由是「always-load 必要性」維度，與 vector 召回品質無關
+
+### 不修的實際風險
+
+- **零**：不是 drift / 不是 broken behavior，是顯式設計選擇
+
+### 連動
+
+- 設計原則：[memory/feedback/feedback-pointer-atom.md](../memory/feedback/feedback-pointer-atom.md)（指標型 atom — 行動本體 vs 縮影的判別）
+

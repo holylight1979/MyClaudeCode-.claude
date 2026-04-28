@@ -16,3 +16,4 @@
 | 5 | misdiagnosis-verify-first.md | 誤診案例 + 驗證優先原則 | 誤診, 驗證優先, verify first, 診斷失敗, 先射箭再畫靶, 假設錯誤就規劃, 過度規劃, 沒驗證就動手 |
 | 6 | vectordb-silent-failure-2026-04.md | VectorDB 12 天假陽性 — 路徑寫死 + flag 無 gate；Wave 3a 修補 + Wave 3b REVIVE 決策 | vector, lance, silent failure, vector_ready, flag, 假陽性, bg subprocess, DEVNULL, probe burst |
 | 7 | codex-windows-sandbox-1385.md | Codex `-s read-only` 在 Windows 因 `[windows] sandbox = "elevated"` 觸發 `CreateProcessWithLogonW failed: 1385`；修補 = `-c 'windows.sandbox="unelevated"'` | codex, sandbox, 1385, CreateProcessWithLogonW, windows, elevated, unelevated, logon type |
+| 8 | codex-cli-version-mismatch-2026-04.md | model 升 (`gpt-5.5`) 但 codex CLI 沒升 → 400「needs newer Codex」；對策：升 model 同時 `npm i -g @openai/codex` + assessor.py 偵測 400 訊息獨立分類 | codex, CLI 版本, gpt-5.5, model 升級, npm i codex, 400 needs newer, version mismatch |

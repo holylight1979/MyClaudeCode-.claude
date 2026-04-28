@@ -125,6 +125,37 @@
 
 **處理優先級**：Wave 6 收尾之後，先處理「附帶議題」（atom 注入真相源統一）才有合理基礎重做 F2/F3。F5/F6/F7 同步等 vector 索引範圍裁決。
 
+## 議題 #10（Stage F 重審 2026-04-28 衍生）：「固」級邏輯程式碼化盤點與遷移
+
+**緣由**：使用者於 Stage F 重審中提出「**非常固定的邏輯，就應該利用程式碼來更精簡 token 的消耗；且這點是絕對不變的原則**」。配合「指標型 atom」設計（[memory/feedback/feedback-pointer-atom.md](../../../memory/feedback/feedback-pointer-atom.md)），既有 atom 中所有 `[固]` 級邏輯需檢視能否搬到 hook 層、以避免每次讓 LLM 讀 atom 來判斷固定規則。
+
+### 判別準則
+
+某條 `[固]` 規則是否該程式碼化，看三條件：
+1. **可機器決斷**：規則的觸發條件可由檔案路徑 / 字串模式 / state 數值決定（不需 LLM 判斷上下文）
+2. **執行路徑明確**：滿足條件時的動作可枚舉（阻擋 / 注入 / 告警 / 自動修補）
+3. **跨 session 穩定**：規則本身不會因專案差異需要 case-by-case 調整
+
+三條件全 yes → 應 hook 化；任一 no → 留在 atom 作為 LLM 提示。
+
+### 候選清單（待後續 session 評估）
+
+| Atom | 規則 | 判別 | 已 hook 化? | 建議動作 |
+|------|------|------|-----------|---------|
+| feedback-memory-path | 「禁止寫 `~/.claude/projects/{slug}/memory/`」 | yes/yes/yes | **部分**（atom_write MCP 透過 scope 路由） | PreToolUse hook 偵測 Write 路徑命中模式 → 阻擋 + 提示用 MCP |
+| feedback-no-test-to-svn | 「測試碼不上 SVN」 | yes/yes/yes | **未** | PreToolUse Bash 偵測 `svn commit` 含 `test/` `tests/` `__tests__/` → 阻擋 |
+| feedback-global-install | 「MCP/skill 安裝路徑規則」 | yes/yes/可能 | **未** | 待評估具體規則 |
+| feedback-fix-on-discovery | 「順手修補清單檢核」 | yes/yes/yes | **已**（ScanReport Gate `wg_evasion.py` 2026-04-23） | — |
+| feedback-fix-escalation | Fix Escalation 6-agent 會議 | yes/yes/yes | **已**（`wisdom_engine.py:track_retry`） | — |
+| preferences「上GIT」縮寫 | 「git add + commit + push (+ SVN commit + 報備)」 | yes/yes/no（SVN 與 git 分流需上下文） | **未** | UserPromptSubmit hook 偵測「上GIT」字眼 → 注入展開上下文（不直接執行）|
+| workflow-rules「執驗上P」 | 「執行→驗證→上 GIT→產 prompt」流程 | yes/yes/no（拆分時機需 LLM 判斷） | **未** | 同上，純注入展開不直接執行 |
+
+### 處理優先級
+
+中。本項屬「降低 token 消耗的絕對原則」落實 — 收益隨 session 數累積。建議 Wave 6 收尾後新開 session 處理「強候選」（feedback-memory-path、feedback-no-test-to-svn）。
+
+---
+
 ## 議題 #7（Wave 3b 待補）：probe burst 路徑寫死的根因 commit 追溯
 
 **緣由**：議題 #2 列出「為什麼路徑會寫錯」未追完。需 `git log -- hooks/workflow-guardian.py` 加 `-S 'vector-service.py'` 找首次出現 commit，判斷是 typo 還是中間搬目錄漏改。

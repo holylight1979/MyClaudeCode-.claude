@@ -11,6 +11,7 @@
 | workflow-svn | memory/workflow-svn.md | svn, svn-update, TortoiseSVN, 衝突, conflict | global |
 | toolchain | memory/toolchain.md | 工具鏈, 環境設定, MCPControl, MCP新增, npm全域, 螢幕截圖, Excel MCP, LanceDB, MSYS2, cp950, PowerShell截圖, 向量服務 | global |
 | toolchain-ollama | memory/toolchain-ollama.md | ollama, dual-backend, rdchat, qwen3, embedding, 萃取品質, thinking, Open WebUI | global |
+| decisions-architecture | memory/decisions-architecture.md | 架構, hooks, pipeline, guardian, SessionStart, hot cache, extract-worker, vector service | global |
 | gdoc-harvester | memory/gdoc-harvester.md | harvester, Google Docs, Sheets, 收割, Playwright, cookie, export | global |
 | feedback-research | memory/feedback/feedback-research-first.md | 試錯, trial-and-error, API試錯, 框架不熟, 搜尋策略 | global |
 | fix-escalation | memory/feedback/feedback-fix-escalation.md | 重試, retry, escalation, 精確修正, fix-escalation, 修不好, 又壞了, 再次失敗 | global |
@@ -27,3 +28,5 @@
 | feedback-no-plan-bound-hook | memory/feedback-no-plan-bound-hook.md | SessionStart hook, 硬編碼 plan, phase6, wg_codex_companion_phase6, 寫死綁定, hook 反模式, plan 路徑寫死 |
 | feedback-bg-subprocess-stderr | memory/feedback-bg-subprocess-stderr.md | bg subprocess, fire-and-forget, DEVNULL, ready flag, subprocess Popen, stderr log, silent failure, background 子進程 |
 | feedback-silent-failure-instrumentation | memory/feedback-silent-failure-instrumentation.md | silent failure, probe burst, log 採樣, observation log, hook 鏈觀察, always-loaded, fallback 未覺察, 灰色地帶 |
+| feedback-codex-companion-model | memory/feedback/feedback-codex-companion-model.md | codex, codex companion, codex_binary, codex CLI, codex model, gpt-5, gpt-5-codex, gpt-5.4, gpt-5.5, model 升級, codex 升級, npm i codex | global |
+| feedback-pointer-atom | memory/feedback/feedback-pointer-atom.md | 寫 atom, atom 設計, 縮影, atom 顆粒, 指標型, atom 重構, atom 規則 | global |
