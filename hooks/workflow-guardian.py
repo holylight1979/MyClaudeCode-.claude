@@ -119,7 +119,10 @@ except ImportError:
 
 # ─── V3.3: DocDrift detection (lazy import, graceful fallback) ────────────
 try:
-    from wg_docdrift import check_source_drift, resolve_doc_update, build_drift_advisory
+    from wg_docdrift import (
+        check_source_drift, resolve_doc_update, build_drift_advisory,
+        prune_committed_entries,
+    )
     DOCDRIFT_AVAILABLE = True
 except ImportError:
     DOCDRIFT_AVAILABLE = False
@@ -1739,6 +1742,10 @@ def handle_post_tool_use(input_data: Dict[str, Any], config: Dict[str, Any]) -> 
     # V3.3: DocDrift advisory generation
     if DOCDRIFT_AVAILABLE and config.get("docdrift", {}).get("enabled", True):
         try:
+            # Auto-resolve stale entries (source committed/reverted across sessions
+            # without a corresponding _AIDocs edit firing resolve_doc_update).
+            if prune_committed_entries(state, config) > 0:
+                write_state(session_id, state)
             drift_msg = build_drift_advisory(state, config)
             if drift_msg:
                 state["_docdrift_advisory"] = drift_msg

@@ -9,6 +9,7 @@ Inspired by PR #1 (@wellstseng).
 
 import fnmatch
 import re
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -117,6 +118,67 @@ def _match_source_to_docs(rel_path: str, state: dict, config: dict) -> List[str]
                     break
 
     return matches
+
+
+# ─── Stale-entry pruning (committed/reverted source files) ──────────────────
+
+def _git_dirty_files(project_root: str) -> Optional[set]:
+    """Return set of normalized rel paths that are dirty (modified/staged/untracked).
+    Returns None if not in a git repo or git unavailable — caller treats as 'don't prune'.
+    """
+    if not project_root:
+        return None
+    try:
+        result = subprocess.run(
+            ["git", "status", "--porcelain", "--untracked-files=normal"],
+            cwd=project_root,
+            capture_output=True,
+            text=True,
+            timeout=3,
+        )
+        if result.returncode != 0:
+            return None
+    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
+        return None
+
+    dirty = set()
+    for line in result.stdout.splitlines():
+        if len(line) < 4:
+            continue
+        # Format: "XY path" or "XY orig -> path" (rename)
+        path = line[3:]
+        if " -> " in path:
+            path = path.split(" -> ", 1)[1]
+        # Strip surrounding quotes if path contains spaces (git may quote)
+        if path.startswith('"') and path.endswith('"'):
+            path = path[1:-1]
+        dirty.add(_normalize(path))
+    return dirty
+
+
+def prune_committed_entries(state: dict, config: dict) -> int:
+    """Remove pending entries whose source file is no longer dirty in git.
+    Auto-resolves drift entries from prior sessions where the source was
+    committed/reverted but no _AIDocs edit fired resolve_doc_update.
+    Returns count of entries pruned.
+    """
+    pending = state.get("docdrift_pending")
+    if not pending:
+        return 0
+    if not config.get("docdrift", {}).get("auto_prune_committed", True):
+        return 0
+    project_root = state.get("aidocs", {}).get("project_root", "")
+    dirty = _git_dirty_files(project_root)
+    if dirty is None:
+        return 0
+    pruned = 0
+    for k in list(pending.keys()):
+        src_norm = _normalize(pending[k]["source"])
+        if src_norm not in dirty:
+            del pending[k]
+            print(f"[v3.3] DocDrift auto-pruned (not dirty): {k}", file=sys.stderr)
+            pruned += 1
+    return pruned
 
 
 # ─── Public API ─────────────────────────────────────────────────────────────

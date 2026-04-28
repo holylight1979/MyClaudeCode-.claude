@@ -31,7 +31,7 @@
 | `wg_intent.py` | ~430 | intent 分類 / session context / MCP / vector（2026-04-28 Wave 3a：vector 進入點加觀察 log → `~/.claude/Logs/vector-observation.log`，schema `{ts, session_id, fn, flag_state, result_count, fallback_used}`，4 天採樣後由 `tools/vector-observation-summary.py` 自動判定 REVIVE/RETIRE/GRAY） |
 | `wg_extraction.py` | ~295 | per-turn 萃取 / worker 管理 / failure 偵測 |
 | `wg_hot_cache.py` | ~160 | Hot Cache 讀寫 / 注入（含 AUTO-DRAFT tag 硬規則） |
-| `wg_docdrift.py` | ~160 | src → _AIDocs 映射 drift 偵測 |
+| `wg_docdrift.py` | ~260 | src → _AIDocs 映射 drift 偵測；`prune_committed_entries` 於 advisory 前以 `git status --porcelain` 自動清掉源檔已 commit/revert 的 stale 條目（避免跨 session 持久誤報；可由 `docdrift.auto_prune_committed=False` 關閉） |
 | `wg_episodic.py` | ~860 | episodic 生成 / 衝突偵測 / 品質回饋 |
 | `wg_iteration.py` | ~450 | 自我迭代 / 震盪 / 衰減 / 晉升 / 覆轍 |
 | `wg_evasion.py` | ~177 | Evasion Guard + Test-Fail Gate + ScanReport Gate（2026-04-17/2026-04-23） |
