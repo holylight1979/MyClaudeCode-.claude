@@ -68,23 +68,6 @@ def test_verify_cmd_in_trace_does_not_block():
     assert r.triggered is False
 
 
-# ─── Sprint 1 教訓：state 缺 trace 但 tail 有實證據 ────────────────────────
-
-
-def test_sprint1_lesson_tail_has_verify_narrative_no_block():
-    """state file 被擾動 trace 缺，但 last_assistant_tail 明確說「pytest 10/10 通過」。
-    應視為弱證據放行，避免 trace 單點失效誤判 BLOCK。
-    這正是 Sprint 1 收尾時的真實踩坑案例。
-    """
-    # 模擬：guardian 仍記得 modified_files（state-{sid}.json 由 guardian 寫，
-    # 與 companion-state-{sid}.json 是兩個檔），但 companion 的 tool_trace 被清掉
-    st = _state(modified=["a.py", "b.py"], trace=[])
-    tail = "Sprint 1 完成。pytest 10/10 通過、e2e smoke 已跑、commit 已 push。"
-    r = heuristics.check_confident_completion_without_evidence(st, stop_text=tail)
-    assert r.triggered is False
-    assert "narrative" in r.detail or "weak evidence" in r.detail
-
-
 def test_verify_narrative_x_over_y_pass_format():
     """X/Y PASS 分數型也算驗證敘述。"""
     st = _state(modified=["a.py"], trace=[])
@@ -126,25 +109,7 @@ def test_state_change_via_trace_edit_when_modified_empty():
     assert r.triggered is True
 
 
-def test_state_change_via_modified_files_when_trace_empty():
-    """trace 空但 modified_files 有檔 → 仍視為 state_change。"""
-    st = _state(modified=["x.py"], trace=[])
-    r = heuristics.check_confident_completion_without_evidence(st, stop_text="完成")
-    assert r.triggered is True
-
-
 # ─── 其他規則一律 advisory (low) ────────────────────────────────────────
-
-
-def test_missing_verification_is_low_only():
-    """改檔沒測 → 觸發但 severity=low，不應 BLOCK。"""
-    st = _state(modified=["a.py", "b.py"], trace=[
-        {"tool": "Edit", "path": "a.py"},
-        {"tool": "Bash", "input": "git status"},
-    ])
-    r = heuristics.check_missing_verification(st)
-    assert r.triggered is True
-    assert r.severity == "low"
 
 
 def test_missing_verification_not_triggered_when_has_test():
@@ -189,15 +154,6 @@ def test_spinning_low_only():
 
 
 # ─── max_severity / severity_at_or_above / triggered_results ───────────
-
-
-def test_max_severity_high_only_from_confident_completion():
-    """只有三條件齊備時 max_severity 才會是 high；其他規則最高 low。"""
-    trace = [{"tool": "Edit", "path": "a.py"}]
-    st = _state(modified=["a.py", "src/payment_provider.py"], trace=trace)
-    results = heuristics.triggered_results(st, stop_text="搞定")
-    # 此 case：missing_verification(low) + architecture_change(low) + confident_completion(high)
-    assert heuristics.max_severity(results) == "high"
 
 
 def test_max_severity_low_when_no_completion_claim():

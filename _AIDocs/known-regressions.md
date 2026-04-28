@@ -63,6 +63,9 @@ c:\Projects\.claude\memory\architecture.md
 
 | 欄位 | 內容 |
 |------|------|
+| 狀態 | **2026-04-28 已處置（砍過期測試）** |
+| 處置方式 | 使用者裁決「測試 code 過期就砍」→ 整檔刪 `test_codex_companion_drain_e2e.py` + `test_codex_companion_stop_e2e.py`（silent mode 下 hook 全靜默，剩 2+2 pass test 屬 trivial pass 無覆蓋價值），`test_heuristics.py` 砍 4 個對齊舊 severity ceiling 的 test（保留 17 個 heuristic 函式單元測試） |
+| 處置 commit | （見本 commit） |
 | 首次偵測 | 2026-04-28 Wave 4a Stage E 收尾跑全 pytest 時觸發 TestFailGate |
 | 引入 commit | `7794f65` `refactor(companion): Silent Advisory Mode — 軟閘改後台觀測，不打擾對話` |
 | 失敗範圍 | 10 項：`tests/test_codex_companion_drain_e2e.py`（5）+ `tests/test_codex_companion_stop_e2e.py`（1）+ `tests/test_heuristics.py`（4） |
