@@ -22,3 +22,4 @@
 | 15 | memory-cleanup-2026-04/ | Memory cleanup 計畫歸檔（synthesis / follow-up issues / 8 大師報告精華） | cleanup, vector, atom, token 浪費, silent failure, 2026-04 |
 | 16 | atomic-memory-evolution/ | 原子記憶 V2/V3 設計史與研究文件（搬自 memory/_reference/，2026-04-28 Stage F5 重審後）：origin / decisions-history / self-iteration / SPEC × 2 / v21 research / v3 design + insights | atom 演化, V2, V3, SPEC, research, 設計史, atomic memory origin |
 | 17 | atom-trigger-source-of-truth.md | Atom Trigger 三源（frontmatter / _ATOM_INDEX / MEMORY.md）真相規格化設計（待拍板） | atom trigger, source of truth, _ATOM_INDEX, frontmatter, MEMORY.md, drift, sync 工具 |
+| 18 | vector-threshold-calibration-2026-04.md | Wave 3b probe-burst 數據驅動的 ranked-sections min_score 校準（90 query x 6 threshold 矩陣 + 決策） | vector, threshold, calibration, ranked-sections, min_score, probe-burst, 議題 #6, REG-005 |
