@@ -51,6 +51,13 @@ TRIGGER_MAX = 12
 MEMORY_INDEX = "MEMORY.md"
 DISTANT_DIR = "_distant"
 SKIP_PREFIXES = ("SPEC_", "_")  # Files to skip during atom scanning
+# 子目錄跳過清單（rglob 掃描時用）
+# - feedback/: 行為 atom，必掃
+# - personal/: V4 user role 宣告檔（role.md），非 atom
+# - wisdom/: Wisdom Engine 設計文件（DESIGN.md），非 atom（內容用設計文件章節）
+# - episodic/: auto-generated session 摘要，使用 ## 摘要 章節，與 atom 格式不同
+SKIP_DIRS = {"_meta", "_reference", "_staging", "_vectordb", "_distant", "episodic", "templates",
+             "personal", "wisdom"}
 REQUIRED_METADATA = {"Scope", "Confidence", "Trigger", "Last-used"}
 OPTIONAL_METADATA = {"Confirmations", "ReadHits", "Privacy", "Source", "Type", "Created", "TTL",
                      "Expires-at", "Tags", "Related", "Supersedes", "Quality"}
@@ -60,6 +67,27 @@ KNOWLEDGE_SECTIONS = {"知識", "印象"}
 VALID_CONFIDENCE = {"[固]", "[觀]", "[臨]"}
 VALID_TYPES = {"semantic", "episodic", "procedural"}
 VALID_PRIVACY = {"public", "internal", "sensitive"}
+
+
+def iter_atom_files(mem_dir: Path):
+    """Recursive scan for atom .md files, skipping non-atom subdirs and SKIP_PREFIXES files.
+
+    Replaces `mem_dir.glob("*.md")` to include atoms in `feedback/` / `wisdom/` etc.
+    """
+    for md in sorted(mem_dir.rglob("*.md")):
+        if md.name == MEMORY_INDEX:
+            continue
+        if any(md.name.startswith(p) for p in SKIP_PREFIXES):
+            continue
+        try:
+            rel_parts = md.relative_to(mem_dir).parts
+        except ValueError:
+            continue
+        # rel_parts: directory parts + filename. Check intermediate dirs only.
+        if any(part in SKIP_DIRS for part in rel_parts[:-1]):
+            continue
+        yield md
+
 
 # ─── Data Classes ────────────────────────────────────────────────────────────
 
@@ -815,10 +843,8 @@ def delete_atom(
     # 3. Scan Related references in other atoms → remove
     related_cleaned = 0
     for layer_name, mdir in layers:
-        for md_file in sorted(mdir.glob("*.md")):
-            if md_file.name == MEMORY_INDEX or md_file == atom_path:
-                continue
-            if any(md_file.name.startswith(p) for p in SKIP_PREFIXES):
+        for md_file in iter_atom_files(mdir):
+            if md_file == atom_path:
                 continue
             try:
                 text = md_file.read_text(encoding="utf-8-sig")
@@ -931,12 +957,7 @@ def enforce_decay(args: argparse.Namespace) -> None:
     actions: List[str] = []
 
     for layer_name, mem_dir in layers:
-        for md_file in sorted(mem_dir.glob("*.md")):
-            if md_file.name == MEMORY_INDEX:
-                continue
-            if any(md_file.name.startswith(p) for p in SKIP_PREFIXES):
-                continue
-
+        for md_file in iter_atom_files(mem_dir):
             atom = parse_atom_file(md_file, layer_name)
             if not atom.last_used or not atom.confidence:
                 continue
@@ -1326,12 +1347,7 @@ def run_audit(args: argparse.Namespace) -> HealthReport:
                 )
 
         # Parse all atom files
-        for md_file in sorted(mem_dir.glob("*.md")):
-            if md_file.name == MEMORY_INDEX:
-                continue
-            if any(md_file.name.startswith(p) for p in SKIP_PREFIXES):
-                continue
-
+        for md_file in iter_atom_files(mem_dir):
             atom = parse_atom_file(md_file, layer_name)
             all_atoms.append(atom)
             report.total_atoms += 1
@@ -1452,9 +1468,7 @@ def main():
                                  project_dir=_project_dir_from_args(args))
         actions: List[str] = []
         for layer_name, mem_dir in layers:
-            for md_file in sorted(mem_dir.glob("*.md")):
-                if md_file.name == MEMORY_INDEX or any(md_file.name.startswith(p) for p in SKIP_PREFIXES):
-                    continue
+            for md_file in iter_atom_files(mem_dir):
                 result = compact_evolution_logs(md_file, dry_run=args.dry_run)
                 if result:
                     actions.append(result)

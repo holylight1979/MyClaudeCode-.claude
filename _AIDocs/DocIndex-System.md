@@ -129,12 +129,14 @@ Session Ready
   - `_request_with_failover` 在 `explicit_model` 與 backend `llm_model` 不符時直接 skip（不計 failure，避免毒化 health_cache 60s 使後續呼叫 silent return）
 
 ### 記憶品質
-- memory-audit.py — 格式驗證 + staleness + 雙軌晉升建議（Conf≥4/10 or RH≥20/50）（支援 `--project-dir`、Claude-native YAML frontmatter、2 欄 MEMORY.md、wildcard 索引項、orphan memory dir 容忍；`## 印象` 為指標型 atom 變體，可取代 `## 知識` 滿足必要區段）
+- memory-audit.py — 格式驗證 + staleness + 雙軌晉升建議（Conf≥4/10 or RH≥20/50）（支援 `--project-dir`、Claude-native YAML frontmatter、2 欄 MEMORY.md、wildcard 索引項、orphan memory dir 容忍；`## 印象` 為指標型 atom 變體，可取代 `## 知識` 滿足必要區段；recursive 掃描 atom 子目錄如 `feedback/`，跳過 `_*`/`personal/`/`wisdom/`/`episodic/`/`templates/` 等非 atom 目錄）
 - memory-write-gate.py — 寫入閘門（6 規則 + 0.80 dedup；[固] 不再 fast-path，一律過品質檢查）
 - memory-conflict-detector.py — 向量衝突 + LLM 分類；mode ∈ {full-scan / write-check / pull-audit}（V4 Phase 5 三時段衝突偵測核心）
 - conflict-review.py — V4 Pending Queue 後端：list/approve/reject 三動作，is_management 雙向認證 guard，approve 寫 Decided-by + merge_history + 觸發 `/index/incremental`
 - atom-health-check.py — 參照完整性（`_` 前綴檔案豁免、`decisions`/`decisions-architecture`/`spec`/`feedback-pointer-atom` 為 central hub 反向參照豁免；`--memory-root` 非全域時自動把全域加入 ref resolution fallback，支援 project→global up-ref 合法解析；`--auto-fix-broken` 自動從 source atom 移除真斷裂 ref）
 - atom-move.py — 跨層原子搬遷工具。`move` 子命令：mv 檔案 + 更新 Scope + 同步兩層 `_ATOM_INDEX`/`MEMORY` + 按層序規則處理 inbound refs（down-ref 自動移除、up-ref 保留、sibling 回報警告）。`reconcile` 子命令：atom 已在 target（如手動 mv 之後）時跑完整清理。均支援 `--dry-run`。MCP 工具 `mcp__workflow-guardian__atom_move` 為對應 in-session 封裝
+- sync-atom-index.py — atom frontmatter Trigger ↔ `_ATOM_INDEX.md` 一致性同步工具（選項 A 真相源規格；設計：`_AIDocs/DevHistory/atom-trigger-source-of-truth.md`）。配對 key 為 rel_path，避免 alias 短名與檔名不符的偽陽性。模式：default dry-run JSON 報告 / `--check` 安靜版（PreCommit hook 用）/ `--fix` 以 `_ATOM_INDEX` 覆蓋 frontmatter Trigger / `--add-from-frontmatter` 把 frontmatter 有 Trigger 但 `_ATOM_INDEX` 缺的 atom 補進索引尾部。排除：`_reference/_archived/_pending_review/_staging/templates/wisdom/_drafts/episodic/`
+- sync-memory-index.py — 從 `_ATOM_INDEX.md` 自動生成 `MEMORY.md`（@import always-loaded 索引）。掃所有 atom 的 H1 第一行作為「說明」欄；`feedback-*` 與 `fix-escalation` 自動歸納為一行「行為校正（N 個含 ...）」帶實際計數；保留 `> **知識庫查閱**：` 標記後段落不變。模式：default 預覽 stdout / `--check` 比對現存（PreCommit）/ `--write` 覆寫
 
 ### 遷移/測試
 - migrate-v221.py — V2.21 遷移（_AIAtoms + 個人記憶 → .claude/memory/）
