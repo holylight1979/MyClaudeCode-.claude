@@ -61,8 +61,31 @@ class VectorServiceHandler(BaseHTTPRequestHandler):
     """HTTP request handler for Memory Vector Service."""
 
     def log_message(self, format, *args):
-        """Override to write to stderr with timestamp."""
-        print(f"[service] {self.client_address[0]} - {format % args}", file=sys.stderr)
+        """Sanitized: strip query string from request line (議題 #6, 2026-04-28).
+
+        log_request 路徑會以 format='"%s" %s %s', args=(request_line, code, size)
+        呼叫；request_line 形如 'GET /search?q=<sensitive> HTTP/1.1'。此處將
+        path 的 query string 截掉，其他 log 路徑（log_error / 直呼 log_message）
+        不變。Parse 失敗 fail-open 保留原行為。
+        """
+        sanitized_args = args
+        if format == '"%s" %s %s' and args:
+            try:
+                request_line = args[0]
+                if isinstance(request_line, str):
+                    parts = request_line.split(' ', 2)
+                    if len(parts) >= 2:
+                        method = parts[0]
+                        path_clean = parts[1].split('?', 1)[0]
+                        http_ver = parts[2] if len(parts) > 2 else 'HTTP/1.1'
+                        sanitized_args = (f'{method} {path_clean} {http_ver}',) + tuple(args[1:])
+            except Exception:
+                sanitized_args = args  # fail-open
+        try:
+            msg = format % sanitized_args
+        except Exception:
+            msg = format  # fail-open: even formatting failure must not crash
+        print(f"[service] {self.client_address[0]} - {msg}", file=sys.stderr)
 
     def handle_one_request(self):
         """Override to catch ConnectionAbortedError / BrokenPipeError."""
