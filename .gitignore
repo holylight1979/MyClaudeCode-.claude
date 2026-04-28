@@ -26,10 +26,12 @@ stats-cache.json
 # ─── Workflow Guardian runtime state ─────────────────────
 # config.json IS tracked; state files are not
 workflow/state-*.json
+workflow/state-*.json.bak-*
 workflow/guardian-crash.log
 workflow/extract-worker.log
 workflow/hot_cache.json
 workflow/vector_ready.flag
+workflow/.backend_long_die.json
 
 # ─── Codex Companion runtime state ────────────────────────
 workflow/companion-state-*.json
