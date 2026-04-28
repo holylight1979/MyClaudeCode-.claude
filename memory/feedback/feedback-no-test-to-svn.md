@@ -3,9 +3,9 @@
 - Scope: global
 - Confidence: [固]
 - Trigger: 上SVN, svn commit, 測試碼, 新手作業, 練習, 不可上傳
-- Last-used: 2026-04-15
+- Last-used: 2026-04-28
 - Confirmations: 0
-- ReadHits: 12
+- ReadHits: 13
 
 - Related: feedback-pre-completion-test-discipline
 

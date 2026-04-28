@@ -4,9 +4,9 @@
 - Author: holylight
 - Confidence: [臨]
 - Trigger: 裁決, 決策呈現, 選項, 多選題, 技術細節, 使用者認知負擔
-- Last-used: 2026-04-21
+- Last-used: 2026-04-28
 - Confirmations: 0
-- ReadHits: 3
+- ReadHits: 4
 - Created-at: 2026-04-17
 - Related: preferences, feedback-decision-no-tech-menu
 

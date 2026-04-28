@@ -65,7 +65,13 @@
       "Bash(mkdir -p ~/.claude/projects/_archived)",
       "Bash(mv ~/.claude/projects/c--TSG ~/.claude/projects/_archived/c--TSG)",
       "Bash(rm ~/.claude/plans/memory-cleanup-2026-04-27/_session_lock_wave2_a.txt)",
-      "Bash(git -C ~/.claude status --short)"
+      "Bash(git -C ~/.claude status --short)",
+      "Bash(mkdir -p ~/.claude/plans/memory-cleanup-2026-04-27/outputs/wave3b)",
+      "Bash(cat)",
+      "Bash(rm ~/.claude/plans/memory-cleanup-2026-04-27/_session_lock_wave3prep_a.txt)",
+      "Bash(git -C ~/.claude status --short -- plans/memory-cleanup-2026-04-27/)",
+      "Bash(taskkill //PID 34662 //F)",
+      "Bash(taskkill //PID 34660 //F)"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [
@@ -85,7 +91,9 @@
       "C:\\Users\\holylight\\.claude\\tools",
       "c:\\Users\\holylight\\.claude\\.claude\\memory",
       "C:\\Users\\holylight\\.claude\\plans\\memory-cleanup-2026-04-27",
-      "C:\\Users\\holylight\\.claude\\_AIDocs\\DevHistory"
+      "C:\\Users\\holylight\\.claude\\_AIDocs\\DevHistory",
+      "C:\\Users\\holylight\\.claude\\plans\\memory-cleanup-2026-04-27\\outputs",
+      "C:\\Users\\holylight\\.claude\\hooks"
     ]
   },
   "hooks": {

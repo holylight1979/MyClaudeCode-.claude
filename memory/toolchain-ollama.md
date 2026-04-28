@@ -6,7 +6,7 @@
 - Last-used: 2026-04-28
 - Created: 2026-03-19
 - Confirmations: 0
-- ReadHits: 90
+- ReadHits: 91
 - Type: procedural
 - Tags: ollama, dual-backend, extraction
 - Related: toolchain, decisions-architecture, decisions

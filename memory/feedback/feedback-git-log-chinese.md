@@ -6,7 +6,7 @@
 - Trigger: git, commit, log, message, 上GIT, 上版, push
 - Last-used: 2026-04-28
 - Confirmations: 0
-- ReadHits: 15
+- ReadHits: 18
 - Created-at: 2026-04-16
 - Related: preferences, workflow-rules
 
