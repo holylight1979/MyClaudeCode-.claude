@@ -24,3 +24,6 @@
 | feedback-git-log-chinese | memory/feedback/feedback-git-log-chinese.md | commit message, commit msg, 上GIT, git commit, git log, git push |
 | feedback-fix-on-discovery | memory/feedback/feedback-fix-on-discovery.md | 不在範圍, 範圍外, 未來處理, 另開 session, out of scope, 順手發現, 不在本次範圍 |
 | feedback-humanist-decision-framing | memory/feedback-humanist-decision-framing.md | 裁決, 決策呈現, 選項, 多選題, 技術細節, 使用者認知負擔 |
+| feedback-no-plan-bound-hook | memory/feedback-no-plan-bound-hook.md | SessionStart hook, 硬編碼 plan, phase6, wg_codex_companion_phase6, 寫死綁定, hook 反模式, plan 路徑寫死 |
+| feedback-bg-subprocess-stderr | memory/feedback-bg-subprocess-stderr.md | bg subprocess, fire-and-forget, DEVNULL, ready flag, subprocess Popen, stderr log, silent failure, background 子進程 |
+| feedback-silent-failure-instrumentation | memory/feedback-silent-failure-instrumentation.md | silent failure, probe burst, log 採樣, observation log, hook 鏈觀察, always-loaded, fallback 未覺察, 灰色地帶 |
