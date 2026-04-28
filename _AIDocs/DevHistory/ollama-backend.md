@@ -18,7 +18,6 @@ config.json → ollama_backends:
 - 10 分鐘內 2 次短 DIE → **長 DIE**（等到下個 6h 時段：00/06/12/18 點）
 - 長 DIE 觸發 → SessionStart hook 詢問使用者「停用」或「保持」
 - **靜態停用旗標**：`enabled: false` 永久跳過，不做 health check
-- 認證：LDAP bearer token，帳號自動 `os.getlogin()`，密碼檔 `workflow/.rdchat_password`
 
 ## 降級鏈
 

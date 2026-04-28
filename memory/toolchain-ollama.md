@@ -3,10 +3,10 @@
 - Scope: global
 - Confidence: [固]
 - Trigger: ollama, dual-backend, rdchat, qwen3, gemma4, embedding, 萃取品質, thinking, Open WebUI
-- Last-used: 2026-04-16
+- Last-used: 2026-04-28
 - Created: 2026-03-19
 - Confirmations: 0
-- ReadHits: 87
+- ReadHits: 90
 - Type: procedural
 - Tags: ollama, dual-backend, extraction
 - Related: toolchain, decisions-architecture, decisions
@@ -19,7 +19,7 @@
 - [固] generate() 支援 think 參數（預設 False）。chat() 固定 think:false（reranker/conflict-detector 用短 prompt，不需 thinking）
 - [固] failover 時 model 名稱要跟著切換（rdchat 用 gemma4:e4b，local 用 qwen3:1.7b），否則 fallback backend 回 404
 - [固] 三階段退避：連續 2 次失敗→短DIE(60s)→10 分鐘內 2 次短DIE→長DIE(等 6h 邊界 00/06/12/18)
-- [固] config 中 password_file 指向獨立檔案（.gitignore 排除），支援 os.getlogin() 多使用者
+- [固] 認證憑證一律存獨立檔（.gitignore 排除），帳號可用 os.getlogin() 多使用者
 
 ### Open WebUI Proxy
 

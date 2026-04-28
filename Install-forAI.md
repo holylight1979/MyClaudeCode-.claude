@@ -277,29 +277,13 @@ curl -s http://127.0.0.1:3849/index/full
     "priority": 1,
     "enabled": true
   },
-  "rdchat": {
-    "base_url": "https://<your-rdchat-proxy>/ollama",
-    "auth": {
-      "type": "bearer_ldap",
-      "login_url": "https://<your-proxy>/api/v1/auths/ldap",
-      "password_file": "~/.claude/workflow/.rdchat_password"
-    },
-    "llm_model": "gemma4:e4b",
-    "embedding_model": "qwen3-embedding:latest",
-    "priority": 2,
-    "enabled": true
-  },
   "local": { "base_url": "http://127.0.0.1:11434", "llm_model": "qwen3:1.7b", "priority": 3 }
 }
 ```
 
-**密碼檔**（gitignored，絕不 commit）：
+> 若團隊使用認證型 backend（OAuth / LDAP / bearer），相關 `auth` 區塊請**私下取得設定範本**，不要寫入公開 git 檔；認證憑證務必走 gitignored 路徑。
 
-```bash
-echo "你的 LDAP 密碼" > ~/.claude/workflow/.rdchat_password
-```
-
-帳號自動取 `os.getlogin()`。三階段退避：正常 → Short DIE 60s → Long DIE 等下個 6h 邊界（0/6/12/18）。
+三階段退避：正常 → Short DIE 60s → Long DIE 等下個 6h 邊界（0/6/12/18）。
 
 ---
 

@@ -41,20 +41,6 @@
         "think": true,
         "llm_num_predict": 4096
       },
-      "rdchat": {
-        "base_url": "https://rdchat.uj.com.tw/ollama",
-        "auth": {
-          "type": "bearer_ldap",
-          "login_url": "https://rdchat.uj.com.tw/api/v1/auths/ldap",
-          "password_file": "~/.claude/workflow/.rdchat_password"
-        },
-        "llm_model": "gemma4:e4b",
-        "embedding_model": "qwen3-embedding:latest",
-        "priority": 2,
-        "enabled": true,
-        "think": true,
-        "llm_num_predict": 4096
-      },
       "local": {
         "base_url": "http://127.0.0.1:11434",
         "llm_model": "qwen3:1.7b",
