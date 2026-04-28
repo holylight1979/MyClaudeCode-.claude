@@ -864,7 +864,7 @@ def handle_user_prompt_submit(
             "[Atom-Write Guard] 偵測到記憶寫入意圖。硬規則："
             "(1) 新 atom 一律 [臨]，MCP atom_write 會 reject [固]/[觀]；"
             "(2) 單次成功 ≠ 穩定模式，需 4+ session 命中才建議晉升；"
-            "(3) 晉升走 atom_promote（[臨]≥20→[觀]、[觀]≥40→[固]），不手動改 frontmatter；"
+            "(3) 晉升走 atom_promote（雙軌：Primary Confirmations ≥4→[觀]/≥10→[固] 或 Auxiliary ReadHits ≥20→[觀]/≥50→[固]），不手動改 frontmatter；"
             "(4) 若是更新既有 atom，用 mode=append 並保留原 confidence。"
         )
 

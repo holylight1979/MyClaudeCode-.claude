@@ -211,7 +211,11 @@ def _self_iterate_atoms(
     """
     si_config = config.get("self_iteration", {})
     decay_half_life = si_config.get("decay_half_life_days", 30)
-    promote_min_conf = si_config.get("promote_min_confirmations", 20)
+    # Dual-track promotion thresholds (decisions.md / server.js truth source)
+    # Primary: Confirmations (cross-session extract hits) — [臨]→[觀] ≥4
+    # Auxiliary: ReadHits (injection reads) — [臨]→[觀] ≥20
+    promote_conf_threshold = si_config.get("promote_confirmations_threshold", 4)
+    promote_min_conf = si_config.get("promote_min_confirmations", 20)  # ReadHits auxiliary track
     archive_threshold = si_config.get("archive_score_threshold", 0.3)
 
     results = {"promoted": [], "archive_candidates": [], "scanned": 0}
@@ -267,8 +271,8 @@ def _self_iterate_atoms(
                     "confirmations": confirmations,
                 })
 
-            # Auto-promote [臨]→[觀] if atom confirmations high enough
-            if confirmations >= promote_min_conf:
+            # Auto-promote [臨]→[觀] (dual-track: Primary Confirmations OR Auxiliary ReadHits)
+            if confirmations >= promote_conf_threshold or readhits >= promote_min_conf:
                 lines = text.split("\n")
                 promoted_in_file = []
                 changed = False

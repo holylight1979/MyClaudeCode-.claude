@@ -36,10 +36,10 @@
 - [固] 衰減分數公式：`score = 0.5 * recency + 0.5 * usage`，recency = `exp(-ln2 * days / half_life)`，usage = `min(1, log10(confirmations+1) / 2)`
 - [固] half_life=30d, archive_threshold=0.3（config.json `self_iteration` 區塊可調）
 - [固] SessionEnd 掃描 `memory/*.md` + `memory/failures/*.md`，跳過 MEMORY.md / SPEC / `_` 前綴
-- [固] [臨]→[觀] 自動晉升條件：atom Confirmations ≥ 20（promote_min_confirmations），行首 `- [臨]` → `- [固]` 直接覆寫
+- [固] [臨]→[觀] 自動晉升（雙軌，依 settings.json `self_iteration` 配置；真相源：`decisions.md` + `tools/workflow-guardian-mcp/server.js`）：Primary Confirmations ≥ 4（`promote_confirmations_threshold`）或 Auxiliary ReadHits ≥ 20（`promote_min_confirmations`）→ 行首 `- [臨]` 改寫為 `- [觀]`（[觀]→[固] 不自動，需 `atom_promote` MCP 雙軌驗證）
 - [固] Archive candidates：score < 0.3 的 atoms 寫入 `_staging/archive-candidates.md`
 - [固] 震盪持久化：`_save_oscillation_state()` SessionEnd 寫 `workflow/oscillation_state.json`；`_load_oscillation_warnings()` SessionStart 讀取注入 `[Guardian:Oscillation]` 警告
-- [固] config.json `self_iteration` 欄位：decay_half_life_days, promote_min_confirmations, archive_score_threshold, oscillation_window, oscillation_threshold, review_interval
+- [固] config.json `self_iteration` 欄位：decay_half_life_days, promote_confirmations_threshold（Primary 軌，預設 4）, promote_min_confirmations（Auxiliary ReadHits 軌，預設 20）, archive_score_threshold, oscillation_window, oscillation_threshold, review_interval
 
 ## 覆轍偵測（V2.17）
 - [固] 寄生式設計：不新增檔案/參數/子系統，附著在 episodic atom 上
