@@ -323,6 +323,15 @@ def handle_user_prompt_submit(input_data: Dict[str, Any], config: Dict[str, Any]
     if not paths:
         _output_nothing()
 
+    # 2026-04-28 改：靜默過濾門檻。預設 high；config 可調。
+    # 只有同時滿足 (severity >= max_inject_severity) AND
+    # (status in {error, needs_followup}) AND (corrective_prompt 非空)
+    # 的 advisory 才浮上來。其他自動標 injected 落盤但不展示。
+    max_inject_severity = str(config.get("max_inject_severity", "high")).lower()
+    _SEV_ORDER = {"low": 0, "medium": 1, "high": 2}
+    inject_threshold = _SEV_ORDER.get(max_inject_severity, 2)
+    actionable_statuses = {"error", "needs_followup"}
+
     pending: list[tuple[int, str, Path, Dict[str, Any]]] = []
     for path in paths:
         try:
@@ -340,6 +349,22 @@ def handle_user_prompt_submit(input_data: Dict[str, Any], config: Dict[str, Any]
         delivery = str(assessment.get("delivery", "inject")).lower()
         if delivery == "ignore":
             _mark_injected(path, data)
+            continue
+
+        # 2026-04-28：靜默過濾。低於門檻 / 非可行動狀態 / 無 corrective_prompt → 不注入
+        sev = _SEV_ORDER.get(str(assessment.get("severity", "low")).lower(), 0)
+        status = str(assessment.get("status", "ok")).lower()
+        corrective = (assessment.get("corrective_prompt", "")
+                      or assessment.get("recommended_action", ""))
+        if (sev < inject_threshold
+                or status not in actionable_statuses
+                or not corrective):
+            _mark_injected(path, data)
+            try:
+                import state as companion_state
+                companion_state.increment_metric(session_id, "advisory_suppressed_silent")
+            except Exception:
+                pass
             continue
 
         turn_index = int(data.get("turn_index", 0))
@@ -525,7 +550,10 @@ def handle_stop(input_data: Dict[str, Any], config: Dict[str, Any]):
     turn_index_post = int(comp_state.get("turn_index", 0))
 
     # ── Sprint 2：heuristic soft gate（BLOCK 權只屬 confident_completion）─
+    # 2026-04-28 改：新增 silent_advisory 旗標。開啟時 heuristic 結果只計數 +
+    # 落盤觀測，不 BLOCK，不打擾對話。BLOCK 路徑保留給未來「明確失敗訊號」用。
     soft_gate_config = config.get("soft_gate", {})
+    silent_advisory = bool(config.get("silent_advisory", False))
     if soft_gate_config.get("completion_evidence", True):
         try:
             import heuristics
@@ -533,17 +561,26 @@ def handle_stop(input_data: Dict[str, Any], config: Dict[str, Any]):
             if results:
                 threshold = soft_gate_config.get("block_severity_threshold", "high")
                 if heuristics.severity_at_or_above(results, threshold):
-                    detail = heuristics.format_for_context(results)
-                    # Phase 5.3/5.4：block reason 從 config 讀
-                    template = config.get(
-                        "block_template",
-                        "Codex Companion 軟閘：偵測到高風險缺漏。\n{detail}\n請補充驗證或修正後再收尾。",
-                    )
-                    try:
-                        block_reason = template.format(detail=detail)
-                    except (KeyError, IndexError):
-                        block_reason = template + "\n" + detail
-                    _output_block(block_reason, session_id=session_id)
+                    if silent_advisory:
+                        # 靜默路徑：只增量 metric，不 BLOCK，不顯示給使用者
+                        try:
+                            import state as companion_state
+                            companion_state.increment_metric(
+                                session_id, "silent_advisory_suppressed"
+                            )
+                        except Exception:
+                            pass
+                    else:
+                        detail = heuristics.format_for_context(results)
+                        template = config.get(
+                            "block_template",
+                            "Codex Companion 軟閘：偵測到高風險缺漏。\n{detail}\n請補充驗證或修正後再收尾。",
+                        )
+                        try:
+                            block_reason = template.format(detail=detail)
+                        except (KeyError, IndexError):
+                            block_reason = template + "\n" + detail
+                        _output_block(block_reason, session_id=session_id)
         except Exception:
             pass  # Heuristics failure → degrade gracefully
 

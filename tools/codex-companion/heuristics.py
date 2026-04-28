@@ -38,6 +38,7 @@ class HeuristicResult:
 
 _VERIFY_CMD_RE = re.compile(
     r"(?:^|\s)(?:"
+    # 測試框架類
     r"pytest|python\s+-m\s+pytest|"
     r"npm\s+(?:run\s+)?test|jest|vitest|"
     r"node\s+--check|tsc|"
@@ -45,12 +46,19 @@ _VERIFY_CMD_RE = re.compile(
     r"dotnet\s+test|"
     r"python\s+.*\.py|"
     r"make\s+(?:test|check|build)|"
-    r"(?:npm|yarn|pnpm)\s+run\s+build"
+    r"(?:npm|yarn|pnpm)\s+run\s+build|"
+    # doc/security/config 類驗證（2026-04-28 擴充）
+    r"git\s+(?:check-ignore|status|diff|log|ls-files|merge-base)|"
+    r"python\s+-m\s+json\.tool|jq|"
+    r"grep\s+-[lLnEric]+|xargs\s+grep|"
+    r"json\.load|json\.loads"
     r")(?:\s|$)"
 )
 
+# 完成宣告：移除過於廣泛的敘事詞（收尾/總結/搞定/wrapped up），
+# 只保留明確結束動詞，避免報告體裁誤判
 _COMPLETION_RE = re.compile(
-    r"(完成|已解決|全部做完|done|finished|all\s+set|wrapped\s+up|大功告成|搞定|收尾|總結)",
+    r"(完成|已解決|全部做完|done|finished|all\s+set|大功告成)",
     re.IGNORECASE,
 )
 
@@ -65,13 +73,19 @@ _ARCH_FILE_RE = re.compile(
 # - 「pytest 通過」「tests passed」「build 成功」近距離搭配
 # - 「驗證通過」「測試綠燈」「all green」整體性敘述
 _VERIFY_NARRATIVE_RE = re.compile(
+    # X/Y PASS 型
     r"\d+\s*/\s*\d+\s*(?:PASS|pass|通過|綠燈|綠)"
     r"|"
-    r"(?:pytest|tests?|單元測試|e2e|smoke|build|建置|verification|驗證)"
-    r"[^\n]{0,30}?"
-    r"(?:通過|passed?|succeeded|成功|PASS|綠燈|綠|ok\b)"
+    # N 項 PASS / N 項通過（doc/security 類常用）
+    r"\d+\s*項\s*(?:PASS|pass|通過|綠燈|OK|ok)"
     r"|"
-    r"(?:all\s+(?:tests?|green)|全部\s*通過|測試\s*綠燈|驗證\s*通過)",
+    # 「pytest 通過」「驗證通過」類
+    r"(?:pytest|tests?|單元測試|e2e|smoke|build|建置|verification|驗證|掃描|grep)"
+    r"[^\n]{0,30}?"
+    r"(?:通過|passed?|succeeded|成功|PASS|綠燈|綠|ok\b|無\s*殘留|乾淨|clean)"
+    r"|"
+    # 整體性敘述
+    r"(?:all\s+(?:tests?|green)|全部\s*通過|測試\s*綠燈|驗證\s*通過|工作樹\s*乾淨|無\s*untracked|clean\s+working\s+tree)",
     re.IGNORECASE,
 )
 
@@ -99,12 +113,15 @@ def _has_completion_claim(state: Dict[str, Any], stop_text: str) -> bool:
 
 
 def _has_state_change(state: Dict[str, Any]) -> bool:
-    """真的有檔案被改 — modified_files 任一非空，或 trace 有 Edit/Write 事件。
-    兩個來源任一命中即可，避免單點失效（state file 被擾動）誤判。
+    """真的有檔案被改 — 僅看 trace 最近 RECENT_WINDOW 條（turn-scoped）。
+
+    BUG FIX (2026-04-28)：原版同時看 modified_files（session-cumulative）和
+    完整 tool_trace（也是 session-cumulative），導致任何 turn 內出現完成口風 +
+    session 早期某 turn 寫過檔，就會觸發 BLOCK 無限循環。改成只看最近 N 條
+    trace（約一個 turn 的工具呼叫量），仍能捕捉「同 turn 寫檔不驗證」的真實風險。
     """
-    if _get_modified_files(state):
-        return True
-    for t in _get_tool_trace(state):
+    RECENT_WINDOW = 10
+    for t in _get_tool_trace(state)[-RECENT_WINDOW:]:
         if t.get("tool") in _STATE_CHANGE_TOOLS:
             return True
     return False
