@@ -54,7 +54,9 @@ SKIP_PREFIXES = ("SPEC_", "_")  # Files to skip during atom scanning
 REQUIRED_METADATA = {"Scope", "Confidence", "Trigger", "Last-used"}
 OPTIONAL_METADATA = {"Confirmations", "ReadHits", "Privacy", "Source", "Type", "Created", "TTL",
                      "Expires-at", "Tags", "Related", "Supersedes", "Quality"}
-REQUIRED_SECTIONS = {"知識", "行動"}
+# 行動 always required; 知識 or 印象（指標型 atom 變體）二選一即可
+REQUIRED_SECTIONS = {"行動"}
+KNOWLEDGE_SECTIONS = {"知識", "印象"}
 VALID_CONFIDENCE = {"[固]", "[觀]", "[臨]"}
 VALID_TYPES = {"semantic", "episodic", "procedural"}
 VALID_PRIVACY = {"public", "internal", "sensitive"}
@@ -375,6 +377,9 @@ def validate_format(atom: AtomMetadata) -> List[Issue]:
     for section in REQUIRED_SECTIONS:
         if section not in atom.sections_found:
             issues.append(Issue(rel, "warning", "format", f"缺少建議區段: ## {section}"))
+    # 知識 / 印象 二選一（指標型 atom 用 ## 印象 取代 ## 知識）
+    if not (atom.sections_found & KNOWLEDGE_SECTIONS):
+        issues.append(Issue(rel, "warning", "format", "缺少建議區段: ## 知識 或 ## 印象"))
 
     # Line count
     if atom.line_count > ATOM_MAX_LINES:

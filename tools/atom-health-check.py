@@ -29,7 +29,9 @@ SKIP_FILES = {"MEMORY.md", "SPEC_Atomic_Memory_System.md", "_ATOM_INDEX.md"}
 SKIP_DIRS = {"_distant", "_staging", "_vectordb", "episodic", "_reference", "templates"}
 # Central hub atoms — skip reverse-link warnings for these
 # (hub docs don't back-reference every detail doc that points to them)
-CENTRAL_HUBS = {"decisions", "decisions-architecture", "spec"}
+# - decisions / decisions-architecture / spec：全域決策與規範 hub
+# - feedback-pointer-atom：指標型 atom 設計原則 meta-rule，被多個 atoms 引用作為設計依據
+CENTRAL_HUBS = {"decisions", "decisions-architecture", "spec", "feedback-pointer-atom"}
 
 
 def parse_memory_index(root: Path) -> dict[str, str]:
