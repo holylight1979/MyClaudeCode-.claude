@@ -118,6 +118,7 @@ Session Ready
 - searcher.py — semantic + ranked + section-level（5-factor: semantic 0.45 + recency 0.15 + intent 0.20 + confidence 0.10 + confirmations 0.10）；排名用 Confirmations（高訊號），ReadHits 可選輕微加分
 - reranker.py — LLM query rewrite + re-rank
 - vector-observation-summary.py — Wave 3a 4 天觀察期分析器（2026-04-28）。讀 `~/.claude/Logs/vector-observation*.log`（main hook + SessionStart probe），統計 vector 命中率 / fallback 比例 / per-fn 分布，自動判定 **REVIVE**（命中率 ≥ 50%）/ **RETIRE**（≤ 5% 且 fallback ≥ 80%）/ **GRAY**（5–15% 灰色地帶詢使用者）。配合 plan v2.1 §修訂 #4 D3.5–D5；不依賴使用者察覺 silent failure。`workflow-guardian.py:617` 路徑修正（舊 `tools/vector-service.py` 不存在 → 真檔 `tools/memory-vector-service/service.py`）+ `vector_ready.flag` 改為「health 200 才寫」杜絕 12 天假陽性同期完成
+- vector-probe-burst.py — Wave 3b probe burst（2026-04-28）。90 query × 2 path = 180 calls 透過 `wg_intent._search_episodic_context` / `_semantic_search` 跑完整 vector pipeline，加速 4 天觀察期至單 session。三 bucket：A 高機率命中（與已有 atom/episodic 重疊）/ B 中機率 / C 低機率（莎士比亞、量子糾纏等 out-of-domain）。Pre-flight 健康檢查 + 自動啟動 service。為 `vector-observation-summary.py` 提供統計樣本，本次跑出 **87.6% 命中率 → REVIVE 決策**。Log schema 純 metadata，不寫 query 內容（紅隊驗證通過）。
 
 ### Ollama 雙 Backend
 - ollama_client.py — singleton，generate()/chat()/embed()

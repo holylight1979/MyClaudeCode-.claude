@@ -14,3 +14,4 @@
 | 3 | silent-failures.md | 靜默失敗案例（看似正常實際沒生效） | 靜默, silent, 看似正常, setdefault, knowledge_queue為空, 吞掉錯誤 |
 | 4 | cognitive-patterns.md | 認知偏差案例（過度工程、代理指標） | 過度工程, 代理指標, proxy metric, AI看不懂, AI在打轉, 品質回饋 |
 | 5 | misdiagnosis-verify-first.md | 誤診案例 + 驗證優先原則 | 誤診, 驗證優先, verify first, 診斷失敗, 先射箭再畫靶, 假設錯誤就規劃, 過度規劃, 沒驗證就動手 |
+| 6 | vectordb-silent-failure-2026-04.md | VectorDB 12 天假陽性 — 路徑寫死 + flag 無 gate；Wave 3a 修補 + Wave 3b REVIVE 決策 | vector, lance, silent failure, vector_ready, flag, 假陽性, bg subprocess, DEVNULL, probe burst |
