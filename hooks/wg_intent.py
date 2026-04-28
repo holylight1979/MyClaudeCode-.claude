@@ -7,8 +7,11 @@ MCP Health Check、Vector Service Management。
 """
 
 import json
+import logging
+import logging.handlers
 import re
 import sys
+import time
 import urllib.request
 import urllib.error
 from collections import Counter
@@ -17,6 +20,73 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from wg_paths import CLAUDE_DIR, WORKFLOW_DIR
 from wg_core import _atom_debug_error
+
+# ─── Vector Observation Log (Wave 3a 2026-04-28) ─────────────────────────────
+# 4-day sampling for vector subsystem decision (revive / retire / gray).
+# Main-hook entry points write here via RotatingFileHandler. The SessionStart
+# bg subprocess writes to a sibling file `vector-observation-probe.log` to
+# avoid rollover races (separate fd ownership).
+
+_VECTOR_OBS_LOG = CLAUDE_DIR / "Logs" / "vector-observation.log"
+_vector_obs_logger: Optional[logging.Logger] = None
+_vector_obs_logger_failed: bool = False  # F2 sentinel — short-circuit retries
+
+
+def _get_vector_obs_logger() -> Optional[logging.Logger]:
+    """Lazy init rotating-file logger. Fail-open + sentinel guard."""
+    global _vector_obs_logger, _vector_obs_logger_failed
+    if _vector_obs_logger is not None:
+        return _vector_obs_logger
+    if _vector_obs_logger_failed:
+        return None
+    try:
+        _VECTOR_OBS_LOG.parent.mkdir(parents=True, exist_ok=True)
+        lg = logging.getLogger("wg.vector_obs")
+        lg.setLevel(logging.INFO)
+        lg.propagate = False
+        if not lg.handlers:
+            h = logging.handlers.RotatingFileHandler(
+                str(_VECTOR_OBS_LOG),
+                maxBytes=2_000_000,
+                backupCount=3,
+                encoding="utf-8",
+                delay=True,
+            )
+            h.setFormatter(logging.Formatter("%(message)s"))
+            lg.addHandler(h)
+        _vector_obs_logger = lg
+        return lg
+    except Exception:
+        _vector_obs_logger_failed = True
+        return None
+
+
+def _log_vector_obs(
+    session_id: Optional[str],
+    fn: str,
+    flag_state: str,
+    result_count: int,
+    fallback_used: bool,
+    extra: Optional[Dict[str, Any]] = None,
+) -> None:
+    """Append observation record. Fail-open — never raises to caller."""
+    lg = _get_vector_obs_logger()
+    if lg is None:
+        return
+    rec: Dict[str, Any] = {
+        "ts": time.time(),
+        "session_id": session_id or "",
+        "fn": fn,
+        "flag_state": flag_state,
+        "result_count": result_count,
+        "fallback_used": fallback_used,
+    }
+    if extra:
+        rec.update(extra)
+    try:
+        lg.info(json.dumps(rec, ensure_ascii=False))
+    except Exception:
+        pass
 
 # ─── Intent Classifier (v2.1 Sprint 2) ───────────────────────────────────────
 
@@ -97,17 +167,20 @@ def _update_topic_tracker(
 
 
 def _search_episodic_context(
-    prompt: str, config: Dict[str, Any]
+    prompt: str, config: Dict[str, Any], session_id: Optional[str] = None
 ) -> List[Dict[str, Any]]:
     """Query /search/episodic for related past sessions. First-prompt only."""
     vs_config = config.get("vector_search", {})
     if not vs_config.get("enabled", True):
+        _log_vector_obs(session_id, "_search_episodic_context", "disabled", 0, True)
         return []
     sc_config = config.get("session_context", {})
     if not sc_config.get("enabled", True):
+        _log_vector_obs(session_id, "_search_episodic_context", "disabled", 0, True)
         return []
     # V3/1.5C: Quick flag check — skip expensive network call if vector not ready
     if not (WORKFLOW_DIR / "vector_ready.flag").exists():
+        _log_vector_obs(session_id, "_search_episodic_context", "no_flag", 0, True)
         return []
 
     port = vs_config.get("service_port", 3849)
@@ -123,9 +196,18 @@ def _search_episodic_context(
         url = f"http://127.0.0.1:{port}/search/episodic?{params}"
         req = urllib.request.Request(url, headers={"Accept": "application/json"})
         with urllib.request.urlopen(req, timeout=timeout_s) as resp:
-            return json.loads(resp.read())
+            results = json.loads(resp.read())
+        _log_vector_obs(
+            session_id, "_search_episodic_context", "ready",
+            len(results) if isinstance(results, list) else 0, False,
+        )
+        return results
     except Exception as e:
         _atom_debug_error("注入:_search_episodic_context", e)
+        _log_vector_obs(
+            session_id, "_search_episodic_context", "error", 0, True,
+            extra={"err": str(e)[:120]},
+        )
         return []
 
 
@@ -309,6 +391,7 @@ def _semantic_search(
     prompt: str, config: Dict[str, Any], intent: str = "general",
     user: Optional[str] = None,
     roles: Optional[List[str]] = None,
+    session_id: Optional[str] = None,
 ) -> List[Tuple[str, str, List[str], List[Dict]]]:
     """Query Memory Vector Service with intent-aware ranked search (v2.18).
 
@@ -320,9 +403,13 @@ def _semantic_search(
     """
     vs_config = config.get("vector_search", {})
     if not vs_config.get("enabled", True):
+        _log_vector_obs(session_id, "_semantic_search", "disabled", 0, True,
+                        extra={"intent": intent})
         return []
     # V3/1.5C: Quick flag check — skip expensive network call if vector not ready
     if not (WORKFLOW_DIR / "vector_ready.flag").exists():
+        _log_vector_obs(session_id, "_semantic_search", "no_flag", 0, True,
+                        extra={"intent": intent})
         return []
     port = vs_config.get("service_port", 3849)
     top_k = vs_config.get("search_top_k", 5)
@@ -378,9 +465,17 @@ def _semantic_search(
                 sections = r.get("sections", []) if use_sections else []
                 entries.append((name, r.get("file_path", ""), [], sections))
                 seen.add(name)
+        _log_vector_obs(
+            session_id, "_semantic_search", "ready", len(entries), False,
+            extra={"intent": intent, "use_sections": use_sections},
+        )
         return entries
     except Exception as e:
         _atom_debug_error("注入:_semantic_search", e)
+        _log_vector_obs(
+            session_id, "_semantic_search", "error", 0, True,
+            extra={"intent": intent, "err": str(e)[:120]},
+        )
         return []
 
 

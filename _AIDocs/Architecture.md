@@ -27,7 +27,7 @@
 | `wg_roles.py` | ~210 | V4 角色機制（雙向認證、personal dir bootstrap） |
 | `wg_core.py` | ~370 | config / state IO / output / debug / promotion audit |
 | `wg_atoms.py` | ~559 | 索引解析 / trigger 匹配 / ACT-R / section 注入 |
-| `wg_intent.py` | ~400 | intent 分類 / session context / MCP / vector |
+| `wg_intent.py` | ~430 | intent 分類 / session context / MCP / vector（2026-04-28 Wave 3a：vector 進入點加觀察 log → `~/.claude/Logs/vector-observation.log`，schema `{ts, session_id, fn, flag_state, result_count, fallback_used}`，4 天採樣後由 `tools/vector-observation-summary.py` 自動判定 REVIVE/RETIRE/GRAY） |
 | `wg_extraction.py` | ~295 | per-turn 萃取 / worker 管理 / failure 偵測 |
 | `wg_hot_cache.py` | ~160 | Hot Cache 讀寫 / 注入（含 AUTO-DRAFT tag 硬規則） |
 | `wg_docdrift.py` | ~160 | src → _AIDocs 映射 drift 偵測 |

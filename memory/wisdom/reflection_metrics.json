@@ -4,7 +4,7 @@
     "first_approach_accuracy": {
       "single_file": {
         "correct": 362,
-        "total": 377
+        "total": 378
       },
       "multi_file": {
         "correct": 4,
@@ -17,11 +17,11 @@
     },
     "over_engineering_rate": {
       "user_reverted_or_simplified": 0,
-      "total_suggestions": 440
+      "total_suggestions": 441
     },
     "silence_accuracy": {
       "held_back_ok": 366,
-      "held_back_missed": 25
+      "held_back_missed": 26
     }
   },
   "blind_spots": [
@@ -29,7 +29,7 @@
     "architecture 首次正確率 10%"
   ],
   "arch_sensitivity_elevated": true,
-  "last_reflection": "2026-04-28T01:17:02.357935+00:00",
+  "last_reflection": "2026-04-28T01:23:45.214894+00:00",
   "v41_extraction": {
     "total_written": 0,
     "total_rejected": 0,
@@ -1409,6 +1409,44 @@
           "trust": 1.0,
           "weighted_total": 0.85
         }
+      },
+      {
+        "session_id": "9f554cee-4613-4db2-aafc-34be1768a7e1",
+        "ts": "2026-04-28T01:23:45.201954+00:00",
+        "prompt_count": 2,
+        "extract_triggered": 0,
+        "extract_written": 0,
+        "dedup_hit": 0,
+        "rejected_24h": 0,
+        "avg_l2_conf": 0.0,
+        "token_used": 0,
+        "scores": {
+          "density": 0.0,
+          "precision_proxy": 1.0,
+          "novelty": 1.0,
+          "cost_efficiency": 1.0,
+          "trust": 1.0,
+          "weighted_total": 0.85
+        }
+      },
+      {
+        "session_id": "aa5f5bbd-2da4-4b01-9cb5-17f3c6701a3d",
+        "ts": "2026-04-28T01:38:50.116266+00:00",
+        "prompt_count": 14,
+        "extract_triggered": 1,
+        "extract_written": 0,
+        "dedup_hit": 0,
+        "rejected_24h": 0,
+        "avg_l2_conf": 0.0,
+        "token_used": 74,
+        "scores": {
+          "density": 0.0713,
+          "precision_proxy": 1.0,
+          "novelty": 1.0,
+          "cost_efficiency": 0.6917,
+          "trust": 1.0,
+          "weighted_total": 0.8144
+        }
       }
     ]
   },
@@ -1453,15 +1491,25 @@
         "sandbox_failures": 0,
         "behavior_gap_blocks": 4,
         "quality_gap_advises": 0
+      },
+      {
+        "session_id": "9f554cee-4613-4db2-aafc-34be1768a7e1",
+        "ts": "2026-04-28T01:23:45+00:00",
+        "audits_skipped_by_score": 0,
+        "audits_total_attempted": 2,
+        "empty_returns": 0,
+        "sandbox_failures": 0,
+        "behavior_gap_blocks": 5,
+        "quality_gap_advises": 0
       }
     ],
     "phase6_trigger_state": {
       "last_fired": [
         "C3"
       ],
-      "last_check_S_count": 4,
-      "last_check_A_count": 44,
-      "last_check_ts": "2026-04-28T01:19:07+00:00",
+      "last_check_S_count": 5,
+      "last_check_A_count": 50,
+      "last_check_ts": "2026-04-28T01:59:21+00:00",
       "last_trigger_ts": "2026-04-27T05:52:20+00:00"
     }
   }

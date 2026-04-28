@@ -117,6 +117,7 @@ Session Ready
 - indexer.py — atom→chunk→embed→LanceDB
 - searcher.py — semantic + ranked + section-level（5-factor: semantic 0.45 + recency 0.15 + intent 0.20 + confidence 0.10 + confirmations 0.10）；排名用 Confirmations（高訊號），ReadHits 可選輕微加分
 - reranker.py — LLM query rewrite + re-rank
+- vector-observation-summary.py — Wave 3a 4 天觀察期分析器（2026-04-28）。讀 `~/.claude/Logs/vector-observation*.log`（main hook + SessionStart probe），統計 vector 命中率 / fallback 比例 / per-fn 分布，自動判定 **REVIVE**（命中率 ≥ 50%）/ **RETIRE**（≤ 5% 且 fallback ≥ 80%）/ **GRAY**（5–15% 灰色地帶詢使用者）。配合 plan v2.1 §修訂 #4 D3.5–D5；不依賴使用者察覺 silent failure。`workflow-guardian.py:617` 路徑修正（舊 `tools/vector-service.py` 不存在 → 真檔 `tools/memory-vector-service/service.py`）+ `vector_ready.flag` 改為「health 200 才寫」杜絕 12 天假陽性同期完成
 
 ### Ollama 雙 Backend
 - ollama_client.py — singleton，generate()/chat()/embed()

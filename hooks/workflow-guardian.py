@@ -614,11 +614,16 @@ def handle_session_start(input_data: Dict[str, Any], config: Dict[str, Any]) -> 
             and not state.get("_skip_vector_init")):
         try:
             vs_port = config.get("vector_search", {}).get("service_port", 3849)
-            vs_script = str(CLAUDE_DIR / "tools" / "vector-service.py")
+            # Wave 3a fix (2026-04-28): real service is at memory-vector-service/service.py.
+            # The old `tools/vector-service.py` path never existed → subprocess.Popen
+            # silently failed for 12 days while the unconditional flag write produced
+            # false-positive readiness. Path fix + ready-gate below.
+            vs_script = str(CLAUDE_DIR / "tools" / "memory-vector-service" / "service.py")
             flag_path = str(WORKFLOW_DIR / "vector_ready.flag")
-            # Inline script: health check → spawn if needed → poll → flag → warmup
+            probe_log_path = str(CLAUDE_DIR / "Logs" / "vector-observation-probe.log")
+            # Inline script: health check → spawn if needed → poll → flag (gated) → warmup → probe
             _bg_code = f"""
-import urllib.request, urllib.error, subprocess, sys, time, os
+import urllib.request, urllib.error, urllib.parse, subprocess, sys, time, os, json, re
 from pathlib import Path
 
 port = {vs_port}
@@ -644,20 +649,75 @@ except Exception:
     except OSError:
         sock.close()  # Port in use — service likely starting
 
-# 3. Poll ready (30 × 0.5s = 15s max)
+# 3. Poll ready (30 × 0.5s = 15s max). Track success — DO NOT write flag if never ready.
+ready = False
 for _ in range(30):
     try:
         urllib.request.urlopen(f"{{base}}/health", timeout=2)
+        ready = True
         break
     except Exception:
         time.sleep(0.5)
 
-# 4. Write ready flag
-Path({repr(flag_path)}).write_text("ready", encoding="utf-8")
+# 4. Write ready flag ONLY if health 200 succeeded (Wave 3a fix).
+if ready:
+    try:
+        Path({repr(flag_path)}).write_text("ready", encoding="utf-8")
+    except Exception:
+        pass
 
-# 5. Warmup query
+# 5. Warmup query (only if ready)
+if ready:
+    try:
+        urllib.request.urlopen(f"{{base}}/search?q=warmup&top_k=1&min_score=0.99", timeout=15)
+    except Exception:
+        pass
+
+# 6. SessionStart observation probe — known query, log vector vs keyword fallback.
+#    Records to vector-observation-probe.log (separate file from main hook to avoid
+#    rollover races with RotatingFileHandler).
+probe_q = "workflow guardian SessionStart 機制"
+vec_count = -1
+fallback_used = not ready
+if ready:
+    try:
+        params = urllib.parse.urlencode({{"q": probe_q, "top_k": 5, "min_score": 0.5}})
+        with urllib.request.urlopen(f"{{base}}/search/ranked?{{params}}", timeout=10) as r:
+            data = json.loads(r.read())
+            vec_count = len(data) if isinstance(data, list) else 0
+    except Exception:
+        vec_count = -1
+        fallback_used = True
+
+# Keyword fallback count: file-grep over ~/.claude/memory/**/*.md
+kw_count = 0
+mem_dir = Path({repr(str(CLAUDE_DIR / "memory"))})
 try:
-    urllib.request.urlopen(f"{{base}}/search?q=warmup&top_k=1&min_score=0.99", timeout=15)
+    pattern = re.compile("workflow|guardian|SessionStart", re.IGNORECASE)
+    for md in mem_dir.rglob("*.md"):
+        try:
+            if pattern.search(md.read_text(encoding="utf-8", errors="ignore")):
+                kw_count += 1
+        except Exception:
+            pass
+except Exception:
+    pass
+
+try:
+    log_p = Path({repr(probe_log_path)})
+    log_p.parent.mkdir(parents=True, exist_ok=True)
+    rec = {{
+        "ts": time.time(),
+        "session_id": {repr(session_id)},
+        "fn": "session_start_probe",
+        "flag_state": "ready" if ready else "no_flag",
+        "result_count": vec_count,
+        "fallback_used": fallback_used,
+        "kw_count": kw_count,
+        "probe_q": probe_q,
+    }}
+    with open(str(log_p), "a", encoding="utf-8") as f:
+        f.write(json.dumps(rec, ensure_ascii=False) + "\\n")
 except Exception:
     pass
 """
@@ -825,7 +885,7 @@ def handle_user_prompt_submit(
     budget = max(budget - hot_cache_tokens, 500)  # V3: deduct hot cache tokens
     if not state.get("session_context_injected", False):
         state["session_context_injected"] = True
-        episodic_results = _search_episodic_context(prompt, config)
+        episodic_results = _search_episodic_context(prompt, config, session_id=session_id)
         if episodic_results:
             # Build compact context block
             ctx_lines = _build_session_context(episodic_results)
@@ -993,6 +1053,7 @@ def handle_user_prompt_submit(
     sem_atoms = _semantic_search(
         prompt, config, intent=intent,
         user=_v4_user, roles=_v4_roles,
+        session_id=session_id,
     )
     # v2.18: Build section hints map from semantic search results
     section_hints: Dict[str, List[Dict]] = {}
