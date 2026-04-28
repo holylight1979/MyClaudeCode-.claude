@@ -58,7 +58,14 @@
       "Bash(rm -f /c/Users/holylight/.claude/tests/regression/test_v4_atoms_unchanged.py)",
       "Bash(rm -f /c/Users/holylight/.claude/tests/fixtures/v4_atoms_baseline.jsonl)",
       "Bash(rm -rf /c/Users/holylight/.claude/tests/regression/__pycache__)",
-      "Bash(rmdir /c/Users/holylight/.claude/tests/regression)"
+      "Bash(rmdir /c/Users/holylight/.claude/tests/regression)",
+      "Bash(rmdir ~/.claude/memory/_distant/)",
+      "Bash(rm ~/.claude/memory/_vectordb/service.pid)",
+      "Bash(rmdir c:/tmp/docs-progg/.claude/memory/shared/_pending_review/)",
+      "Bash(mkdir -p ~/.claude/projects/_archived)",
+      "Bash(mv ~/.claude/projects/c--TSG ~/.claude/projects/_archived/c--TSG)",
+      "Bash(rm ~/.claude/plans/memory-cleanup-2026-04-27/_session_lock_wave2_a.txt)",
+      "Bash(git -C ~/.claude status --short)"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [
@@ -76,7 +83,9 @@
       "c:\\tmp\\docs-progg\\.claude\\memory\\shared\\_pending_review",
       "C:\\Users\\holylight\\.claude\\journals",
       "C:\\Users\\holylight\\.claude\\tools",
-      "c:\\Users\\holylight\\.claude\\.claude\\memory"
+      "c:\\Users\\holylight\\.claude\\.claude\\memory",
+      "C:\\Users\\holylight\\.claude\\plans\\memory-cleanup-2026-04-27",
+      "C:\\Users\\holylight\\.claude\\_AIDocs\\DevHistory"
     ]
   },
   "hooks": {

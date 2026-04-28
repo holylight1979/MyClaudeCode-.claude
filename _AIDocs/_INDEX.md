@@ -10,7 +10,7 @@
 | # | 文件名稱 | 說明 | keywords |
 |---|---------|------|----------|
 | 1 | Architecture.md | 系統架構總覽：原子記憶 V3.1 + Workflow Guardian + Wisdom Engine + 三層即時管線 + Hot Cache + SessionStart 去重 + 專案自治層 | 架構, hooks, skill, rules, 事件驅動, wisdom engine, 規則模組, guardian, 覆轍偵測, 自我迭代自動化, 專案自治, hot cache, quick extract, 即時管線 |
-| 2 | Project_File_Tree.md | 完整目錄結構 | 目錄結構, 檔案位置, 資料夾, 在哪裡 |
+| 2 | Project_File_Tree.md | 頂層目錄角色說明（30 行；詳細請跑 `tree -L 3`） | 目錄角色, 頂層結構說明 |
 | 3 | _CHANGELOG.md | 變更記錄（最近 ~8 筆） | 變更記錄, 最近更新, 改了什麼 |
 | 4 | _CHANGELOG_ARCHIVE.md | 變更記錄封存 | 歷史變更, 舊版記錄 |
 | 5 | ../README.md | 安裝 + 3 步上手（人類入門，80 行） | 安裝, 入門, 使用方式, 快速開始 |

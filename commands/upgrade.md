@@ -130,8 +130,9 @@ $ARGUMENTS
 
 掃描 `_AIDocs/` 目錄：
 - 比對 Architecture.md, Project_File_Tree.md, _INDEX.md, _CHANGELOG.md
+  - **Project_File_Tree.md 注意**：2026-04 起為「頂層目錄角色說明」（30 行內，路徑用 `~/.claude/` 不含帳號名）；不再是完整檔樹快照，僅當頂層目錄角色變動或新增模組時才需更新
 - 新增的文件 → 複製
-- 已有的文件 → 替換（但需做帳號名稱替換）
+- 已有的文件 → 替換（但需做帳號名稱替換；Project_File_Tree.md 已無帳號名可替換）
 
 ### 2.7 系統文件與說明文檔
 
@@ -276,7 +277,7 @@ rm -rf ~/.claude/ && cp -r ~/.claude-backup-{版本}-{日期}/ ~/.claude/
 4. **Phase 3 替換**：直接 cp 覆蓋，涵蓋四類：
    - 程式碼/腳本：hooks、tools（有本地改進的保留現有，標注差異）
    - 系統文件：README.md、Install-forAI.md（版號/特性/安裝步驟須與程式碼一致）
-   - _AIDocs 文件：Architecture.md、Project_File_Tree.md 等（帳號名需替換）
+   - _AIDocs 文件：Architecture.md、Project_File_Tree.md 等（其他檔案的帳號名需替換；Project_File_Tree.md 已用 `~/.claude/`，不需）
    - 設定檔：.gitignore（合併新增規則，不刪現有）、.mcp.json（帳號替換）
 5. **Phase 4 手動合併 settings.json**：
    - 只做差異部分的 surgical edit（不整檔替換）

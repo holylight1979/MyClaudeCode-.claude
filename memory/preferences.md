@@ -5,7 +5,7 @@
 - Trigger: 偏好, 風格, 習慣, 語言, 回應, 執P, 執驗上P, 上GIT
 - Last-used: 2026-04-27
 - Confirmations: 0
-- ReadHits: 156
+- ReadHits: 157
 - Type: preference
 
 - Related: feedback-decision-no-tech-menu, feedback-no-outsource-rigor, feedback-git-log-chinese, feedback-fix-on-discovery, feedback-humanist-decision-framing

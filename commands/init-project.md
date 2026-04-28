@@ -50,7 +50,7 @@
 _AIDocs/
   _INDEX.md          — 文件索引（含追蹤用途速查）
   _CHANGELOG.md      — 變更記錄（初始條目：「知識庫建立」）
-  Project_File_Tree.md — 專案結構摘要
+  Project_File_Tree.md — 頂層目錄角色說明（30 行內；完整檔樹用 `tree -L 3`）
 ```
 
 `_INDEX.md` 模板：
@@ -67,7 +67,7 @@ _AIDocs/
 
 | # | 文件名稱 | 說明 |
 |---|---------|------|
-| 1 | Project_File_Tree.md | 專案資料夾結構摘要 |
+| 1 | Project_File_Tree.md | 頂層目錄角色說明（30 行內，詳細跑 `tree -L 3`） |
 
 ---
 

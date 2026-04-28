@@ -1,7 +1,7 @@
 # /memory-session-score — V4.1 P4 Session 評分檢視
 
 > 列出最近的 session 評價：5 維度加權（density / precision / novelty / cost / trust）→ weighted_total。
-> 對應 plan `merry-riding-toucan.md` 子任務 A Deliverable 5。
+> 對應 plan `_AIDocs/DevHistory/atom-v4-phases/merry-riding-toucan.md` 子任務 A Deliverable 5。
 
 ---
 

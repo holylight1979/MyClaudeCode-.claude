@@ -1,7 +1,7 @@
 # Claude Code 全域設定 — 核心架構（Index）
 
 > 本檔為**索引型**。穩定子系統細節放 `DevHistory/` 子檔；本檔只留現役、演化中 feature + 關鍵索引。
-> 詳盡規範：`SPEC_ATOM_V4.md`（V4 原子記憶）、`rules/core.md`（行為規則）、`Project_File_Tree.md`（完整檔樹）。
+> 詳盡規範：`SPEC_ATOM_V4.md`（V4 原子記憶）、`rules/core.md`（行為規則）、`Project_File_Tree.md`（頂層目錄角色說明，30 行；完整檔樹用 `tree -L 3`）。
 
 ## Hooks 系統
 
