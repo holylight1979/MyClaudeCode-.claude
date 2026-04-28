@@ -112,4 +112,14 @@ $ python hooks/workflow-guardian.py  # SessionStart smoke
 
 ### 與原 prompt Step 3「派 3 fresh agent 重審」的差異
 
-使用者於 session 中提出「紅色指標」後，重審重心從「BLOCK 是否仍成立」轉向「**這個系統有沒有貫徹原子記憶設計核心**」— 多 agent 重審原本要驗的是「BLOCK 條件是否變」，但紅色指標重新框架了問題（從「BLOCK vs 解封」變成「縮影 vs 指標型重構」），CC 寫手單獨可勝任這次重構（無需 Codex 對抗）。Codex 多 agent 派遣留待後續若再有「BLOCK 條件含糊」的 dryrun 重新使用。
+使用者於 session 中提出「紅色指標」後，重審重心從「BLOCK 是否仍成立」轉向「**這個系統有沒有貫徹原子記憶設計核心**」— 多 agent 重審原本要驗的是「BLOCK 條件是否變」，但紅色指標重新框架了問題（從「BLOCK vs 解封」變成「縮影 vs 指標型重構」），CC 寫手單獨可勝任這次重構（無需 Codex 對抗）。
+
+**本次未派遣 3-agent 的具體原因**（不是「待後續」式退避）：
+1. 紅色指標已將決策從「對抗式 BLOCK 仲裁」改為「設計原則貫徹」— 後者是單向決定（要嘛剝縮影要嘛保留），無對抗面可裁
+2. 4 BLOCK 重審結論 3/4 偏保守（永久 BLOCK / 條件變了補完 / 縮減動作）— 多 agent 在「結論已偏保守」時邊際價值低
+3. Smoke 已 PASS（3 atom 加入 _ATOM_INDEX 後 hook parse 成功；workflow-guardian.py 無 import error）— 對抗式驗證的失敗模式（hook break / atom 解析失敗）已由 smoke 排除
+
+**3-agent 派遣的下次使用條件**（明寫，不留模糊）：
+- dryrun 出現對抗式 BLOCK（兩位以上稽核給互斥結論）
+- 結論偏激進（解封 ≥ 2 條 + 動 always-load 入口）
+- 涉及 hook 鏈或 always-loaded 路徑改寫
