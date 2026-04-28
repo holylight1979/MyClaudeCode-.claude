@@ -319,7 +319,127 @@ def stale_check(atoms: dict[str, Path], days: int = 60) -> list[dict]:
     return stale
 
 
-def full_report(atoms: dict[str, Path], aliases: dict[str, str] | None = None) -> dict:
+def _strip_noise_lines(text: str) -> str:
+    """Remove pointer / @import / pure-path lines so they don't inflate ratios."""
+    kept = []
+    for line in text.splitlines():
+        if any(p.match(line) for p in NOISE_LINE_PATTERNS):
+            continue
+        kept.append(line)
+    return "\n".join(kept).strip()
+
+
+def _extract_section(text: str, heading: str) -> str:
+    """Extract content of `## {heading}` section (until next `## ` or EOF)."""
+    pattern = re.compile(
+        rf"^##\s+{re.escape(heading)}\s*$(.*?)(?=^##\s|\Z)",
+        re.MULTILINE | re.DOTALL,
+    )
+    m = pattern.search(text)
+    return m.group(1).strip() if m else ""
+
+
+def extract_atom_sections(atom_path: Path) -> dict[str, str]:
+    """Return {section_name: cleaned_text} for SHADOW_SECTIONS present in atom.
+    Empty / too-short sections are skipped.
+    """
+    text = atom_path.read_text(encoding="utf-8")
+    out = {}
+    for sec in SHADOW_SECTIONS:
+        body = _extract_section(text, sec)
+        if not body:
+            continue
+        cleaned = _strip_noise_lines(body)
+        if len(cleaned) < SHADOW_MIN_LEN:
+            continue
+        out[sec] = cleaned
+    return out
+
+
+def split_md_subsections(md_path: Path) -> list[tuple[str, str]]:
+    """Split _AIDocs md by `## ` heading. Return [(heading, body), ...].
+    Body before the first `## ` (under H1) is included as ('(preamble)', body).
+    """
+    text = md_path.read_text(encoding="utf-8")
+    sections: list[tuple[str, str]] = []
+    parts = re.split(r"^(##\s+.+)$", text, flags=re.MULTILINE)
+    # parts[0] = preamble (before first ## ); then alternating (heading, body)
+    if parts and parts[0].strip():
+        preamble = parts[0].strip()
+        if len(preamble) >= SHADOW_MIN_LEN:
+            sections.append(("(preamble)", preamble))
+    for i in range(1, len(parts), 2):
+        heading = parts[i].lstrip("#").strip()
+        body = parts[i + 1].strip() if i + 1 < len(parts) else ""
+        if len(body) >= SHADOW_MIN_LEN:
+            sections.append((heading, body))
+    return sections
+
+
+def _ratio_fast(a: str, b: str, threshold: float) -> float:
+    """SequenceMatcher.ratio with length-prefix early-exit.
+    If size disparity already precludes reaching threshold, return 0 without computing.
+    """
+    la, lb = len(a), len(b)
+    if la == 0 or lb == 0:
+        return 0.0
+    # Upper bound: 2 * min(la, lb) / (la + lb)
+    upper = (2 * min(la, lb)) / (la + lb)
+    if upper < threshold:
+        return 0.0
+    return SequenceMatcher(None, a, b, autojunk=False).ratio()
+
+
+def detect_shadow_atoms(
+    atoms: dict[str, Path],
+    aidocs_root: Path,
+    threshold: float = SHADOW_THRESHOLD_DEFAULT,
+    dry_run: bool = False,
+) -> list[dict]:
+    """For each (atom_section × md_subsection), compute SequenceMatcher.ratio.
+    - dry_run=True: return all pairs sorted by ratio desc (for distribution analysis)
+    - dry_run=False: return only pairs with ratio >= threshold (warnings)
+    """
+    if not aidocs_root.is_dir():
+        return []
+
+    md_subs: list[tuple[Path, str, str]] = []
+    for md in aidocs_root.rglob("*.md"):
+        # Skip _CHANGELOG / _CHANGELOG_ARCHIVE etc.; keep _INDEX.md (atoms may shadow it)
+        if md.name.startswith("_") and md.name != "_INDEX.md":
+            continue
+        for heading, body in split_md_subsections(md):
+            md_subs.append((md, heading, body))
+
+    results: list[dict] = []
+    for atom_name, atom_path in sorted(atoms.items()):
+        sections = extract_atom_sections(atom_path)
+        for sec_name, sec_text in sections.items():
+            for md_path, md_heading, md_body in md_subs:
+                # dry-run: use threshold=0 to capture full distribution
+                effective_thr = 0.0 if dry_run else threshold
+                r = _ratio_fast(sec_text, md_body, effective_thr)
+                if r >= (threshold if not dry_run else 0.0):
+                    if dry_run and r < 0.3:
+                        continue  # noise floor for dry-run report
+                    try:
+                        md_rel = str(md_path.relative_to(aidocs_root))
+                    except ValueError:
+                        md_rel = str(md_path)
+                    results.append({
+                        "atom": atom_name,
+                        "section": sec_name,
+                        "md_path": md_rel,
+                        "md_heading": md_heading,
+                        "ratio": round(r, 3),
+                    })
+
+    results.sort(key=lambda x: x["ratio"], reverse=True)
+    return results
+
+
+def full_report(atoms: dict[str, Path], aliases: dict[str, str] | None = None,
+                shadow_atoms: list[dict] | None = None) -> dict:
     """Generate complete health report."""
     aliases = aliases or {}
     report = {
@@ -330,6 +450,7 @@ def full_report(atoms: dict[str, Path], aliases: dict[str, str] | None = None) -
         "broken_refs": validate_refs(atoms, aliases),
         "missing_reverse_refs": check_reverse_refs(atoms, aliases),
         "stale_atoms": stale_check(atoms),
+        "shadow_atoms": shadow_atoms or [],
     }
 
     for name, path in sorted(atoms.items()):
@@ -410,6 +531,17 @@ def print_text_report(report: dict):
     else:
         print("── Stale Atoms: None ✅ ──\n")
 
+    # Shadow atoms (warning level — does NOT count toward issues_count)
+    if report.get("shadow_atoms"):
+        print("── Shadow Atoms (vs _AIDocs) ──")
+        for s in report["shadow_atoms"]:
+            print(f"  ⚠️  {s['atom']}::{s['section']}  ratio={s['ratio']:.2f}  → {s['md_path']}#{s['md_heading']}")
+        print()
+    elif "shadow_atoms" in report:
+        # Empty list means check ran but found nothing
+        # Skip the "(none)" line when --shadow-check was not requested at all.
+        pass
+
     # Summary
     issues_count = (
         len(report["broken_refs"])
@@ -430,6 +562,12 @@ def main():
     parser.add_argument("--auto-fix-broken", action="store_true", help="Auto-remove broken Related refs from source atoms (unresolvable targets)")
     parser.add_argument("--stale-check", action="store_true", help="List atoms with Last-used > 60 days")
     parser.add_argument("--stale-days", type=int, default=60, help="Stale threshold in days (default: 60)")
+    parser.add_argument("--shadow-check", action="store_true",
+                        help="Detect atom sections (## 印象 / ## 知識) shadowing _AIDocs md subsections")
+    parser.add_argument("--shadow-threshold", type=float, default=SHADOW_THRESHOLD_DEFAULT,
+                        help=f"Shadow similarity threshold (default: {SHADOW_THRESHOLD_DEFAULT})")
+    parser.add_argument("--shadow-dry-run", action="store_true",
+                        help="Print full ratio distribution (≥0.3) instead of filtering by threshold")
     parser.add_argument("--report", action="store_true", help="Full health report")
     parser.add_argument("--json", action="store_true", help="Output as JSON")
     parser.add_argument("--memory-root", type=str, default=None, help="Override memory root path")
@@ -457,7 +595,8 @@ def main():
     atoms = find_atoms(MEMORY_ROOT)
     aliases = parse_memory_index(MEMORY_ROOT)
 
-    if not any([args.validate_refs, args.fix_refs, args.auto_fix_broken, args.stale_check, args.report]):
+    if not any([args.validate_refs, args.fix_refs, args.auto_fix_broken,
+                args.stale_check, args.shadow_check, args.report]):
         parser.print_help()
         sys.exit(0)
 
@@ -514,8 +653,45 @@ def main():
         else:
             print(f"✅ No atoms older than {args.stale_days} days.")
 
+    elif args.shadow_check:
+        shadow = detect_shadow_atoms(
+            atoms, AIDOCS_ROOT,
+            threshold=args.shadow_threshold,
+            dry_run=args.shadow_dry_run,
+        )
+        if args.json:
+            print(json.dumps(shadow, indent=2, ensure_ascii=False))
+        elif args.shadow_dry_run:
+            print(f"=== Shadow Distribution (≥0.30, top {len(shadow)}) ===")
+            print(f"AIDocs root: {AIDOCS_ROOT}\n")
+            buckets = {"0.9+": 0, "0.8-0.9": 0, "0.7-0.8": 0, "0.5-0.7": 0, "0.3-0.5": 0}
+            for s in shadow:
+                r = s["ratio"]
+                if r >= 0.9: buckets["0.9+"] += 1
+                elif r >= 0.8: buckets["0.8-0.9"] += 1
+                elif r >= 0.7: buckets["0.7-0.8"] += 1
+                elif r >= 0.5: buckets["0.5-0.7"] += 1
+                else: buckets["0.3-0.5"] += 1
+            print("── Bucket counts ──")
+            for k, v in buckets.items():
+                print(f"  {k}: {v}")
+            print("\n── Top 30 pairs ──")
+            for s in shadow[:30]:
+                print(f"  {s['ratio']:.3f}  {s['atom']}::{s['section']}  → {s['md_path']}#{s['md_heading']}")
+        elif shadow:
+            print(f"⚠️ {len(shadow)} shadow warning(s) (threshold={args.shadow_threshold}):")
+            for s in shadow:
+                print(f"  {s['atom']}::{s['section']}  ratio={s['ratio']:.2f}  → {s['md_path']}#{s['md_heading']}")
+        else:
+            print(f"✅ No shadow atoms above threshold {args.shadow_threshold}.")
+
     elif args.report:
-        report = full_report(atoms, aliases)
+        shadow = []
+        if args.shadow_check or args.shadow_dry_run:
+            shadow = detect_shadow_atoms(atoms, AIDOCS_ROOT,
+                                         threshold=args.shadow_threshold,
+                                         dry_run=args.shadow_dry_run)
+        report = full_report(atoms, aliases, shadow_atoms=shadow)
         if args.json:
             print(json.dumps(report, indent=2, ensure_ascii=False))
         else:

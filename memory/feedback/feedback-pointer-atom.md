@@ -29,4 +29,4 @@
 - 印象段每條 ≤ 30 字 + → 指針；超過代表該住 md
 - 整檔 ≤ 20 行（含 frontmatter，行動段例外可放寬）；超過拆或剝知識
 - 既有 atom 改寫：先剝「知識描述」段（搬 _AIDocs/ 或刪）→ 保留印象 + 行動
-- 健康度檢測（follow-up）：atom-health-check.py 加「縮影偵測」— atom 段落與 _AIDocs/ 字串相似度 ≥ 0.7 標 warning
+- 健康度檢測：`atom-health-check.py --shadow-check` 已落地（2026-04-28）— 比對 atom `## 印象` / `## 知識` 段 vs `_AIDocs/**/*.md` 子段落 SequenceMatcher.ratio ≥ 0.7 標 warning（不影響 health 總計）。dry-run 全 31 atoms：top 0.333、buffer 充足，0.7 default 確認合理；偵測器以 deliberate copy 驗證 ratio=1.000 命中
