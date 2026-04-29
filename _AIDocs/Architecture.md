@@ -23,7 +23,7 @@
 
 | 模組 | 行數 | 職責 |
 |------|------|------|
-| `workflow-guardian.py` | ~1620 | 瘦身 dispatcher：8 event handlers 編排（atom 注入點 line ~1106 起 2026-04-29 改用 `decide_atom_injection` 三態決策 + `[BUDGET]` debug log；trigger-matched 與 spread_related 兩段共享同一 `used_tokens` 計數，cap 800；**REG-005 C-layer Session 2/3 2026-04-29**：注入點加 `atom_source` dict 記錄 `trigger`/`vector`/`related` source；主迴圈每 atom 先 `classify_hot_cold` → cold 走 1 行 `format_cold_inject_line` 不消耗 budget；hot 走原 budget 流程；併呼叫 `wg_atom_observation.log_injection` 寫 append-only `atom-injection-injections-YYYY-MM-DD.log`；Related 段 commit 4 僅 instrument 觀察用 classification，行為不變，commit 5 才加 hot/cold 過濾） |
+| `workflow-guardian.py` | ~1620 | 瘦身 dispatcher：8 event handlers 編排（atom 注入點 line ~1106 起 2026-04-29 改用 `decide_atom_injection` 三態決策 + `[BUDGET]` debug log；trigger-matched 與 spread_related 兩段共享同一 `used_tokens` 計數，cap 800；**REG-005 C-layer Session 2/3 2026-04-29**：注入點加 `atom_source` dict 記錄 `trigger`/`vector`/`related` source；主迴圈每 atom 先 `classify_hot_cold` → cold 走 1 行 `format_cold_inject_line` 不消耗 budget；hot 走原 budget 流程；併呼叫 `wg_atom_observation.log_injection` 寫 append-only `atom-injection-injections-YYYY-MM-DD.log`；**Related 段 D-layer commit 5**：每個 rname 先 `classify_hot_cold(rpath, "related")` → cold 走 1 行 `format_cold_inject_line` 改 `(cold)` 為 `(related, cold)` 標記不 break、不消耗 budget；hot 走原 budget 流程；`spread_related(max_depth=1)` 既有 depth 限制天然滿足 D 層需求，不做 transitive 擴散） |
 | `wg_paths.py` | ~445 | 路徑唯一真相來源（V4 sublayer 發現） |
 | `wg_roles.py` | ~210 | V4 角色機制（雙向認證、personal dir bootstrap） |
 | `wg_core.py` | ~370 | config / state IO / output / debug / promotion audit |

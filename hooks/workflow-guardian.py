@@ -1204,10 +1204,24 @@ def handle_user_prompt_submit(
                 raw_content = rpath.read_text(encoding="utf-8-sig")
             except (OSError, UnicodeDecodeError):
                 continue
-            # REG-005 C-layer (Session 2 commit 4): observation-only classification
-            # for Related atoms. Behavior unchanged in commit 4 — D-layer commit 5
-            # will use this classification to filter Related spread.
+            # REG-005 D-layer (Session 2 commit 5): hot/cold filter for Related spread.
+            # cold Related atoms get 1-line summary (no budget consumption); hot走原 budget 流程。
+            # spread_related max_depth=1 已在 line 1194 — depth 限制天然滿足。
             related_classification = classify_hot_cold(rpath, "related")
+            if related_classification == "cold":
+                cold_line = format_cold_inject_line(rname, raw_content, rel_path)
+                # 加 "(related, cold)" 標記區分主迴圈 cold
+                cold_line = cold_line.replace(f"[Atom:{rname}] (cold)", f"[Atom:{rname}] (related, cold)", 1)
+                atom_lines.append(cold_line)
+                newly_injected.append(rname)
+                _atom_debug_log(
+                    "BUDGET",
+                    f"atom={rname}(related) classification=cold (1-line)",
+                    config,
+                )
+                log_injection(session_id or "", rname, "cold", "related")
+                continue
+
             content = _strip_atom_for_injection(raw_content)
             decision, inject_content, consumed = decide_atom_injection(
                 raw_content, content, used_tokens
@@ -1218,30 +1232,30 @@ def handle_user_prompt_submit(
                 used_tokens += consumed
                 _atom_debug_log(
                     "BUDGET",
-                    f"atom={rname}(related) classification={related_classification} tokens={consumed} decision=ok used={used_tokens}/{_TURN_BUDGET_LIMIT}",
+                    f"atom={rname}(related) classification=hot tokens={consumed} decision=ok used={used_tokens}/{_TURN_BUDGET_LIMIT}",
                     config,
                 )
-                log_injection(session_id or "", rname, related_classification, "related")
+                log_injection(session_id or "", rname, "hot", "related")
             elif decision == "fallback":
                 atom_lines.append(f"[Atom:{rname}] (related, budget fallback)\n{inject_content}")
                 newly_injected.append(rname)
                 used_tokens += consumed
                 _atom_debug_log(
                     "BUDGET",
-                    f"atom={rname}(related) classification={related_classification} tokens={consumed} decision=fallback used={used_tokens}/{_TURN_BUDGET_LIMIT}",
+                    f"atom={rname}(related) classification=hot tokens={consumed} decision=fallback used={used_tokens}/{_TURN_BUDGET_LIMIT}",
                     config,
                 )
-                log_injection(session_id or "", rname, related_classification, "related")
+                log_injection(session_id or "", rname, "hot", "related")
             else:  # skip
                 first_line = content.split("\n", 1)[0].strip("# ").strip()
                 atom_lines.append(f"[Atom:{rname}] (related) {first_line} (full: Read {rel_path or rname + '.md'})")
                 newly_injected.append(rname)
                 _atom_debug_log(
                     "BUDGET",
-                    f"atom={rname}(related) classification={related_classification} decision=skip used={used_tokens}/{_TURN_BUDGET_LIMIT}",
+                    f"atom={rname}(related) classification=hot decision=skip used={used_tokens}/{_TURN_BUDGET_LIMIT}",
                     config,
                 )
-                log_injection(session_id or "", rname, related_classification, "related")
+                log_injection(session_id or "", rname, "hot", "related")
                 break
 
         if atom_lines:
