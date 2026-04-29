@@ -148,6 +148,15 @@
             "timeout": 3
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import runpy,pathlib;runpy.run_path(str(pathlib.Path.home()/'.claude/hooks/wg_atom_observation.py'),run_name='__main__')\"",
+            "timeout": 3
+          }
+        ]
       }
     ],
     "PreToolUse": [
@@ -207,6 +216,16 @@
           {
             "type": "command",
             "command": "python -c \"import runpy,pathlib;runpy.run_path(str(pathlib.Path.home()/'.claude/hooks/codex_companion.py'),run_name='__main__')\"",
+            "timeout": 3
+          }
+        ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import runpy,pathlib;runpy.run_path(str(pathlib.Path.home()/'.claude/hooks/wg_atom_observation.py'),run_name='__main__')\"",
             "timeout": 3
           }
         ]

@@ -36,6 +36,7 @@
 | `wg_iteration.py` | ~450 | 自我迭代 / 震盪 / 衰減 / 晉升 / 覆轍 |
 | `wg_evasion.py` | ~177 | Evasion Guard + Test-Fail Gate + ScanReport Gate（2026-04-17/2026-04-23） |
 | `wg_pretool_guards.py` | ~75 | PreToolUse 路徑/指令防呆（path-block + svn-test-block, 2026-04-28）— [固] 級規則程式碼化，純函式無 IO/state |
+| `wg_atom_observation.py` | ~165 | **REG-005 atom 注入觀察採樣 hook（Session 1 skeleton, 2026-04-29）**：flag-gated（`memory/_staging/reg-005-observation-start.flag`），flag 不存在 → 入口 `sys.exit(0)` 零開銷返回。獨立 hook（不走 workflow-guardian dispatcher），UserPromptSubmit / PostToolUse(Read) 各註冊一個 matcher。schema：log line JSON `{ts, session_id, event, details}` → `~/.claude/Logs/atom-injection-observation-YYYY-MM-DD.log`；metric → `reflection_metrics.json` 子鍵 `reg005_observation`（atomic write via `.tmp` rename）。Session 1 收集 sessions / reads_in_memory；Session 2 加 C-layer hot/cold 分級時補上 injections / cold_active_reads instrumentation |
 | `extract-worker.py` | ~690 | SessionEnd 萃取子程序（共用 `lib/ollama_extract_core.py`） |
 | `lib/ollama_extract_core.py` | ~190 | 萃取共用核心（budget tracker / ack_then_clear） |
 | `quick-extract.py` | ~155 | Stop async 快篩 |
