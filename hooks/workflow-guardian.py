@@ -62,6 +62,7 @@ from wg_atoms import (
     _kw_match, match_triggers, compute_token_budget,
     _STRIP_META_RE, _STRIP_SECTION_RE, _strip_atom_for_injection,
     SECTION_INJECT_THRESHOLD, _extract_sections,
+    _TURN_BUDGET_LIMIT, decide_atom_injection,
     load_atoms_within_budget, _truncate_context_by_activation,
     parse_aidocs_index, extract_aidocs_keywords,
 )
@@ -1103,7 +1104,7 @@ def handle_user_prompt_submit(
 
     matched_with_dir.sort(key=_activation_key, reverse=True)
 
-    # Load atoms within budget
+    # Load atoms within budget (REG-005 B-layer 2026-04-29: hard cap _TURN_BUDGET_LIMIT=800)
     newly_injected: List[str] = []
     atom_source_dirs: Dict[str, Path] = {}
     if matched_with_dir:
@@ -1116,11 +1117,11 @@ def handle_user_prompt_submit(
                 continue
             atom_source_dirs[name] = atom_path.parent
             try:
-                content = atom_path.read_text(encoding="utf-8-sig")
+                raw_content = atom_path.read_text(encoding="utf-8-sig")
             except (OSError, UnicodeDecodeError):
                 continue
 
-            content = _strip_atom_for_injection(content)
+            content = _strip_atom_for_injection(raw_content)
             content_tokens = len(content) // 4  # char-to-token estimate
 
             # v2.18: Section-level injection when hints available and atom is large enough
@@ -1128,18 +1129,38 @@ def handle_user_prompt_submit(
                 extracted = _extract_sections(content, section_hints[name])
                 if extracted is not None:
                     content = extracted
-                    content_tokens = len(content) // 4
 
-            if used_tokens + content_tokens <= budget:
-                atom_lines.append(f"[Atom:{name}]\n{content}")
+            decision, inject_content, consumed = decide_atom_injection(
+                raw_content, content, used_tokens
+            )
+            if decision == "ok":
+                atom_lines.append(f"[Atom:{name}]\n{inject_content}")
                 newly_injected.append(name)
-                used_tokens += content_tokens
-            else:
-                # Over budget: summary only
+                used_tokens += consumed
+                _atom_debug_log(
+                    "BUDGET",
+                    f"atom={name} tokens={consumed} decision=ok used={used_tokens}/{_TURN_BUDGET_LIMIT}",
+                    config,
+                )
+            elif decision == "fallback":
+                atom_lines.append(f"[Atom:{name}] (budget fallback)\n{inject_content}")
+                newly_injected.append(name)
+                used_tokens += consumed
+                _atom_debug_log(
+                    "BUDGET",
+                    f"atom={name} tokens={consumed} decision=fallback used={used_tokens}/{_TURN_BUDGET_LIMIT}",
+                    config,
+                )
+            else:  # skip — budget really full
                 first_line = content.split("\n", 1)[0].strip("# ").strip()
                 display_path = rel_path or f"{name}.md"
                 atom_lines.append(f"[Atom:{name}] {first_line} (full: Read {display_path})")
                 newly_injected.append(name)
+                _atom_debug_log(
+                    "BUDGET",
+                    f"atom={name} decision=skip used={used_tokens}/{_TURN_BUDGET_LIMIT}",
+                    config,
+                )
                 break
 
         # ── Related-Edge Spreading (v2.9) ─────────────────────────
@@ -1154,19 +1175,40 @@ def handle_user_prompt_submit(
                 continue
             atom_source_dirs[rname] = rpath.parent
             try:
-                content = rpath.read_text(encoding="utf-8-sig")
+                raw_content = rpath.read_text(encoding="utf-8-sig")
             except (OSError, UnicodeDecodeError):
                 continue
-            content = _strip_atom_for_injection(content)
-            content_tokens = len(content) // 4
-            if used_tokens + content_tokens <= budget:
-                atom_lines.append(f"[Atom:{rname}] (related)\n{content}")
+            content = _strip_atom_for_injection(raw_content)
+            decision, inject_content, consumed = decide_atom_injection(
+                raw_content, content, used_tokens
+            )
+            if decision == "ok":
+                atom_lines.append(f"[Atom:{rname}] (related)\n{inject_content}")
                 newly_injected.append(rname)
-                used_tokens += content_tokens
-            else:
+                used_tokens += consumed
+                _atom_debug_log(
+                    "BUDGET",
+                    f"atom={rname}(related) tokens={consumed} decision=ok used={used_tokens}/{_TURN_BUDGET_LIMIT}",
+                    config,
+                )
+            elif decision == "fallback":
+                atom_lines.append(f"[Atom:{rname}] (related, budget fallback)\n{inject_content}")
+                newly_injected.append(rname)
+                used_tokens += consumed
+                _atom_debug_log(
+                    "BUDGET",
+                    f"atom={rname}(related) tokens={consumed} decision=fallback used={used_tokens}/{_TURN_BUDGET_LIMIT}",
+                    config,
+                )
+            else:  # skip
                 first_line = content.split("\n", 1)[0].strip("# ").strip()
                 atom_lines.append(f"[Atom:{rname}] (related) {first_line} (full: Read {rel_path or rname + '.md'})")
                 newly_injected.append(rname)
+                _atom_debug_log(
+                    "BUDGET",
+                    f"atom={rname}(related) decision=skip used={used_tokens}/{_TURN_BUDGET_LIMIT}",
+                    config,
+                )
                 break
 
         if atom_lines:

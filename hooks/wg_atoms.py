@@ -406,6 +406,42 @@ def _strip_atom_for_injection_impression_only(content: str) -> str:
     return "\n\n".join(parts).strip()
 
 
+# REG-005 B-layer (2026-04-29): per-turn budget tracker.
+# Hard cap on cumulative atom injection per UserPromptSubmit turn. Independent
+# of `compute_token_budget` (which sizes the broader Context Budget for all
+# injection types: hot cache + project memory + episodic + atoms).
+
+_TURN_BUDGET_LIMIT = 800  # tokens
+
+
+def decide_atom_injection(
+    raw_content: str,
+    full_content: str,
+    used_tokens: int,
+    budget_limit: int = _TURN_BUDGET_LIMIT,
+) -> Tuple[str, str, int]:
+    """Decide ok / fallback / skip for an atom against per-turn budget.
+
+    Returns (decision, content_to_inject, tokens_consumed):
+    - "ok"       : full_content fits within budget — inject as-is
+    - "fallback" : full overflows but impression-only fits — inject minimal
+    - "skip"     : even impression-only overflows or is not smaller — caller
+                   should append a summary line and continue
+    """
+    full_tokens = _estimate_tokens(full_content)
+    if used_tokens + full_tokens <= budget_limit:
+        return ("ok", full_content, full_tokens)
+
+    fb_content = _strip_atom_for_injection_impression_only(raw_content)
+    fb_tokens = _estimate_tokens(fb_content)
+    # Avoid pathological "fallback" to a version larger than full
+    if fb_tokens >= full_tokens:
+        return ("skip", "", 0)
+    if used_tokens + fb_tokens <= budget_limit:
+        return ("fallback", fb_content, fb_tokens)
+    return ("skip", "", 0)
+
+
 def load_atoms_within_budget(
     matched: List[AtomEntry],
     memory_dir: Path,
@@ -528,7 +564,7 @@ def _truncate_context_by_activation(
 
 # ─── Section-Level Extraction (v2.18) ───────────────────────────────────────
 
-SECTION_INJECT_THRESHOLD = 300  # tokens; atoms smaller than this → full inject
+SECTION_INJECT_THRESHOLD = 200  # tokens; atoms smaller than this → full inject (REG-005 B-layer 2026-04-29: 300 → 200)
 
 _SECTION_HEADER_RE = re.compile(r"^(#{2,3})\s+(.+)", re.MULTILINE)
 _RELATED_LINE_RE = re.compile(r"^- Related:\s*.+", re.MULTILINE)

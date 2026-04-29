@@ -23,11 +23,11 @@
 
 | 模組 | 行數 | 職責 |
 |------|------|------|
-| `workflow-guardian.py` | ~1570 | 瘦身 dispatcher：8 event handlers 編排 |
+| `workflow-guardian.py` | ~1610 | 瘦身 dispatcher：8 event handlers 編排（atom 注入點 line ~1106 起 2026-04-29 改用 `decide_atom_injection` 三態決策 + `[BUDGET]` debug log；trigger-matched 與 spread_related 兩段共享同一 `used_tokens` 計數，cap 800） |
 | `wg_paths.py` | ~445 | 路徑唯一真相來源（V4 sublayer 發現） |
 | `wg_roles.py` | ~210 | V4 角色機制（雙向認證、personal dir bootstrap） |
 | `wg_core.py` | ~370 | config / state IO / output / debug / promotion audit |
-| `wg_atoms.py` | ~700 | 索引解析 / trigger 匹配 / ACT-R / section 注入 / **A-layer 摘要優先（REG-005, 2026-04-29）**：`_strip_atom_for_injection` 由整檔剝離改為按 atom 類型路由（`impression_action` → frontmatter+印象+行動 / `knowledge_mixed` → frontmatter+印象+知識(cap 200 tokens)+行動 / `fallback` → 沿用 V2.14 legacy strip）。helpers：`_detect_atom_type`、`_extract_named_section(max_tokens)`、`_extract_title_and_frontmatter`（白名單保 Confidence/Trigger/Last-used）、`_strip_atom_for_injection_impression_only`（B-layer fallback 用） |
+| `wg_atoms.py` | ~720 | 索引解析 / trigger 匹配 / ACT-R / section 注入 / **A-layer 摘要優先 + B-layer per-turn budget（REG-005, 2026-04-29）**：`_strip_atom_for_injection` 由整檔剝離改為按 atom 類型路由（`impression_action` → frontmatter+印象+行動 / `knowledge_mixed` → frontmatter+印象+知識(cap 200 tokens)+行動 / `fallback` → 沿用 V2.14 legacy strip）。`decide_atom_injection(raw, full, used)` 對每 atom 回 ok/fallback/skip 三態，hard cap `_TURN_BUDGET_LIMIT=800`；超 budget 時 fallback 到 `_strip_atom_for_injection_impression_only`（frontmatter+印象 only），impression-only 仍超則 skip 加 summary 後 break。`SECTION_INJECT_THRESHOLD` 由 300 → 200（更多 atom 走 vector section 提取）。helpers：`_detect_atom_type`、`_extract_named_section(max_tokens)`、`_extract_title_and_frontmatter`（白名單保 Confidence/Trigger/Last-used）。 |
 | `wg_intent.py` | ~430 | intent 分類 / session context / MCP / vector（2026-04-28 Wave 3a：vector 進入點加觀察 log → `~/.claude/Logs/vector-observation.log`，schema `{ts, session_id, fn, flag_state, result_count, fallback_used}`，4 天採樣後由 `tools/vector-observation-summary.py` 自動判定 REVIVE/RETIRE/GRAY） |
 | `wg_extraction.py` | ~295 | per-turn 萃取 / worker 管理 / failure 偵測 |
 | `wg_hot_cache.py` | ~160 | Hot Cache 讀寫 / 注入（含 AUTO-DRAFT tag 硬規則） |
