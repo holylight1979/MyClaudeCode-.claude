@@ -249,12 +249,161 @@ _STRIP_SECTION_RE = re.compile(
 )
 
 
-def _strip_atom_for_injection(content: str) -> str:
-    """Strip metadata lines and non-essential sections from atom content before injection."""
+# REG-005 A-layer (2026-04-28): summary-first injection helpers.
+# Design: memory/_staging/reg-005-atom-injection-refactor.md
+
+_FRONTMATTER_KEEP_RE = re.compile(
+    r"^- (?:Confidence|Trigger|Last-used):\s*.+$",
+    re.MULTILINE,
+)
+
+_KNOWLEDGE_CAP_TOKENS_DEFAULT = 200
+
+
+def _estimate_tokens(text: str) -> int:
+    return len(text) // 4
+
+
+def _extract_named_section(
+    content: str, section_title: str, max_tokens: Optional[int] = None,
+) -> Optional[str]:
+    """Extract a single ## section by exact title (until next ## or EOF).
+
+    Returns the section as `## title\\n<body>` (rstripped), or None if absent.
+    When `max_tokens` is provided and the section is larger, the body is truncated
+    at the nearest paragraph/line boundary and a `…（已截斷，原 N tokens）` marker
+    is appended.
+    """
+    pattern = re.compile(
+        r"^##[ \t]+" + re.escape(section_title) + r"[ \t]*\n([\s\S]*?)(?=^## |\Z)",
+        re.MULTILINE,
+    )
+    m = pattern.search(content)
+    if not m:
+        return None
+    body = m.group(1).rstrip()
+    full = f"## {section_title}\n{body}"
+
+    if max_tokens is None:
+        return full
+
+    full_tokens = _estimate_tokens(full)
+    if full_tokens <= max_tokens:
+        return full
+
+    header = f"## {section_title}\n"
+    marker = f"\n\n…（已截斷，原 {full_tokens} tokens）"
+    target_chars = max_tokens * 4 - len(header) - len(marker)
+    if target_chars < 50:
+        target_chars = 50
+    truncated = body[:target_chars]
+    snap = truncated.rfind("\n\n")
+    if snap < target_chars * 0.5:
+        snap = truncated.rfind("\n")
+    if snap > 0:
+        truncated = truncated[:snap]
+    return f"{header}{truncated.rstrip()}{marker}"
+
+
+def _detect_atom_type(content: str) -> str:
+    """Classify atom layout for injection routing.
+
+    - "knowledge_mixed": has ## 知識 (with or without ## 印象) — needs cap on 知識
+    - "impression_action": has ## 印象 but no ## 知識 — inject in full
+    - "fallback": neither — delegate to legacy strip
+    """
+    has_knowledge = _extract_named_section(content, "知識") is not None
+    if has_knowledge:
+        return "knowledge_mixed"
+    has_impression = _extract_named_section(content, "印象") is not None
+    if has_impression:
+        return "impression_action"
+    return "fallback"
+
+
+def _extract_title_and_frontmatter(content: str) -> str:
+    """Build header block: `# Title` + whitelisted frontmatter (Confidence/Trigger/Last-used)."""
+    title_line = ""
+    for line in content.split("\n"):
+        if line.startswith("# ") and not line.startswith("## "):
+            title_line = line.rstrip()
+            break
+
+    keep_lines = [m.group(0) for m in _FRONTMATTER_KEEP_RE.finditer(content)]
+    parts: List[str] = []
+    if title_line:
+        parts.append(title_line)
+    if keep_lines:
+        if title_line:
+            parts.append("")
+        parts.extend(keep_lines)
+    return "\n".join(parts)
+
+
+def _legacy_strip_atom_for_injection(content: str) -> str:
+    """V2.14 legacy strip: metadata + 行動/演化日誌 lines removed.
+
+    Used as fallback for atoms lacking standard ## 印象/## 知識 sections.
+    """
     content = _STRIP_META_RE.sub("", content)
     content = _STRIP_SECTION_RE.sub("", content)
     content = re.sub(r"\n{3,}", "\n\n", content)
     return content.strip()
+
+
+def _strip_atom_for_injection(
+    content: str, knowledge_cap_tokens: int = _KNOWLEDGE_CAP_TOKENS_DEFAULT,
+) -> str:
+    """REG-005 A-layer: summary-first injection (replaces V2.14 token diet).
+
+    Routes by atom layout:
+    - impression_action → title + frontmatter + ## 印象 (full) + ## 行動 (full)
+    - knowledge_mixed   → title + frontmatter + ## 印象 (if any) + ## 知識 (capped) + ## 行動 (full)
+    - fallback          → legacy strip (all sections except 行動/演化日誌)
+
+    `knowledge_cap_tokens` truncates the ## 知識 section in mixed atoms
+    (default 200; tunable per call).
+    """
+    atom_type = _detect_atom_type(content)
+
+    if atom_type == "fallback":
+        return _legacy_strip_atom_for_injection(content)
+
+    parts: List[str] = []
+    header = _extract_title_and_frontmatter(content)
+    if header:
+        parts.append(header)
+
+    impression = _extract_named_section(content, "印象")
+    if impression:
+        parts.append(impression)
+
+    if atom_type == "knowledge_mixed":
+        knowledge = _extract_named_section(content, "知識", max_tokens=knowledge_cap_tokens)
+        if knowledge:
+            parts.append(knowledge)
+
+    action = _extract_named_section(content, "行動")
+    if action:
+        parts.append(action)
+
+    return "\n\n".join(parts).strip()
+
+
+def _strip_atom_for_injection_impression_only(content: str) -> str:
+    """REG-005 B-layer fallback: title + frontmatter + ## 印象 only.
+
+    Used when per-turn token budget is tight. If ## 印象 is absent, returns
+    header alone.
+    """
+    parts: List[str] = []
+    header = _extract_title_and_frontmatter(content)
+    if header:
+        parts.append(header)
+    impression = _extract_named_section(content, "印象")
+    if impression:
+        parts.append(impression)
+    return "\n\n".join(parts).strip()
 
 
 def load_atoms_within_budget(
