@@ -33,3 +33,4 @@
 | feedback-codex-collaboration | memory/feedback/feedback-codex-collaboration.md | codex, codex exec, gpt-5, codex companion, second opinion, 第二觀點, 雙 LLM, 大師會議, 異議審查 | global |
 | feedback-end-to-end-smoke | memory/feedback/feedback-end-to-end-smoke.md | 上線, 部署, 整合測試, smoke test, 系統驗證, hook 系統, 子程序整合, codex 整合, ollama 整合, mcp 整合, daemon 啟動 | global |
 | feedback-pre-completion-test-discipline | memory/feedback/feedback-pre-completion-test-discipline.md | 宣告完成, 收尾, 測試失敗, TestFailGate, ScanReport, known regression, pre-existing, xfail, REG-001 | global |
+| electron-uia-automation | memory/electron-uia-automation.md | Electron 自動化, VS Code 自動點擊, UIA Invoke, EVENT_E_NO_SUBSCRIBERS, PostMessage Chromium 失效, SendInput 偷塞字, AttachThreadInput, SetForegroundWindow 失敗, focus swap, ghost button, Claude Code 彈窗, GUI 工具, exe 打包 | global |

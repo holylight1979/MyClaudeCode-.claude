@@ -13,6 +13,7 @@
 | toolchain-ollama | Ollama Dual-Backend 實戰記憶 |
 | decisions-architecture | 架構決策 |
 | gdoc-harvester | gdoc-harvester — Web Harvester 收割工具經驗 |
+| electron-uia-automation | Electron app UI 自動化三層障礙 |
 | feedback-* | 行為校正（20 個含 research, fix-escalation, no-test-to-svn, global-install, memory-path 等） |
 
 > **知識庫查閱**：
