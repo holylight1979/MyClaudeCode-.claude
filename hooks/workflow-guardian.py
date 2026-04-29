@@ -65,7 +65,9 @@ from wg_atoms import (
     _TURN_BUDGET_LIMIT, decide_atom_injection,
     load_atoms_within_budget, _truncate_context_by_activation,
     parse_aidocs_index, extract_aidocs_keywords,
+    classify_hot_cold, format_cold_inject_line,
 )
+from wg_atom_observation import log_injection
 from wg_intent import (
     INTENT_PATTERNS, classify_intent,
     _update_topic_tracker,
@@ -985,6 +987,9 @@ def handle_user_prompt_submit(
 
     # Match prompt against triggers (keyword)
     matched_with_dir: List[Tuple[AtomEntry, Path]] = []
+    # REG-005 C-layer (Session 2): track injection source ("trigger"|"vector"|"related")
+    # for hot/cold classification routing.
+    atom_source: Dict[str, str] = {}
     prompt_lower = prompt.lower()
     alias_injected_projects: set = set()  # v2.9: track alias-injected projects
 
@@ -1037,6 +1042,7 @@ def handle_user_prompt_submit(
     for (name, rel_path, triggers), base_dir in all_atoms:
         if name not in already_injected and any(_kw_match(kw, prompt_lower) for kw in triggers):
             matched_with_dir.append(((name, rel_path, triggers), base_dir))
+            atom_source[name] = "trigger"
 
     # ── Intent classification (v2.1) ────────────────────────────────
     intent = classify_intent(prompt)
@@ -1069,6 +1075,7 @@ def handle_user_prompt_submit(
         for (name, rel_path, triggers), base_dir in all_atoms:
             if name == sem_name:
                 matched_with_dir.append(((name, rel_path, triggers), base_dir))
+                atom_source.setdefault(name, "vector")
                 kw_matched_names.add(name)
                 break
 
@@ -1121,6 +1128,22 @@ def handle_user_prompt_submit(
             except (OSError, UnicodeDecodeError):
                 continue
 
+            # REG-005 C-layer (Session 2): hot/cold routing.
+            source = atom_source.get(name, "vector")
+            classification = classify_hot_cold(atom_path, source)
+
+            if classification == "cold":
+                cold_line = format_cold_inject_line(name, raw_content, rel_path)
+                atom_lines.append(cold_line)
+                newly_injected.append(name)
+                _atom_debug_log(
+                    "BUDGET",
+                    f"atom={name} source={source} classification=cold (1-line)",
+                    config,
+                )
+                log_injection(session_id or "", name, "cold", source)
+                continue
+
             content = _strip_atom_for_injection(raw_content)
             content_tokens = len(content) // 4  # char-to-token estimate
 
@@ -1139,18 +1162,20 @@ def handle_user_prompt_submit(
                 used_tokens += consumed
                 _atom_debug_log(
                     "BUDGET",
-                    f"atom={name} tokens={consumed} decision=ok used={used_tokens}/{_TURN_BUDGET_LIMIT}",
+                    f"atom={name} source={source} tokens={consumed} decision=ok used={used_tokens}/{_TURN_BUDGET_LIMIT}",
                     config,
                 )
+                log_injection(session_id or "", name, "hot", source)
             elif decision == "fallback":
                 atom_lines.append(f"[Atom:{name}] (budget fallback)\n{inject_content}")
                 newly_injected.append(name)
                 used_tokens += consumed
                 _atom_debug_log(
                     "BUDGET",
-                    f"atom={name} tokens={consumed} decision=fallback used={used_tokens}/{_TURN_BUDGET_LIMIT}",
+                    f"atom={name} source={source} tokens={consumed} decision=fallback used={used_tokens}/{_TURN_BUDGET_LIMIT}",
                     config,
                 )
+                log_injection(session_id or "", name, "hot", source)
             else:  # skip — budget really full
                 first_line = content.split("\n", 1)[0].strip("# ").strip()
                 display_path = rel_path or f"{name}.md"
@@ -1158,9 +1183,10 @@ def handle_user_prompt_submit(
                 newly_injected.append(name)
                 _atom_debug_log(
                     "BUDGET",
-                    f"atom={name} decision=skip used={used_tokens}/{_TURN_BUDGET_LIMIT}",
+                    f"atom={name} source={source} decision=skip used={used_tokens}/{_TURN_BUDGET_LIMIT}",
                     config,
                 )
+                log_injection(session_id or "", name, "hot", source)
                 break
 
         # ── Related-Edge Spreading (v2.9) ─────────────────────────
@@ -1178,6 +1204,10 @@ def handle_user_prompt_submit(
                 raw_content = rpath.read_text(encoding="utf-8-sig")
             except (OSError, UnicodeDecodeError):
                 continue
+            # REG-005 C-layer (Session 2 commit 4): observation-only classification
+            # for Related atoms. Behavior unchanged in commit 4 — D-layer commit 5
+            # will use this classification to filter Related spread.
+            related_classification = classify_hot_cold(rpath, "related")
             content = _strip_atom_for_injection(raw_content)
             decision, inject_content, consumed = decide_atom_injection(
                 raw_content, content, used_tokens
@@ -1188,27 +1218,30 @@ def handle_user_prompt_submit(
                 used_tokens += consumed
                 _atom_debug_log(
                     "BUDGET",
-                    f"atom={rname}(related) tokens={consumed} decision=ok used={used_tokens}/{_TURN_BUDGET_LIMIT}",
+                    f"atom={rname}(related) classification={related_classification} tokens={consumed} decision=ok used={used_tokens}/{_TURN_BUDGET_LIMIT}",
                     config,
                 )
+                log_injection(session_id or "", rname, related_classification, "related")
             elif decision == "fallback":
                 atom_lines.append(f"[Atom:{rname}] (related, budget fallback)\n{inject_content}")
                 newly_injected.append(rname)
                 used_tokens += consumed
                 _atom_debug_log(
                     "BUDGET",
-                    f"atom={rname}(related) tokens={consumed} decision=fallback used={used_tokens}/{_TURN_BUDGET_LIMIT}",
+                    f"atom={rname}(related) classification={related_classification} tokens={consumed} decision=fallback used={used_tokens}/{_TURN_BUDGET_LIMIT}",
                     config,
                 )
+                log_injection(session_id or "", rname, related_classification, "related")
             else:  # skip
                 first_line = content.split("\n", 1)[0].strip("# ").strip()
                 atom_lines.append(f"[Atom:{rname}] (related) {first_line} (full: Read {rel_path or rname + '.md'})")
                 newly_injected.append(rname)
                 _atom_debug_log(
                     "BUDGET",
-                    f"atom={rname}(related) decision=skip used={used_tokens}/{_TURN_BUDGET_LIMIT}",
+                    f"atom={rname}(related) classification={related_classification} decision=skip used={used_tokens}/{_TURN_BUDGET_LIMIT}",
                     config,
                 )
+                log_injection(session_id or "", rname, related_classification, "related")
                 break
 
         if atom_lines:

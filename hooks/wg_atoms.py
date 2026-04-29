@@ -442,6 +442,85 @@ def decide_atom_injection(
     return ("skip", "", 0)
 
 
+# REG-005 C-layer (2026-04-29): hot/cold classifier for atom injection routing.
+# Design: memory/_staging/reg-005-atom-injection-refactor.md §C 層
+
+_HOT_RECENT_DAYS = 7
+_HOT_RECENT_WINDOW_SEC = _HOT_RECENT_DAYS * 86400
+_COLD_LINE_CAP = 80
+
+
+def _recent_reads_7d(access_file: Path) -> int:
+    """Count timestamps in {atom}.access.json within last 7 days. Fail-open → 0."""
+    if not access_file.exists():
+        return 0
+    try:
+        data = json.loads(access_file.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return 0
+    timestamps = data.get("timestamps", []) if isinstance(data, dict) else []
+    if not isinstance(timestamps, list):
+        return 0
+    now = time.time()
+    count = 0
+    for ts in timestamps:
+        try:
+            if now - float(ts) <= _HOT_RECENT_WINDOW_SEC:
+                count += 1
+        except (TypeError, ValueError):
+            continue
+    return count
+
+
+def classify_hot_cold(
+    atom_path: Path, source: str, hot_recent_threshold: int = 3,
+) -> str:
+    """Classify atom as hot/cold for injection routing.
+
+    hot 若：source == "trigger" (直接 trigger 命中) OR recent_reads_7d >= 門檻
+    source ∈ {"trigger", "vector", "related"}; 未知值視同 "vector"
+    """
+    if source == "trigger":
+        return "hot"
+    access_file = atom_path.parent / f"{atom_path.stem}.access.json"
+    return "hot" if _recent_reads_7d(access_file) >= hot_recent_threshold else "cold"
+
+
+def format_cold_inject_line(name: str, raw_content: str, rel_path: str) -> str:
+    """Build single-line cold-injection summary.
+
+    Priority: ## 印象 first bullet → # Title → atom name.
+    Cap 80 chars (truncate + …); guarantees single line; rel_path empty → name.md.
+    """
+    summary = ""
+    impression = _extract_named_section(raw_content, "印象")
+    if impression:
+        for line in impression.split("\n"):
+            stripped = line.strip()
+            if not stripped or stripped.startswith("##") or stripped.startswith(">"):
+                continue
+            if stripped.startswith("- "):
+                summary = stripped[2:].strip()
+            else:
+                summary = stripped
+            if summary:
+                break
+    if not summary:
+        for line in raw_content.split("\n"):
+            if line.startswith("# ") and not line.startswith("## "):
+                summary = line[2:].strip()
+                break
+    if not summary:
+        summary = name
+
+    summary = summary.replace("\n", " ").replace("\r", " ").strip()
+    if len(summary) > _COLD_LINE_CAP:
+        summary = summary[:_COLD_LINE_CAP].rstrip() + "…"
+
+    display_path = rel_path or f"{name}.md"
+    return f"[Atom:{name}] (cold) {summary} (full: Read {display_path})"
+
+
 def load_atoms_within_budget(
     matched: List[AtomEntry],
     memory_dir: Path,

@@ -166,6 +166,43 @@ def _handle_post_tool_use_read(payload: Dict[str, Any]) -> None:
     })
 
 
+def _today_injection_log_path() -> Path:
+    return LOG_DIR / f"atom-injection-injections-{datetime.now().strftime('%Y-%m-%d')}.log"
+
+
+def log_injection(
+    session_id: str,
+    name: str,
+    classification: str,
+    source: str,
+) -> None:
+    """Append injection record to atom-injection-injections-YYYY-MM-DD.log.
+
+    Flag-gated（讀 FLAG_PATH 同既有 _flag_active()）。flag 不存在 → 立即 return。
+    fail-open — 任何 OSError / encode error 不 raise，沉默吞掉。
+
+    Schema (one JSON per line):
+    {"ts": ISO8601_seconds, "session_id": str, "name": str,
+     "classification": str, "source": str, "event": "atom_injected"}
+    """
+    if not _flag_active():
+        return
+    try:
+        rec = {
+            "ts": datetime.now().isoformat(timespec="seconds"),
+            "session_id": session_id,
+            "name": name,
+            "classification": classification,
+            "source": source,
+            "event": "atom_injected",
+        }
+        LOG_DIR.mkdir(parents=True, exist_ok=True)
+        with open(_today_injection_log_path(), "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except (OSError, TypeError, ValueError):
+        pass
+
+
 def main() -> None:
     # Flag-gate first — zero overhead when not active.
     if not _flag_active():
