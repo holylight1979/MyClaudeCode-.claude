@@ -304,6 +304,56 @@ def _count_pending_review(project_mem_dir: Optional[Path]) -> int:
         return 0
 
 
+def _check_reg005_observation_status() -> Optional[Dict[str, Any]]:
+    """Run tools/atom-injection-summary.py --json when REG-005 observation flag is set.
+
+    Returns parsed JSON dict on success, or None on any failure (flag missing,
+    script missing, subprocess error, JSON parse error). Fail-open by design —
+    SessionStart must never break because of REG-005 status check.
+    """
+    flag = CLAUDE_DIR / "memory" / "_staging" / "reg-005-observation-start.flag"
+    if not flag.exists():
+        return None
+    summary_script = CLAUDE_DIR / "tools" / "atom-injection-summary.py"
+    if not summary_script.exists():
+        return None
+    try:
+        result = subprocess.run(
+            [sys.executable, str(summary_script), "--json"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode != 0:
+            return None
+        return json.loads(result.stdout)
+    except Exception:
+        return None
+
+
+def _format_reg005_highlight(reg005: Optional[Dict[str, Any]]) -> Optional[str]:
+    """Build the SessionStart highlight line from a parsed summary dict.
+
+    Returns the markdown-bold notification string only when verdict is
+    KEEP / ROLLBACK / GRAY (i.e. observation period is over). NOT_STARTED /
+    INCOMPLETE / None all return None so the caller appends nothing —
+    silent-during-observation per design.
+    """
+    if not reg005:
+        return None
+    verdict = reg005.get("verdict")
+    if verdict not in ("KEEP", "ROLLBACK", "GRAY"):
+        return None
+    d = reg005.get("details") or {}
+    a = d.get("A_injections", 0)
+    b = d.get("B_sessions", 0)
+    wall = d.get("wall_clock_days", 0)
+    return (
+        f"**[REG-005] 觀察期已滿（A={a}, B={b}, wall={wall}d），"
+        f"自動判定 = {verdict}，請查看 "
+        f"_AIDocs/DevHistory/atom-injection-refactor-2026-04.md "
+        f"並執行對應動作（開新 Session 3/3 跑收尾）**"
+    )
+
+
 def _count_recent_auto_atoms(user: str, cwd: str, hours: int = 24) -> int:
     """[F18] Count auto-extracted-v4.1 atoms created within last N hours."""
     from datetime import timedelta as _td
@@ -585,6 +635,16 @@ def handle_session_start(input_data: Dict[str, Any], config: Dict[str, Any]) -> 
             lines.append("[MCP] " + "; ".join(mcp_issues))
     except Exception as e:
         print(f"[mcp-health] Check error: {e}", file=sys.stderr)
+
+    # ── REG-005 atom-injection 觀察期高亮提醒 ────────────────────────
+    # 觀察期靜默原則：INCOMPLETE / NOT_STARTED 不打擾使用者；
+    # 期滿（KEEP/ROLLBACK/GRAY）才注入粗體高亮，引導開 Session 3/3 收尾。
+    try:
+        reg005_msg = _format_reg005_highlight(_check_reg005_observation_status())
+        if reg005_msg:
+            lines.append(reg005_msg)
+    except Exception as e:
+        print(f"[reg-005] SessionStart status check error: {e}", file=sys.stderr)
 
     # CRITICAL: write state before any output so subsequent hooks can read it.
     write_state(session_id, state)
