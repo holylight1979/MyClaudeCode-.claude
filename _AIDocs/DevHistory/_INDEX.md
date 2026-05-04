@@ -23,3 +23,4 @@
 | 16 | atomic-memory-evolution/ | 原子記憶 V2/V3 設計史與研究文件（搬自 memory/_reference/，2026-04-28 Stage F5 重審後）：origin / decisions-history / self-iteration / SPEC × 2 / v21 research / v3 design + insights | atom 演化, V2, V3, SPEC, research, 設計史, atomic memory origin |
 | 17 | atom-trigger-source-of-truth.md | Atom Trigger 三源（frontmatter / _ATOM_INDEX / MEMORY.md）真相規格化設計（待拍板） | atom trigger, source of truth, _ATOM_INDEX, frontmatter, MEMORY.md, drift, sync 工具 |
 | 18 | vector-threshold-calibration-2026-04.md | Wave 3b probe-burst 數據驅動的 ranked-sections min_score 校準（90 query x 6 threshold 矩陣 + 決策） | vector, threshold, calibration, ranked-sections, min_score, probe-burst, 議題 #6, REG-005 |
+| 19 | atom-injection-refactor-2026-04.md | REG-005 atom 注入機制重構收尾（A+B+C+D 4 層 + 觀察期 KEEP 判定 + 設計歸檔） | REG-005, atom, injection, summary-first, budget, hot-cold, related, 4-layer, KEEP, 觀察期 |

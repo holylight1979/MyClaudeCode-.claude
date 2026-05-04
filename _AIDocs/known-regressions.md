@@ -159,21 +159,38 @@ tests/test_heuristics.py::test_max_severity_high_only_from_confident_completion
 
 ---
 
-## REG-005 · Atom 注入機制重構（議題 #3）
+## REG-005 · Atom 注入機制重構（議題 #3）✅ RESOLVED 2026-05-04
 
 | 欄位 | 內容 |
 |------|------|
 | 首次提案 | 2026-04-28（memory cleanup follow_up #3，從 plan v1 §二 矛盾 #4 帶過來） |
 | 範圍 | `wg_atoms.py:_strip_atom_for_injection` 改寫為「摘要優先 + token budget + hot/cold 分級」；`SECTION_INJECT_THRESHOLD` 從 300 降至 200；Related 擴散加 activation-aware 過濾 |
-| 不修風險 | **中**：當前 trigger 命中即全文注入，特別是 vector 失能時降級到 atom 全注入；現況 vector 已 REVIVE 但 section_hints 召回品質仍受 ranked min_score 偏寬鬆影響（議題 #6） |
+| 處理結果 | **KEEP**（觀察期 A=290 / B=24 / wall=5.43d，四標準達標；自動止血未觸發） |
+| 收尾報告 | [_AIDocs/DevHistory/atom-injection-refactor-2026-04.md](DevHistory/atom-injection-refactor-2026-04.md) |
 
-### 前置條件
+### 落地 commit
 
-(a) atom 注入機制 3 源不一致已先解決（atom frontmatter `Trigger` / `_ATOM_INDEX.md` / `MEMORY.md` 三者統一真相源）；(b) 議題 #6 ranked min_score 校準完成。
+| commit | 內容 |
+|--------|------|
+| `540cc91` | A 層 — 摘要優先（`_strip_atom_for_injection` + atom 類型偵測 + 21 unit tests） |
+| `3d03ba1` | B 層 — per-turn budget cap（`_TURN_BUDGET_LIMIT=800` + `SECTION_INJECT_THRESHOLD` 300→200 + 10 integration tests） |
+| `0309c89` | 觀察儀表（`wg_atom_observation.py` flag-gated + `atom-injection-summary.py` 自動判定） |
+| `a2e1a39` | C 層 — hot/cold 分級器（`classify_hot_cold` + cold 1 行注入 + 23 unit tests） |
+| `5255c7b` | D 層 — Related 擴散 hot/cold 過濾 + max_depth=1（8 unit tests） |
+| `49e4849` | SessionStart 高亮提醒（KEEP/ROLLBACK/GRAY 期滿自動推送 + 16 unit tests） |
+| `d47b37a` | ROLLBACK cleanup helper（`reg005-rollback-cleanup.py` 冪等清掃 + 10 unit tests） |
 
-### 修補路徑
+### 觀察期關鍵發現
 
-入口：`hooks/wg_atoms.py`、`hooks/wg_intent.py`、`memory/_ATOM_INDEX.md` 表格規格。
+- **「按需展開」假設未證實**（cold_active_reads/cold_injections = 0/15 = 0%），但 n=15 < 40 min-sample 門檻 → 不觸發 ROLLBACK；C/D 層的 token 節省與此假設獨立成立
+- **Hot 主導**：290 注入 = 275 hot (94.8%) + 15 cold (5.2%)
+- **Per-turn 分布**：51 turns，平均 5.69 atoms/turn，max 11；B 層 800 budget 上限有效收斂高密度 turn
+
+### 後續追蹤（不 block，不另開 session）
+
+- 3 個月後重審 cold rate（待 cold_inj 累積 ≥40）
+- Wisdom Engine 整合 `hot_hits` / `miss_count`（目前 placeholder=0）
+- (5b) canary baseline drift 設計尚未實作
 
 ---
 
