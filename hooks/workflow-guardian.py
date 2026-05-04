@@ -1889,15 +1889,14 @@ def handle_post_tool_use(input_data: Dict[str, Any], config: Dict[str, Any]) -> 
                     write_state(session_id, state)
 
     # V3.3: DocDrift advisory generation
+    # 2026-05-04 (user feedback)：advisory 改為 SessionEnd-only 觸發（見 handle_session_end）。
+    # PostToolUse 仍持續累積 pending（state["docdrift_pending"] 由 check_source_drift 維護），
+    # 但不再每次 Edit/Bash 注入 additionalContext nag — 改為 session 結束印一次摘要。
+    # auto-prune 仍保留（避免跨 session 殘留）。
     if DOCDRIFT_AVAILABLE and config.get("docdrift", {}).get("enabled", True):
         try:
-            # Auto-resolve stale entries (source committed/reverted across sessions
-            # without a corresponding _AIDocs edit firing resolve_doc_update).
             if prune_committed_entries(state, config) > 0:
                 write_state(session_id, state)
-            drift_msg = build_drift_advisory(state, config)
-            if drift_msg:
-                state["_docdrift_advisory"] = drift_msg
         except Exception:
             pass
 
@@ -2247,6 +2246,15 @@ def handle_session_end(input_data: Dict[str, Any], config: Dict[str, Any]) -> No
 
     state["ended_at"] = _now_iso()
     state["phase"] = "done"
+
+    # 2026-05-04: DocDrift 一次性摘要（SessionEnd-only，避免每 Edit/Bash nag）
+    if DOCDRIFT_AVAILABLE and config.get("docdrift", {}).get("enabled", True):
+        try:
+            drift_msg = build_drift_advisory(state, config)
+            if drift_msg:
+                print(f"[Guardian:DocDrift] {drift_msg}", file=sys.stderr)
+        except Exception:
+            pass
 
     # ─── V4.1 [F26]: Drain pending_user_extract when flag is off ──────
     ue_config = config.get("userExtraction", {})
