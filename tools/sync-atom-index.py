@@ -28,6 +28,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+# S2.2: 走 funnel 入口（lib/atom_io.write_index_full）。
+# 註：使用 write_index_full（整檔覆寫）而非 write_index（row append），因為
+# _ATOM_INDEX.md 是 4 欄 schema（Atom/Path/Trigger/Scope），funnel write_index
+# 對拍 server.js byte-identical 是 3 欄，row-by-row 替換會破壞 Scope 欄。
+# 保留本檔原有 4 欄 splice 邏輯，最後一次性走 funnel 落檔 + audit。
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from lib.atom_io import write_index_full  # noqa: E402
+
 MEMORY_DIR = Path.home() / ".claude" / "memory"
 ATOM_INDEX_NAME = "_ATOM_INDEX.md"
 
@@ -220,6 +228,12 @@ def add_to_index_from_frontmatter(atoms_by_path: Dict[str, AtomFile],
                                   index_rows: List[IndexRow],
                                   index_lines: List[str],
                                   index_path: Path) -> List[str]:
+    """S2.2: 整檔覆寫走 funnel write_index_full（產生 audit log）。
+
+    保留本檔 4 欄 schema 的 splice 邏輯（不能直接套 funnel write_index 的
+    3 欄 row append — 會破壞 Scope 欄）。最終落檔走 funnel，audit log
+    source=tool:sync-atom-index。
+    """
     indexed = {r.path for r in index_rows}
     to_add = [a for p, a in atoms_by_path.items() if p not in indexed]
     if not to_add:
@@ -254,7 +268,11 @@ def add_to_index_from_frontmatter(atoms_by_path: Dict[str, AtomFile],
     out = "\n".join(new_lines)
     if not out.endswith("\n"):
         out += "\n"
-    index_path.write_text(out, encoding="utf-8")
+    result = write_index_full(index_path, out, source="tool:sync-atom-index")
+    if not result.ok:
+        print(f"[sync-atom-index] write_index_full failed: {result.error}",
+              file=sys.stderr)
+        return []
     return added
 
 

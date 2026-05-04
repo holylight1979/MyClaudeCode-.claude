@@ -46,10 +46,12 @@ VALID_SOURCES = frozenset({
     "hook:episodic",
     "hook:user-extract",
     "hook:extract-worker",
-    "tool:migrate",
-    "tool:undo",
     "tool:atom-move",
     "tool:changelog-roll",
+    "tool:migrate",
+    "tool:sync-atom-index",
+    "tool:sync-memory-index",
+    "tool:undo",
     "test",  # 測試用，等價測試 fixture 使用
 })
 
@@ -250,6 +252,35 @@ def write_index(
     _audit_log({
         "audit_id": audit_id, "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "op": "index", "source": source, "path": str(index_path), "slug": slug,
+    })
+    return WriteResult(ok=True, path=index_path, audit_id=audit_id)
+
+
+def write_index_full(
+    index_path: Path,
+    content: str,
+    *,
+    source: str,
+) -> WriteResult:
+    """整檔覆寫 MEMORY.md / _ATOM_INDEX.md（給 sync-memory-index / sync-atom-index 整表重組用）。
+
+    與 write_index 的差異：
+      - write_index: row-by-row append/update（單 atom 寫入後同步索引）
+      - write_index_full: 整檔覆寫（batch tool 重組整個 atom 索引表，例如 feedback-* 群組合併）
+
+    所有寫入仍走 _atomic_write + _audit_log，行為對拍 funnel 其他入口。
+    """
+    if source not in VALID_SOURCES:
+        return WriteResult(ok=False, error=f"invalid source: {source}",
+                           audit_id=_gen_audit_id())
+    audit_id = _gen_audit_id()
+    try:
+        _atomic_write(index_path, content)
+    except OSError as e:
+        return WriteResult(ok=False, error=f"write failed: {e}", audit_id=audit_id)
+    _audit_log({
+        "audit_id": audit_id, "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "op": "index_full", "source": source, "path": str(index_path),
     })
     return WriteResult(ok=True, path=index_path, audit_id=audit_id)
 

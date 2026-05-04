@@ -48,6 +48,7 @@ from lib.ollama_extract_core import (
     ack_then_clear,
     SessionBudgetTracker,
 )
+from lib.atom_io import write_atom
 from wg_session_evaluator import evaluate_session
 
 sys.path.insert(0, str(CLAUDE_DIR / "tools"))
@@ -328,83 +329,80 @@ def _write_atom_via_mcp(
     l2_result: Dict, candidate: Dict, session_id: str, user: str,
     config: Dict,
 ) -> str:
-    """Write atom via MCP atom_write tool (subprocess call to server).
+    """Write atom via funnel write_atom (lib/atom_io).
 
-    Returns 'wrote' | 'deduped' | 'failed'. Falls back to direct file write.
+    S2.2: 改走 funnel — 自動產生 audit log + 統一 atomic write 行為。
+    Returns 'wrote' | 'deduped' | 'failed'.
     """
     statement = l2_result.get("statement", "")
     scope = l2_result.get("scope", "personal")
-    audience = l2_result.get("audience", "programmer")
+    audience_raw = l2_result.get("audience", "programmer")
     triggers = l2_result.get("trigger", [])
-    conf = l2_result.get("conf", 0.0)
+    if not isinstance(triggers, list):
+        triggers = [str(triggers)]
+    triggers = [t.strip() for t in triggers if t and str(t).strip()]
+    if not triggers:
+        triggers = ["auto"]
     turn_id = candidate.get("turn_id", "")
+    cwd = candidate.get("cwd", "")
 
-    # Build atom content
-    slug = _slug_from_statement(statement)
-    trigger_str = ", ".join(triggers) if isinstance(triggers, list) else str(triggers)
-
-    now = datetime.now().strftime("%Y-%m-%d")
-    content = (
-        f"# {slug}\n\n"
-        f"- Scope: {scope}\n"
-        f"- Confidence: [臨]\n"
-        f"- Type: decision\n"
-        f"- Trigger: {trigger_str}\n"
-        f"- Created: {now}\n"
-        f"- Last-used: {now}\n"
-        f"- Confirmations: 1\n"
-        f"- ReadHits: 0\n"
-        f"- Related: \n"
-        f"- Author: auto-extracted-v4.1\n"
-        f"- Audience: {audience}\n\n"
-        f"## 知識\n\n"
-        f"- [{scope == 'personal' and '臨' or '臨'}] {statement}\n\n"
-        f"<!-- src: {turn_id} -->\n"
+    audience_list = (
+        [a.strip() for a in audience_raw.split(",") if a.strip()]
+        if isinstance(audience_raw, str)
+        else list(audience_raw or [])
     )
 
-    # Try MCP atom_write via node subprocess
-    mcp_server = CLAUDE_DIR / "tools" / "workflow-guardian-mcp" / "server.js"
-    if mcp_server.exists():
-        try:
-            # Use the MCP tool directly via the JSON-RPC protocol
-            # For simplicity, write the atom file directly (MCP writes files anyway)
-            pass
-        except Exception:
-            pass
+    # Title 對拍原行為：從 statement 推導的 slug 當 title（funnel 內部會 slugify）。
+    slug = _slug_from_statement(statement)
+    knowledge_lines = [f"- [臨] {statement}", f"<!-- src: {turn_id} -->"]
 
-    # Direct file write to personal/auto/{user}/
-    cwd = candidate.get("cwd", "")
+    # Pre-check existence for dedup parity with prior behaviour.
+    # personal scope → memory/personal/{user}/{slug}.md
     project_root = find_project_root(cwd) if cwd else None
-
     if project_root:
-        auto_dir = Path(project_root) / ".claude" / "memory" / "personal" / "auto" / user
+        target_dir = Path(project_root) / ".claude" / "memory" / "personal" / user
     else:
-        auto_dir = CLAUDE_DIR / "memory" / "personal" / "auto" / user
-
-    auto_dir.mkdir(parents=True, exist_ok=True)
-    atom_path = auto_dir / f"{slug}.md"
-
-    # Dedup: skip if file already exists with same slug
-    if atom_path.exists():
+        target_dir = CLAUDE_DIR / "memory" / "personal" / user
+    pre_path = target_dir / f"{slug}.md"
+    if pre_path.exists():
         try:
-            existing = atom_path.read_text(encoding="utf-8")
+            existing = pre_path.read_text(encoding="utf-8")
             if statement in existing:
                 return "deduped"
         except (OSError, UnicodeDecodeError):
             pass
-        # Append counter
+        # Append counter to title (funnel will slugify-by-title)
         for i in range(2, 10):
-            alt = auto_dir / f"{slug}-{i}.md"
-            if not alt.exists():
-                atom_path = alt
+            alt_slug = f"{slug}-{i}"
+            if not (target_dir / f"{alt_slug}.md").exists():
+                slug = alt_slug
                 break
 
     try:
-        atom_path.write_text(content, encoding="utf-8")
-        return "wrote"
-    except OSError as e:
+        result = write_atom(
+            title=slug,
+            scope="personal",
+            confidence="[臨]",
+            triggers=triggers,
+            knowledge=knowledge_lines,
+            audience=audience_list or None,
+            user=user,
+            project_cwd=cwd or None,
+            mode="create",
+            source="hook:user-extract",
+            author="auto-extracted-v4.1",
+        )
+    except Exception as e:
         _atom_debug_error("user-extract:_write_atom", e)
         return "failed"
+
+    if result.ok:
+        return "wrote"
+    err = result.error or ""
+    if "already exists" in err:
+        return "deduped"
+    _atom_debug_error("user-extract:_write_atom", Exception(err))
+    return "failed"
 
 
 def _write_pending_candidate(

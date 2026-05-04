@@ -87,6 +87,7 @@ class AtomMetadata:
     layer_name: str
     title: str = ""
     scope: str = ""
+    scope_label: str = ""  # P7: dedup 用（frontmatter 優先，缺則由路徑推斷；對齊 lib/atom_spec.VALID_SCOPES）
     confidence: str = ""
     trigger: List[str] = field(default_factory=list)
     last_used: Optional[date] = None
@@ -214,6 +215,8 @@ def parse_atom_file(path: Path, layer_name: str) -> AtomMetadata:
 
     # Extract structured fields
     atom.scope = atom.raw_metadata.get("Scope", "")
+    # P7: scope_label — frontmatter 優先，缺則路徑推斷（對齊 tools/migrate-scope-field.py:infer_scope）
+    atom.scope_label = atom.scope or _infer_scope_from_path(path)
     raw_conf = atom.raw_metadata.get("Confidence", "")
     cm = CONFIDENCE_EXTRACT.search(raw_conf)
     atom.confidence = f"[{cm.group(1)}]" if cm else raw_conf
@@ -530,10 +533,11 @@ def detect_duplicates(all_atoms: List[AtomMetadata]) -> List[DuplicatePair]:
             if a.file_path.parent == b.file_path.parent:
                 continue
 
-            # Title match
-            title_match = (
-                a.title and b.title and _normalize(a.title) == _normalize(b.title)
-            )
+            # Title match — P7: 同 (scope_label, normalized title) 才算重複；
+            # 跨 scope 同名 atom（如 global/decisions vs shared/decisions）不該誤判
+            key_a = (a.scope_label, _normalize(a.title)) if a.title else None
+            key_b = (b.scope_label, _normalize(b.title)) if b.title else None
+            title_match = bool(key_a and key_b and key_a == key_b)
 
             # Trigger overlap
             set_a = {t.lower() for t in a.trigger}
@@ -1269,6 +1273,27 @@ def _rel_path(p: Path) -> str:
 def _normalize(s: str) -> str:
     """Normalize string for comparison."""
     return re.sub(r"\s+", " ", s.strip().lower())
+
+
+def _infer_scope_from_path(atom_path: Path) -> str:
+    """P7: 由路徑推斷 scope（fallback when frontmatter 缺 Scope:）。
+
+    對齊 tools/migrate-scope-field.py:infer_scope 與 lib/atom_spec.VALID_SCOPES。
+    支援 ~/.claude/memory/ 與 {project}/.claude/memory/ 兩種根層。
+    """
+    parts = atom_path.parts
+    # 找 memory/ 在 parts 的位置（global / project 共用此規則）
+    for i, p in enumerate(parts):
+        if p == "memory" and i + 1 < len(parts):
+            sub_parts = parts[i + 1:]  # memory/ 之下的 rel parts
+            if sub_parts and sub_parts[0] == "shared":
+                return "shared"
+            if len(sub_parts) >= 2 and sub_parts[0] == "roles":
+                return "role"
+            if len(sub_parts) >= 2 and sub_parts[0] == "personal":
+                return "personal"
+            return "global"
+    return "global"
 
 
 def _count_distant(memory_dir: Path) -> int:

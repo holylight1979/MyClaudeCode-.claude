@@ -22,6 +22,10 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Tuple
 
+# S2.2: 走 funnel write_index_full（整檔覆寫 + audit log）。
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from lib.atom_io import write_index_full  # noqa: E402
+
 MEMORY_DIR = Path.home() / ".claude" / "memory"
 ATOM_INDEX_NAME = "_ATOM_INDEX.md"
 MEMORY_INDEX_NAME = "MEMORY.md"
@@ -154,7 +158,12 @@ def main() -> int:
         return 0
 
     if args.write:
-        memory_path.write_text(new_full, encoding="utf-8")
+        result = write_index_full(memory_path, new_full,
+                                  source="tool:sync-memory-index")
+        if not result.ok:
+            print(f"[sync-memory-index] write failed: {result.error}",
+                  file=sys.stderr)
+            return 1
         print(f"[sync-memory-index] wrote {memory_path}")
         return 0
 
