@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import socket
 import subprocess
 import sys
@@ -720,6 +721,11 @@ def main():
     # Fast path: read config, check enabled
     config = _load_config()
     if not config.get("enabled", False):
+        sys.exit(0)
+
+    # 沒裝 codex CLI 的環境直接退出，避免每輪 spawn 失敗後落盤 assessment 檔與 log
+    codex_bin = config.get("codex_binary", "codex")
+    if not (os.path.isfile(codex_bin) or shutil.which(codex_bin)):
         sys.exit(0)
 
     # Read stdin
