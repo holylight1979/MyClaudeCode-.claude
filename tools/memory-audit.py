@@ -34,6 +34,14 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+# S3.3: route memory-audit atom writes through funnel
+_CLAUDE_DIR = Path.home() / ".claude"
+if str(_CLAUDE_DIR) not in sys.path:
+    sys.path.insert(0, str(_CLAUDE_DIR))
+from lib.atom_io import write_raw  # noqa: E402
+
+_AUDIT_SOURCE = "tool:memory-audit"
+
 # ─── Single source of truth: lib/atom_spec.py（S1.2 規則收束） ────────────────
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from lib.atom_spec import (
@@ -653,7 +661,10 @@ def restore_from_distant(atom_path: Path) -> Tuple[bool, str]:
     )
 
     try:
-        dest.write_text(text, encoding="utf-8")
+        # S3.3: 走 funnel
+        _r = write_raw(dest, text, source=_AUDIT_SOURCE, op="audit_demote")
+        if not _r.ok:
+            raise OSError(_r.error)
         atom_path.unlink()
         # Clean up empty year_month dir
         parent = atom_path.parent
@@ -699,11 +710,13 @@ def _append_evolution_entry(atom_path: Path, change: str, source: str = "memory-
                             lines.insert(j + 1, entry_line)
                             break
                     break
-        atom_path.write_text("\n".join(lines), encoding="utf-8")
+        # S3.3: 走 funnel
+        write_raw(atom_path, "\n".join(lines), source=_AUDIT_SOURCE, op="audit_evolution_insert")
     else:
         # No evolution log section; append one
         text += f"\n\n## 演化日誌\n\n| 日期 | 變更 | 來源 |\n|------|------|------|\n{entry_line}\n"
-        atom_path.write_text(text, encoding="utf-8")
+        # S3.3: 走 funnel
+        write_raw(atom_path, text, source=_AUDIT_SOURCE, op="audit_evolution_create")
 
 
 def compact_evolution_logs(
@@ -768,7 +781,8 @@ def compact_evolution_logs(
         else:
             new_lines.append(line)
 
-    atom_path.write_text("\n".join(new_lines), encoding="utf-8")
+    # S3.3: 走 funnel
+    write_raw(atom_path, "\n".join(new_lines), source=_AUDIT_SOURCE, op="audit_compact")
     return f"COMPACTED: {rel} — merged {merge_count} entries ({earliest}~{latest})"
 
 

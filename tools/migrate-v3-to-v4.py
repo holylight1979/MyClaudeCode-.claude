@@ -35,6 +35,11 @@ CLAUDE_DIR = Path.home() / ".claude"
 GLOBAL_MEMORY = CLAUDE_DIR / "memory"
 REGISTRY = GLOBAL_MEMORY / "project-registry.json"
 
+# S3.1: route migration writes through atom_io funnel
+if str(CLAUDE_DIR) not in sys.path:
+    sys.path.insert(0, str(CLAUDE_DIR))
+from lib.atom_io import write_raw  # noqa: E402
+
 SKIP_FILES = {"MEMORY.md", "_ATOM_INDEX.md", "_CHANGELOG.md",
               "_CHANGELOG_ARCHIVE.md", "_roles.md"}
 SKIP_PREFIXES = ("SPEC_",)
@@ -283,14 +288,14 @@ def run(project_filter: Optional[Path], global_only: bool,
                 "added_fields": added,
             }
             if apply:
-                try:
-                    tmp = path.with_suffix(path.suffix + ".tmp")
-                    tmp.write_text(new_text, encoding="utf-8")
-                    tmp.replace(path)
+                # S3.1: 走 atom_io.write_raw funnel（migration patch 是修補既有
+                # atom 而非建新，不適用 build_atom_content；走 raw escape hatch）
+                res = write_raw(path, new_text, source="tool:migrate", op="migrate_patch")
+                if res.ok:
                     entry["applied"] = True
-                except OSError as e:
+                else:
                     entry["applied"] = False
-                    entry["error"] = str(e)
+                    entry["error"] = res.error
             else:
                 entry["applied"] = False
             layer_info["patched"].append(entry)

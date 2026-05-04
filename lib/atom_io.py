@@ -44,10 +44,12 @@ AUDIT_LOG = GLOBAL_MEMORY_DIR / "_meta" / "atom_io_audit.jsonl"
 VALID_SOURCES = frozenset({
     "mcp",
     "hook:episodic",
+    "hook:episodic-confirm",  # wg_episodic L367 cross-session Confirmations +1
     "hook:user-extract",
     "hook:extract-worker",
     "tool:atom-move",
     "tool:changelog-roll",
+    "tool:memory-audit",  # memory-audit demote/compact/log_evolution 修補
     "tool:migrate",
     "tool:sync-atom-index",
     "tool:sync-memory-index",
@@ -283,6 +285,88 @@ def write_index_full(
         "op": "index_full", "source": source, "path": str(index_path),
     })
     return WriteResult(ok=True, path=index_path, audit_id=audit_id)
+
+
+# ─── Raw write escape hatch（給 V4 spec 不適用的 atom 子族用） ───────────────
+
+
+def write_raw(
+    file_path: Path,
+    content: str,
+    *,
+    source: str,
+    op: str = "raw",
+) -> WriteResult:
+    """Raw atom 寫入入口 — caller 提供完整 content + 絕對 path。
+
+    用途：failures/ episodic/ cross-session 等子族不符 V4 build_atom_content 規範
+    （沒 Trigger / Last-used / 用 Type:procedural 等），無法走 write_atom，但
+    仍需走 audit log + PreToolUse 放行清單。
+
+    funnel 只負責 _atomic_write + _audit_log；不做 validate / scope resolve / build。
+    """
+    audit_id = _gen_audit_id()
+    if source not in VALID_SOURCES:
+        return WriteResult(ok=False, audit_id=audit_id,
+                           error=f"invalid source: {source}")
+    try:
+        _atomic_write(file_path, content)
+    except OSError as e:
+        return WriteResult(ok=False, audit_id=audit_id, error=f"write failed: {e}")
+    _audit_log({
+        "audit_id": audit_id, "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "op": op, "source": source, "path": str(file_path),
+    })
+    return WriteResult(ok=True, audit_id=audit_id, path=file_path)
+
+
+# ─── Field-level update (Confirmations / ReadHits / Last-used 等 metadata) ───
+
+
+def update_atom_field(
+    file_path: Path,
+    field: str,
+    value: str,
+    *,
+    source: str,
+) -> WriteResult:
+    """單欄位 metadata in-place 更新（read-modify-write 一個 `- Field: X` 行）。
+
+    用於：cross-session Confirmations +1、ReadHits 計數、Last-used 戳記等
+    無法用 build_atom_content 整檔重建的場景（會丟掉自由格式 ## 章節）。
+
+    對拍 wg_episodic.py L367 / wg_episodic.py L384 行為等價。
+    """
+    audit_id = _gen_audit_id()
+    if source not in VALID_SOURCES:
+        return WriteResult(ok=False, audit_id=audit_id,
+                           error=f"invalid source: {source}")
+    if not file_path.exists():
+        return WriteResult(ok=False, audit_id=audit_id,
+                           error=f"atom not found: {file_path}")
+    try:
+        text = file_path.read_text(encoding="utf-8-sig")
+    except OSError as e:
+        return WriteResult(ok=False, audit_id=audit_id, error=f"read failed: {e}")
+
+    pat = re.compile(rf"^- {re.escape(field)}:\s*.+$", re.MULTILINE)
+    new_line = f"- {field}: {value}"
+    if pat.search(text):
+        text = pat.sub(new_line, text, count=1)
+    else:
+        return WriteResult(ok=False, audit_id=audit_id,
+                           error=f"field not found in atom: {field}")
+
+    try:
+        _atomic_write(file_path, text)
+    except OSError as e:
+        return WriteResult(ok=False, audit_id=audit_id, error=f"write failed: {e}")
+    _audit_log({
+        "audit_id": audit_id, "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "op": "update_field", "source": source, "path": str(file_path),
+        "field": field,
+    })
+    return WriteResult(ok=True, audit_id=audit_id, path=file_path)
 
 
 # ─── Main entry ───────────────────────────────────────────────────────────────

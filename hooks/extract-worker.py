@@ -35,6 +35,12 @@ from wg_paths import (
 )
 from wg_content_classify import classify_extracted_item
 
+# S3.0: route failure atom writes through atom_io funnel
+_LIB_PARENT = str(Path.home() / ".claude")
+if _LIB_PARENT not in sys.path:
+    sys.path.insert(0, _LIB_PARENT)
+from lib.atom_io import write_raw  # noqa: E402
+
 WORKFLOW_DIR = CLAUDE_DIR / "workflow"
 
 # Windows cp950 → UTF-8 (detached subprocess doesn't inherit guardian's encoding)
@@ -543,7 +549,8 @@ def _failure_writeback(ctx: dict, items: list) -> None:
         now = datetime.now().strftime("%Y-%m-%d")
         entry_line = f"- [臨] {content}{tag_str}  ({now})"
 
-        # 寫入：插在 ## 行動 之前；若檔案不存在則建立
+        # S3.0: 走 atom_io.write_raw funnel（保留原 marker fallback 行為，
+        # 但統一經過 audit log + PreToolUse 強制門禁放行）
         if target.exists():
             text = target.read_text(encoding="utf-8-sig")
             inserted = False
@@ -555,7 +562,10 @@ def _failure_writeback(ctx: dict, items: list) -> None:
                     break
             if not inserted:
                 text += "\n" + entry_line + "\n"
-            target.write_text(text, encoding="utf-8")
+            res = write_raw(target, text, source="hook:extract-worker", op="failure_append")
+            if not res.ok:
+                _atom_debug_log("failure_writeback", f"funnel reject: {res.error}", config)
+                continue
         else:
             _create_failure_atom(target, ftype, entry_line)
         written += 1
@@ -569,7 +579,11 @@ def _failure_writeback(ctx: dict, items: list) -> None:
 
 
 def _create_failure_atom(path: Path, ftype: str, first_entry: str) -> None:
-    """建立最小 failure atom 檔（專案層首次寫入用）。"""
+    """建立最小 failure atom 檔（專案層首次寫入用）。
+
+    S3.0: 走 atom_io.write_raw funnel（failures 子族不符 V4 build_atom_content
+    規範 — 用 Type/Created 而非 Trigger/Last-used，故走 raw escape hatch）。
+    """
     content = (
         f"# {_FAILURE_TITLES.get(ftype, ftype)}\n\n"
         f"- Scope: project\n"
@@ -580,7 +594,7 @@ def _create_failure_atom(path: Path, ftype: str, first_entry: str) -> None:
         f"## 行動\n\n- 同全域 failures 共通行動規則\n"
     )
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
+    write_raw(path, content, source="hook:extract-worker", op="failure_create")
 
 
 # ─── Entry point ──────────────────────────────────────────────────────────────

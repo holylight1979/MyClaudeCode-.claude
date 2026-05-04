@@ -124,6 +124,55 @@ PostToolUse hook 偵測 `_CHANGELOG.md` 寫入 → 行數 >`config.changelog_aut
 
 資料層：`MEMORY.md` 索引（always-loaded）+ atom 檔（按需）+ LanceDB vector + episodic + wisdom + 專案自治層。
 
+### Atom 寫入單點收束（funnel，S1–S3，2026-05-04）
+
+> 全系統所有 atom 寫入經過 `lib/atom_io.py` 唯一入口；違者由 PreToolUse 強制門禁攔截。
+
+**架構：**
+
+- `lib/atom_spec.py` — atom 格式規則純函式（slugify / build_atom_content / validate / SKIP_DIRS / VALID_SCOPES），audit/health/atom_io 共用 import 避免規則漂移
+- `lib/atom_io.py` — funnel 入口：`write_atom()` (build+validate+atomic write+index+audit log) / `write_raw()` (escape hatch for failures/episodic 子族) / `update_atom_field()` (Confirmations 計數類 in-place 更新) / `write_index_full()` (整檔重組 sync 用)
+- `lib/atom_io_cli.py` — stdin JSON → write_* → stdout JSON，供 MCP server.js spawn
+
+**Caller 接線（contract: source 必填，記入 `_meta/atom_io_audit.jsonl`）：**
+
+| Caller | source 名稱 | 切入點 |
+|---|---|---|
+| MCP server.js (toolAtomWrite/Promote) | `mcp` | `funnelWriteRaw()` + `funnelWriteIndexFull()` spawn CLI |
+| hooks/extract-worker.py (failure atom) | `hook:extract-worker` | `_failure_writeback` + `_create_failure_atom` |
+| hooks/wg_episodic.py (cross-session confirm) | `hook:episodic-confirm` | L367 Confirmations +1 `update_atom_field` |
+| hooks/wg_episodic.py (episodic atom) | `hook:episodic` | `write_raw` |
+| hooks/quick-extract / user-extract | `hook:user-extract` | (S2 接) |
+| tools/migrate-v3-to-v4.py | `tool:migrate` | `write_raw` migration patch |
+| tools/memory-undo.py | `tool:undo` | `write_raw` reject footer |
+| tools/atom-move.py | `tool:atom-move` | `write_raw` (atom) + `write_index_full` (index) |
+| tools/memory-audit.py | `tool:memory-audit` | demote / compact / log_evolution `write_raw` |
+| tools/sync-atom-index / sync-memory-index | `tool:sync-*` | `write_index_full` |
+
+**強制門禁（PreToolUse）：**
+
+- `hooks/wg_pretool_guards.py:check_memory_path_block`
+  - (a) `~/.claude/projects/{slug}/memory/` 殘骸 → deny [P1]
+  - (b) `~/.claude/.claude/memory/` 雙層路徑 → deny [P6]
+  - (c) 任何 atom .md 直 Write/Edit 不走 funnel → deny [S3.3]
+- 白名單：`MEMORY.md` / `_ATOM_INDEX.md` / `_` 前綴檔 / `_meta`/`_staging`/`episodic`/`wisdom`/`personal` 子目錄
+- 緊急 bypass：env `WG_DISABLE_ATOM_GUARD=1`
+
+**MCP cwd-scope 雙向防護（server.js:resolveMemDir）：**
+
+- P3：scope=global 配 project root cwd（非 `~/.claude`）→ reject（避免污染 global），可用 `force_global=true` escape
+- P4：scope=shared/role/personal 配 cwd 在 `~/.claude` 下 → reject（V4 sub-scope 在專案層才有意義）
+
+**反向證明工具：**
+
+- `tools/check-bypass.py` — 靜態掃 hooks/tools/lib/plugins 內所有 `write_text`/`open(..., w)`/`fs.writeFileSync` 出現在 memory 路徑附近的點，white-list 之外 → 印警告（CI exit 1）
+- `tools/audit-reconcile.py` — 動態對拍：列近期 mtime atom × audit log entries，mtime 沒對應 audit ts → 列為 suspect bypass（`--since 30s/2h/1d`）
+
+**測試：**
+
+- `tests/test_atom_io_equivalence.py` — 11 cases 對拍 server.js byte-identical
+- `tests/test_guardian_atom_write_gate.py` — 9 cases 含 S3.3 強制門禁攔截場景
+
 ## MCP Servers
 
 | Server | 傳輸 | 用途 |

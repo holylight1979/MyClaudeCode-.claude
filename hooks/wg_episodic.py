@@ -27,6 +27,12 @@ from wg_content_classify import is_plan_content
 sys.path.insert(0, str(Path.home() / ".claude" / "tools"))
 from ollama_client import get_client
 
+# S3.0: route Confirmations counter update through atom_io funnel
+_LIB_PARENT = str(Path.home() / ".claude")
+if _LIB_PARENT not in sys.path:
+    sys.path.insert(0, _LIB_PARENT)
+from lib.atom_io import update_atom_field, write_raw  # noqa: E402
+
 
 # ─── Episodic Gate ────────────────────────────────────────────────────────────
 
@@ -360,11 +366,11 @@ def _check_cross_session_patterns(
                         cm = re.search(r"^(- Confirmations:\s*)(\d+)", atom_text, re.MULTILINE)
                         if cm:
                             new_c = int(cm.group(2)) + 1
-                            atom_text = re.sub(
-                                r"^(- Confirmations:\s*)\d+", rf"\g<1>{new_c}",
-                                atom_text, count=1, flags=re.MULTILINE,
+                            # S3.0: 走 atom_io.update_atom_field funnel（單欄位 in-place 更新）
+                            update_atom_field(
+                                Path(atom_file), "Confirmations", str(new_c),
+                                source="hook:episodic-confirm",
                             )
-                            Path(atom_file).write_text(atom_text, encoding="utf-8")
                         # Phase B: write correlation_id to access.json
                         try:
                             import uuid as _uuid
@@ -806,7 +812,9 @@ def _generate_episodic_atom(
         f"| {today} | 自動建立 episodic atom (v2.2) | session:{session_id[:8]} |\n"
     )
 
-    atom_path.write_text(content, encoding="utf-8")
+    # S3.3: episodic atom 走 funnel write_raw（在 SKIP_DIRS 不算 V4 atom，
+    # 但仍經 audit log 確保 PreToolUse 強制門禁可放行）
+    write_raw(atom_path, content, source="hook:episodic", op="episodic_create")
     # v2.2: Episodic atoms NOT listed in MEMORY.md index (TTL 24d, vector search discovers them)
 
     # Debug log: one-line summary instead of full content (full is in atom file)

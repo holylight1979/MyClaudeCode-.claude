@@ -97,27 +97,30 @@ def test_new_atom_with_solid_inline_tag_blocked(tmp_path):
     assert "[固]" in deny.get("permissionDecisionReason", "")
 
 
-def test_new_atom_with_temp_confidence_allowed(tmp_path):
-    """反向 1：新建 atom Confidence: [臨] + 內文全 [臨] → 放行。"""
+def test_new_atom_with_temp_confidence_blocked_by_funnel_gate(tmp_path):
+    """S3.3 後：新建 [臨] atom 直 Write 也被擋 — 必須走 funnel
+    (lib.atom_io.write_atom / MCP atom_write)。先前「[臨] 直 Write 放行」
+    的設計被強制門禁取代：funnel 是唯一入口。"""
     fp = tmp_path / ".claude" / "memory" / "feedback" / "feedback-temp.md"
     fp.parent.mkdir(parents=True, exist_ok=True)
     content = _atom_content("[臨]", ["- [臨] 第一次觀察", "- [臨] 待驗證"])
     out = _run_pretool(str(fp), content)
-    assert out == {}, out  # output_nothing → 空輸出
+    deny = out.get("hookSpecificOutput", {})
+    assert deny.get("permissionDecision") == "deny", out
+    assert "AtomFunnelBlock" in deny.get("permissionDecisionReason", "")
 
 
-def test_existing_atom_overwrite_with_solid_confidence_allowed(tmp_path):
-    """反向 2：對既有 atom（已存在路徑）整檔覆寫保留 [固] → 放行。
-
-    Write 對已存在檔案的場景對應 MCP mode=replace 路徑（保留 confirmations
-    + readhits 的合法晉升狀態），不應 block。
-    """
+def test_existing_atom_overwrite_blocked_by_funnel_gate(tmp_path):
+    """S3.3 後：覆寫既有 atom 也要走 funnel (write_atom mode=replace)，
+    直 Write 即使 confidence=[固] 也被擋。"""
     fp = tmp_path / ".claude" / "memory" / "feedback" / "feedback-existing.md"
     fp.parent.mkdir(parents=True, exist_ok=True)
     fp.write_text("placeholder existing", encoding="utf-8")
     content = _atom_content("[固]", ["- [固] 已晉升條目"])
     out = _run_pretool(str(fp), content)
-    assert out == {}, out
+    deny = out.get("hookSpecificOutput", {})
+    assert deny.get("permissionDecision") == "deny", out
+    assert "AtomFunnelBlock" in deny.get("permissionDecisionReason", "")
 
 
 # ─── 邊界測試 ────────────────────────────────────────────────────────

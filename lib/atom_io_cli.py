@@ -1,20 +1,27 @@
 """atom_io_cli.py — thin CLI bridge: stdin JSON → write_atom → stdout JSON (S1.3)
 
-供 S3.2 server.js 切 spawn 用：MCP toolAtomWrite/Promote/Move 主體刪掉，
+供 S3.2 server.js 切 spawn 用：MCP toolAtomWrite/Promote 最終落檔
 改 spawn `python -m lib.atom_io_cli`，stdin 餵 JSON 參數，stdout 讀 WriteResult。
 
 Schema:
-  stdin:  {"action": "write_atom"|"write_index", ...kwargs}
+  stdin:  {"action": "write_atom"|"write_index"|"write_index_full"|"write_raw"|"update_atom_field", ...kwargs}
   stdout: WriteResult.to_dict()  (single-line JSON)
   exit code: 0=ok, 1=error
+
+write_raw / write_index_full 額外參數：caller 端傳 file_path (str)、content (str)。
+update_atom_field 額外參數：file_path (str)、field (str)、value (str)。
 """
 
 from __future__ import annotations
 
 import json
 import sys
+from pathlib import Path
 
-from .atom_io import write_atom, write_index, WriteResult
+from .atom_io import (
+    write_atom, write_index, write_index_full, write_raw,
+    update_atom_field, WriteResult,
+)
 
 
 def main() -> int:
@@ -30,10 +37,22 @@ def main() -> int:
             result = write_atom(**payload)
         elif action == "write_index":
             result = write_index(**payload)
+        elif action == "write_index_full":
+            # JSON 不能傳 Path，caller 用 str；轉成 Path
+            payload["index_path"] = Path(payload["index_path"])
+            result = write_index_full(**payload)
+        elif action == "write_raw":
+            payload["file_path"] = Path(payload["file_path"])
+            result = write_raw(**payload)
+        elif action == "update_atom_field":
+            payload["file_path"] = Path(payload["file_path"])
+            result = update_atom_field(**payload)
         else:
             result = WriteResult(ok=False, error=f"unknown action: {action}")
     except TypeError as e:
         result = WriteResult(ok=False, error=f"bad params: {e}")
+    except KeyError as e:
+        result = WriteResult(ok=False, error=f"missing param: {e}")
 
     print(json.dumps(result.to_dict(), ensure_ascii=False))
     return 0 if result.ok else 1

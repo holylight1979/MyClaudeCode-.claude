@@ -513,7 +513,8 @@ function handleToolCall(id, toolName, args) {
     case "atom_write":
       return toolAtomWrite(id, args).catch(e => sendToolResult(id, `atom_write error: ${e.message}`, true));
     case "atom_promote":
-      return toolAtomPromote(id, args);
+      // S3.2: toolAtomPromote 改 async，需 .catch 包 throw（與 atom_write/atom_move 一致）
+      return toolAtomPromote(id, args).catch(e => sendToolResult(id, `atom_promote error: ${e.message}`, true));
     case "atom_move":
       return toolAtomMove(id, args).catch(e => sendToolResult(id, `atom_move error: ${e.message}`, true));
     default:
@@ -777,6 +778,45 @@ function isSensitiveAudience(audience) {
 function resolveMemDir(scope, projectCwd, opts = {}) {
   scope = scope || "shared";
 
+  // ─── S3.2 P3+P4: cwd-scope mismatch 防護 ────────────────────────────────
+  // 防止「在專案 root 下用 scope=global 寫個人/專案知識到全域」與
+  // 「在 ~/.claude 下用 scope=shared/role/personal 落到不存在的 V4 子層」。
+  // force_global escape hatch 給 migration / 測試使用。
+  const normCwd = (s) => {
+    if (!s) return "";
+    try { return path.resolve(s).toLowerCase(); }
+    catch { return String(s).toLowerCase(); }
+  };
+  const claudeDirNorm = normCwd(CLAUDE_DIR);
+  const cwdNorm = normCwd(projectCwd);
+  const isUnderClaudeDir = cwdNorm && (
+    cwdNorm === claudeDirNorm ||
+    cwdNorm.startsWith(claudeDirNorm + path.sep.toLowerCase()) ||
+    cwdNorm.startsWith(claudeDirNorm + "/")
+  );
+
+  if (scope === "global" && !opts.force_global) {
+    // P3: 若 cwd 落在某個專案 root（非 ~/.claude）→ 拒絕（避免污染 global）
+    if (cwdNorm && !isUnderClaudeDir) {
+      const projRoot = findProjectRoot(projectCwd);
+      if (projRoot && normCwd(projRoot) !== claudeDirNorm) {
+        return { error:
+          `scope=global rejected: cwd=${projectCwd} is inside project root=${projRoot}; ` +
+          `use scope=shared/role/personal for project knowledge, or pass force_global=true`,
+        };
+      }
+    }
+  }
+
+  if ((scope === "shared" || scope === "role" || scope === "personal") && isUnderClaudeDir) {
+    // P4: ~/.claude 本身沒有 V4 sub-scope 結構（已被 P1 防護擋住）
+    return { error:
+      `scope=${scope} rejected: cwd=${projectCwd} is under ~/.claude itself; ` +
+      `use scope=global for cross-project knowledge`,
+    };
+  }
+  // ─── /S3.2 P3+P4 ────────────────────────────────────────────────────────
+
   if (scope === "global") {
     fs.mkdirSync(MEMORY_DIR, { recursive: true });
     return { dir: MEMORY_DIR, base: MEMORY_DIR };
@@ -950,7 +990,7 @@ function execWriteGate(content, classification) {
 }
 
 /** Append or update an atom entry in MEMORY.md index table */
-function appendToIndex(memDir, atomName, relPath, triggers) {
+async function appendToIndex(memDir, atomName, relPath, triggers) {
   const indexPath = resolveMemoryIndex(memDir);
   const triggerStr = triggers.join(", ");
   const newRow = `| ${atomName} | ${relPath} | ${triggerStr} |`;
@@ -1007,10 +1047,11 @@ function appendToIndex(memDir, atomName, relPath, triggers) {
     }
   }
 
-  // Write atomically
-  const tmp = indexPath + ".tmp";
-  fs.writeFileSync(tmp, content, "utf-8");
-  fs.renameSync(tmp, indexPath);
+  // S3.2: 走 lib.atom_io.write_index_full funnel（atomic write + audit log）
+  // appendToIndex 改 async + caller await，避免 syncMemoryIndex 在 index 寫入
+  // 完成前讀到舊版 _ATOM_INDEX 而漏新行。
+  const r = await funnelWriteIndexFull(indexPath, content, "mcp");
+  if (!r.ok) crashLog("appendToIndex funnel", r.error);
 }
 
 /** Trigger vector service re-index (fire and forget) */
@@ -1059,6 +1100,64 @@ function parseAtomMeta(content) {
   if (titleMatch) meta.title = titleMatch[1];
   return meta;
 }
+
+// ─── S3.2: Atom Funnel Bridge (spawn lib/atom_io_cli) ─────────────────────
+
+/** Spawn `python -m lib.atom_io_cli` to perform atom write through the
+ *  centralized funnel (audit log + audit-id + uniform error contract).
+ *  Returns Promise<{ok, error, audit_id, path}>.
+ *  All atomic writes from MCP go through this so PreToolUse strict gate
+ *  (S3.3) can verify every write has an audit log entry.
+ */
+function spawnAtomCli(action, payload) {
+  return new Promise((resolve) => {
+    let cp;
+    try {
+      cp = require("child_process").spawn(
+        "python", ["-m", "lib.atom_io_cli"],
+        {
+          cwd: CLAUDE_DIR,
+          windowsHide: true,
+          env: { ...process.env, PYTHONIOENCODING: "utf-8" },
+        }
+      );
+    } catch (e) {
+      return resolve({ ok: false, error: `spawn failed: ${e.message}` });
+    }
+    let out = "", err = "";
+    cp.stdout.on("data", (d) => { out += d.toString("utf-8"); });
+    cp.stderr.on("data", (d) => { err += d.toString("utf-8"); });
+    cp.on("close", () => {
+      try {
+        resolve(JSON.parse(out));
+      } catch (e) {
+        resolve({ ok: false, error: `cli parse fail: ${e.message} stderr=${err.slice(0, 200)}` });
+      }
+    });
+    cp.on("error", (e) => resolve({ ok: false, error: `spawn error: ${e.message}` }));
+    try {
+      cp.stdin.write(JSON.stringify({ action, ...payload }));
+      cp.stdin.end();
+    } catch (e) {
+      resolve({ ok: false, error: `stdin write failed: ${e.message}` });
+    }
+  });
+}
+
+/** Atomic write through funnel: routes raw content via lib.atom_io.write_raw. */
+function funnelWriteRaw(filePath, content, source, op) {
+  return spawnAtomCli("write_raw", {
+    file_path: filePath, content, source, op: op || "raw",
+  });
+}
+
+/** Index full overwrite through funnel. */
+function funnelWriteIndexFull(indexPath, content, source) {
+  return spawnAtomCli("write_index_full", {
+    index_path: indexPath, content, source,
+  });
+}
+
 
 // ─── Atom Write Handler ────────────────────────────────────────────────────
 
@@ -1188,11 +1287,13 @@ async function toolAtomWrite(id, args) {
     }
 
     fs.mkdirSync(memDir, { recursive: true });
-    const tmp = filePath + ".tmp";
-    fs.writeFileSync(tmp, content, "utf-8");
-    fs.renameSync(tmp, filePath);
+    // S3.2: 走 lib.atom_io.write_raw funnel（atomic write + audit log）
+    const wr = await funnelWriteRaw(filePath, content, "mcp", "atom_create");
+    if (!wr.ok) {
+      return sendToolResult(id, `funnel write_raw failed: ${wr.error}`, true);
+    }
 
-    appendToIndex(baseDir, slug, relPath, triggers);
+    await appendToIndex(baseDir, slug, relPath, triggers);
     triggerVectorReindex();
     if (scopeLabel === "global") syncMemoryIndex();
 
@@ -1236,9 +1337,11 @@ async function toolAtomWrite(id, args) {
       return sendToolResult(id, `Validation failed after append: ${err}`, true);
     }
 
-    const tmp = filePath + ".tmp";
-    fs.writeFileSync(tmp, finalContent, "utf-8");
-    fs.renameSync(tmp, filePath);
+    // S3.2: 走 lib.atom_io.write_raw funnel
+    const wr = await funnelWriteRaw(filePath, finalContent, "mcp", "atom_append");
+    if (!wr.ok) {
+      return sendToolResult(id, `funnel write_raw failed: ${wr.error}`, true);
+    }
 
     triggerVectorReindex();
 
@@ -1282,11 +1385,13 @@ async function toolAtomWrite(id, args) {
       .replace(/^- ReadHits:\s*\d+$/m, `- ReadHits: ${readhits}`);
 
     fs.mkdirSync(memDir, { recursive: true });
-    const tmp = filePath + ".tmp";
-    fs.writeFileSync(tmp, finalContent, "utf-8");
-    fs.renameSync(tmp, filePath);
+    // S3.2: 走 lib.atom_io.write_raw funnel
+    const wr = await funnelWriteRaw(filePath, finalContent, "mcp", "atom_replace");
+    if (!wr.ok) {
+      return sendToolResult(id, `funnel write_raw failed: ${wr.error}`, true);
+    }
 
-    appendToIndex(baseDir, slug, relPath, triggers);
+    await appendToIndex(baseDir, slug, relPath, triggers);
     triggerVectorReindex();
     if (scopeLabel === "global") syncMemoryIndex();
 
@@ -1301,7 +1406,7 @@ async function toolAtomWrite(id, args) {
 
 // ─── Atom Promote Handler ──────────────────────────────────────────────────
 
-function toolAtomPromote(id, args) {
+async function toolAtomPromote(id, args) {
   const { atom_name, scope, project_cwd, execute, role, user, merge_to_preferences } = args;
 
   const resolved = resolveMemDir(scope, project_cwd, { role, user });
@@ -1401,9 +1506,11 @@ function toolAtomPromote(id, args) {
     `- ${next}`
   );
 
-  const tmp = filePath + ".tmp";
-  fs.writeFileSync(tmp, finalContent, "utf-8");
-  fs.renameSync(tmp, filePath);
+  // S3.2: 走 lib.atom_io.write_raw funnel
+  const wrPromote = await funnelWriteRaw(filePath, finalContent, "mcp", "atom_promote");
+  if (!wrPromote.ok) {
+    return sendToolResult(id, `funnel write_raw failed: ${wrPromote.error}`, true);
+  }
 
   triggerVectorReindex();
 
@@ -1449,7 +1556,11 @@ function toolAtomPromote(id, args) {
           `\n\n### 歸檔合併 · ${atom_name} (${today})\n` +
           `> 自 [觀]→[固] 晉升時合併自 \`${path.basename(filePath)}\`\n\n` +
           knowledgeLines.map(l => `- ${l}`).join("\n") + "\n";
-        fs.writeFileSync(prefPath, prefText.trimEnd() + mergeSection, "utf-8");
+        // S3.2: 走 lib.atom_io.write_raw funnel
+        const wrPref = await funnelWriteRaw(
+          prefPath, prefText.trimEnd() + mergeSection, "mcp", "promote_merge_pref"
+        );
+        if (!wrPref.ok) throw new Error(`funnel write_raw failed: ${wrPref.error}`);
 
         fs.renameSync(filePath, archivePath);
 

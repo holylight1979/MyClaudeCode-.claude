@@ -25,6 +25,13 @@ ATOM_INDEX = "_ATOM_INDEX.md"
 MEMORY_INDEX = "MEMORY.md"
 SKIP_NAMES = {ATOM_INDEX, MEMORY_INDEX}
 
+# S3.1: route atom-move writes through atom_io funnel
+if str(CLAUDE_DIR) not in sys.path:
+    sys.path.insert(0, str(CLAUDE_DIR))
+from lib.atom_io import write_raw, write_index_full  # noqa: E402
+
+_ATOM_MOVE_SOURCE = "tool:atom-move"
+
 
 def find_atom_file(root: Path, slug: str):
     if not root.is_dir():
@@ -115,7 +122,8 @@ def remove_atom_index_row(root: Path, slug: str):
     lines = idx.read_text(encoding="utf-8").splitlines(keepends=True)
     new = [l for l in lines if not re.match(rf"^\|\s*{re.escape(slug)}\s*\|", l)]
     if len(new) != len(lines):
-        idx.write_text("".join(new), encoding="utf-8")
+        # S3.1: 走 atom_io.write_index_full funnel
+        write_index_full(idx, "".join(new), source=_ATOM_MOVE_SOURCE)
         return True
     return False
 
@@ -123,12 +131,14 @@ def remove_atom_index_row(root: Path, slug: str):
 def add_atom_index_row(root: Path, slug: str, trigger: str, scope: str):
     idx = root / ATOM_INDEX
     if not idx.exists():
-        idx.write_text(
+        # S3.1: 首次建檔走 funnel
+        write_index_full(
+            idx,
             "# Atom Trigger Index\n\n"
             "> Machine-parsed by workflow-guardian hooks. Not @imported into context.\n\n"
             "| Atom | Path | Trigger | Scope |\n"
             "|------|------|---------|-------|\n",
-            encoding="utf-8",
+            source=_ATOM_MOVE_SOURCE,
         )
     text = idx.read_text(encoding="utf-8")
     if re.search(rf"^\|\s*{re.escape(slug)}\s*\|", text, re.MULTILINE):
@@ -143,7 +153,7 @@ def add_atom_index_row(root: Path, slug: str, trigger: str, scope: str):
     if not text.endswith("\n"):
         text += "\n"
     text += row
-    idx.write_text(text, encoding="utf-8")
+    write_index_full(idx, text, source=_ATOM_MOVE_SOURCE)
     return True
 
 
@@ -155,7 +165,7 @@ def remove_memory_index_row(root: Path, slug: str):
     pattern = re.compile(rf"^\|\s*{re.escape(slug)}\s*\|.*$\n?", re.MULTILINE)
     new, n = pattern.subn("", text)
     if n:
-        mem_idx.write_text(new, encoding="utf-8")
+        write_index_full(mem_idx, new, source=_ATOM_MOVE_SOURCE)
         return True
     return False
 
@@ -171,7 +181,7 @@ def remove_inbound_ref(atom_path: Path, slug: str):
         return False
     new_line = f"- Related: {', '.join(new_items) if new_items else '(none)'}"
     text = text.replace(m.group(0), new_line, 1)
-    atom_path.write_text(text, encoding="utf-8")
+    write_raw(atom_path, text, source=_ATOM_MOVE_SOURCE, op="atom_move_related")
     return True
 
 
@@ -183,14 +193,14 @@ def update_scope_field(atom_path: Path, new_scope: str):
     if m:
         old = m.group(1).strip()
         text = text.replace(m.group(0), f"- Scope: {new_scope}", 1)
-        atom_path.write_text(text, encoding="utf-8")
+        write_raw(atom_path, text, source=_ATOM_MOVE_SOURCE, op="atom_move_scope")
         return f"{old} → {new_scope}"
     # No Scope field — insert after title
     lines = text.splitlines(keepends=True)
     for i, ln in enumerate(lines):
         if ln.startswith("# "):
             lines.insert(i + 2, f"- Scope: {new_scope}\n")
-            atom_path.write_text("".join(lines), encoding="utf-8")
+            write_raw(atom_path, "".join(lines), source=_ATOM_MOVE_SOURCE, op="atom_move_scope_insert")
             return f"(none) → {new_scope}"
     return None
 
