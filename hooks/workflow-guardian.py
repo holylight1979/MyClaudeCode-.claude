@@ -1736,15 +1736,21 @@ def handle_post_tool_use(input_data: Dict[str, Any], config: Dict[str, Any]) -> 
     file_path = tool_input.get("file_path", "")
 
     if tool_name in ("Edit", "Write") and file_path:
+        # Auto-roll _CHANGELOG.md when row count > threshold (fail-open, detached)
+        # 不受 ephemeral filter 影響：純檔內容驅動，與 session 簿記無關
+        _maybe_auto_roll_changelog(file_path, config)
+
+    if (
+        tool_name in ("Edit", "Write")
+        and file_path
+        and not _is_ephemeral_path(file_path)
+    ):
         state.setdefault("modified_files", []).append({
             "path": file_path,
             "tool": tool_name,
             "at": _now_iso(),
         })
         state["sync_pending"] = True
-
-        # Auto-roll _CHANGELOG.md when row count > threshold (fail-open, detached)
-        _maybe_auto_roll_changelog(file_path, config)
 
         # V2.11: Track per-file edit counts for over-engineering detection
         edit_counts = state.setdefault("edit_counts", {})
@@ -2039,6 +2045,40 @@ def _maybe_spawn_user_extract_worker(
     except Exception as e:
         _atom_debug_error("V4.1:spawn_user_extract_worker", e)
         return False
+
+
+# ─── PostToolUse path filter ───────────────────────────────────────────────
+
+
+import tempfile as _tempfile
+# 注意：以下 token 會比對 norm（已把 \ 轉成 /）後的小寫字串，所以全用 /
+_EPHEMERAL_DIR_TOKENS = (
+    "/pytest-of-",       # pytest tmp_path 根
+    "/.pytest_cache/",
+    "/__pycache__/",
+)
+
+
+def _is_ephemeral_path(path: str) -> bool:
+    """過濾測試/快取/系統 tmp 路徑，避免污染 modified_files。
+
+    任何真實使用者 Edit/Write 都不應落在系統 tmp 或 pytest 暫存目錄；
+    這類 path 來自單元測試本身的 fixture（會被 pytest 自動清掉），
+    不該觸發 sync 提醒，也不該被 _maybe_auto_roll_changelog 處理。
+    """
+    if not path:
+        return False
+    norm = path.replace("\\", "/")
+    # 系統 tmp 根（跨平台：Windows %TEMP%、POSIX /tmp）
+    try:
+        tmp_root = _tempfile.gettempdir().replace("\\", "/").rstrip("/")
+        if tmp_root and norm.lower().startswith(tmp_root.lower() + "/"):
+            return True
+    except Exception:
+        pass
+    # 通用測試/快取目錄 token
+    norm_low = norm.lower()
+    return any(tok in norm_low for tok in _EPHEMERAL_DIR_TOKENS)
 
 
 # ─── Sync Reminder Gate helpers ────────────────────────────────────────────

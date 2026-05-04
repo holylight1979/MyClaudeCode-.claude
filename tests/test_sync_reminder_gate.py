@@ -122,6 +122,49 @@ def test_git_mixed_committed_and_modified(tmp_path: Path):
     assert str(committed) not in result
 
 
+def test_ephemeral_filter_blocks_pytest_tmp():
+    """pytest tmp_path 路徑（含 pytest-of-*）→ ephemeral，不該進 modified_files。"""
+    assert wg._is_ephemeral_path(
+        r"C:\Users\holylight\AppData\Local\Temp\pytest-of-holylight\pytest-89\test_x0\some.md"
+    ) is True
+
+
+def test_ephemeral_filter_blocks_system_tmp(tmp_path: Path):
+    """系統 tmp 根下的任意檔 → ephemeral。"""
+    f = tmp_path / "anything.txt"
+    f.write_text("x", encoding="utf-8")
+    assert wg._is_ephemeral_path(str(f)) is True
+
+
+def test_ephemeral_filter_blocks_pycache():
+    assert wg._is_ephemeral_path(
+        r"C:\Users\holylight\.claude\hooks\__pycache__\workflow-guardian.cpython-314.pyc"
+    ) is True
+
+
+def test_ephemeral_filter_blocks_pytest_cache():
+    assert wg._is_ephemeral_path(
+        "/home/user/proj/.pytest_cache/v/cache/lastfailed"
+    ) is True
+
+
+def test_ephemeral_filter_allows_real_project_paths():
+    """專案內真實檔案不該被誤殺。"""
+    real_paths = [
+        r"C:\Users\holylight\.claude\hooks\workflow-guardian.py",
+        r"C:\Users\holylight\.claude\memory\decisions.md",
+        "/home/user/proj/src/foo.py",
+        "/c/Users/holylight/.claude/tests/test_x.py",
+    ]
+    for p in real_paths:
+        assert wg._is_ephemeral_path(p) is False, f"misidentified: {p}"
+
+
+def test_ephemeral_filter_handles_empty_and_none():
+    assert wg._is_ephemeral_path("") is False
+    assert wg._is_ephemeral_path(None) is False  # type: ignore[arg-type]
+
+
 def test_dedup_same_path_listed_once(tmp_path: Path):
     """同一檔案重複出現在 modified_files（多次 Edit）→ 只列一次。"""
     f = tmp_path / "dup.txt"
