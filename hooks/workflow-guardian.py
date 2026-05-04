@@ -2041,6 +2041,81 @@ def _maybe_spawn_user_extract_worker(
         return False
 
 
+# ─── Sync Reminder Gate helpers ────────────────────────────────────────────
+
+
+def _detect_uncommitted_files(
+    modified_files: List[Dict[str, Any]],
+) -> Optional[List[str]]:
+    """偵測 modified_files 裡仍未提交的檔案。
+
+    回傳:
+      - List[str]: 未提交檔案路徑（已去重）
+      - []: 全已提交（git/svn 均回乾淨）
+      - None: 偵測失敗（找不到 git/svn 工作區或工具不存在）— 跳過此閘
+
+    每檔個別檢查（git status --porcelain -- <file> / svn status <file>），
+    任一回非空 stdout → 視為未提交。
+    """
+    unique_paths: List[str] = []
+    seen: set = set()
+    for m in modified_files:
+        p = (m or {}).get("path", "")
+        if p and p not in seen:
+            seen.add(p)
+            unique_paths.append(p)
+    if not unique_paths:
+        return []
+
+    uncommitted: List[str] = []
+    detected_any_vcs = False
+
+    for path in unique_paths:
+        if not os.path.exists(path):
+            # 檔案已被刪 — 視同已 commit/不需提醒
+            continue
+        parent = str(Path(path).parent)
+        committed_via_git = False
+        # git
+        try:
+            r = subprocess.run(
+                ["git", "status", "--porcelain", "--", path],
+                cwd=parent, capture_output=True, text=True, timeout=3,
+            )
+            if r.returncode == 0:
+                detected_any_vcs = True
+                committed_via_git = True
+                if r.stdout.strip():
+                    uncommitted.append(path)
+        except (FileNotFoundError, subprocess.SubprocessError, OSError):
+            pass
+        if committed_via_git:
+            continue
+        # svn fallback —— svn status 在非 working copy 也回 rc=0（空 stdout +
+        # 'is not a working copy' 警告到 stderr），不能單看 rc，需檢 stderr。
+        try:
+            r = subprocess.run(
+                ["svn", "status", path],
+                cwd=parent, capture_output=True, text=True, timeout=3,
+            )
+            stderr_low = (r.stderr or "").lower()
+            not_a_wc = (
+                "is not a working copy" in stderr_low
+                or "w155007" in stderr_low
+                or "e155007" in stderr_low
+            )
+            if r.returncode == 0 and not not_a_wc:
+                detected_any_vcs = True
+                if r.stdout.strip():
+                    uncommitted.append(path)
+        except (FileNotFoundError, subprocess.SubprocessError, OSError):
+            pass
+
+    if not detected_any_vcs:
+        return None
+    return uncommitted
+
+
 # ─── Stop Hook ────────────────────────────────────────────────────────────
 
 
@@ -2108,6 +2183,47 @@ def handle_stop(input_data: Dict[str, Any], config: Dict[str, Any]) -> None:
                 "      （若確實無則明寫「本次無發現 drift」）\n"
                 "  (b) 需另開 session：項目 X — 超出原因：Y\n"
                 "請補上後再宣告完成；不得用「不在範圍 / 留給未來」籠統帶過。"
+            )
+            output_block(reason)
+            return
+
+    # ── Sync Reminder Gate：modified_files>0 且仍未 commit → 軟阻一次 ──
+    # 補位 min_files_to_block (=2) 漏洞：單檔修改也應被提醒同步。
+    # 與 ScanReport gate 互斥（ScanReport 處理「宣告完成卻無掃描報告」），
+    # 本 gate 處理「動工後忘記提 sync」。
+    sr_config = config.get("sync_reminder", {}) or {}
+    sr_enabled = sr_config.get("enabled", True)
+    sr_max = int(sr_config.get("max_reminders", 1))
+    sr_count = int(state.get("sync_reminder_count", 0))
+    if (
+        sr_enabled
+        and mod_files_all
+        and not state.get("muted")
+        and phase not in ("done", "syncing")
+        and sr_count < sr_max
+    ):
+        uncommitted = _detect_uncommitted_files(mod_files_all)
+        # None → 偵測失敗（非 git/svn 工作區）→ 跳過，不誤殺
+        # []   → 全已提交 → 跳過
+        if uncommitted:
+            state["sync_reminder_count"] = sr_count + 1
+            state["stop_blocked_count"] = stop_count + 1
+            write_state(session_id, state)
+            shown = uncommitted[:8]
+            names = "\n".join(f"  - {p}" for p in shown)
+            more = (
+                f"\n  ...（共 {len(uncommitted)} 檔，僅顯示前 8）"
+                if len(uncommitted) > 8 else ""
+            )
+            reason = (
+                f"[Guardian:SyncReminder] 偵測到 {len(uncommitted)} 個已修改但"
+                "尚未提交的檔案，依 rules/core.md「完成修改後主動提出 "
+                ".git→commit+push」應提示同步。\n"
+                f"{names}{more}\n"
+                "請選一個方向：\n"
+                "  (a) 上 GIT — 立刻 commit + push\n"
+                "  (b) 我不打算上 — 請說明原因（會跳過本次提醒）\n"
+                "  (c) 已在前一輪上過了 — 我跑 workflow_signal: sync_completed 標記"
             )
             output_block(reason)
             return

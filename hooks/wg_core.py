@@ -59,6 +59,13 @@ DEFAULTS = {
         "max_session_start_entries": 15,
         "max_prompt_matches": 3,
     },
+    # 2026-05-04: Sync reminder soft block — Stop 階段任何 modified_files>0
+    # 但仍未 commit 時提一次軟阻，避免單檔修改溜過 min_files_to_block 硬閘。
+    # 與 stop_gate_max_blocks 互不影響；本 gate 用 sync_reminder_count 自行限速。
+    "sync_reminder": {
+        "enabled": True,
+        "max_reminders": 1,
+    },
     # v3.3: DocDrift detection
     "docdrift": {
         "enabled": True,
