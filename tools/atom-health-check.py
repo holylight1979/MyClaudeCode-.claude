@@ -19,16 +19,19 @@ if sys.stderr.encoding != 'utf-8':
 import argparse
 import json
 import re
+import sys
 from datetime import datetime, timedelta
 from difflib import SequenceMatcher
 from pathlib import Path
+
+# Single source of truth (S1.2): lib/atom_spec.py
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from lib.atom_spec import is_atom_file, REQUIRED_METADATA  # noqa: E402
 
 MEMORY_ROOT = Path.home() / ".claude" / "memory"
 GLOBAL_MEMORY_ROOT = Path.home() / ".claude" / "memory"
 AIDOCS_ROOT = Path.home() / ".claude" / "_AIDocs"
 EXTRA_SCAN_ROOTS: list[Path] = []  # populated from CLI; searched as fallback for ref resolution
-SKIP_FILES = {"MEMORY.md", "SPEC_Atomic_Memory_System.md", "_ATOM_INDEX.md"}
-SKIP_DIRS = {"_distant", "_staging", "_vectordb", "episodic", "_reference", "templates"}
 # Central hub atoms — skip reverse-link warnings for these
 # (hub docs don't back-reference every detail doc that points to them)
 # - decisions / decisions-architecture / spec：全域決策與規範 hub
@@ -65,18 +68,15 @@ def parse_memory_index(root: Path) -> dict[str, str]:
 
 
 def find_atoms(root: Path) -> dict[str, Path]:
-    """Recursively find all .md atom files, return {name: path}."""
+    """Recursively find all .md atom files, return {name: path}.
+
+    判定委派給 lib.atom_spec.is_atom_file（單一規則來源）— SKIP_DIRS 含
+    personal/wisdom/_pending_review/episodic 等非 atom 子目錄。
+    """
     atoms = {}
     for md in root.rglob("*.md"):
-        if md.name in SKIP_FILES:
-            continue
-        # Skip underscore-prefixed files (_ATOM_INDEX, _reference docs, etc.)
-        if md.name.startswith("_"):
-            continue
-        if any(part in SKIP_DIRS for part in md.relative_to(root).parts):
-            continue
-        name = md.stem
-        atoms[name] = md
+        if is_atom_file(md, root):
+            atoms[md.stem] = md
     return atoms
 
 
@@ -470,14 +470,15 @@ def full_report(atoms: dict[str, Path], aliases: dict[str, str] | None = None,
 
         # Check for missing standard fields
         if fm.get("_format") == "atom":
-            if not fm.get("Last-used"):
-                entry["issues"].append("missing Last-used")
+            # REQUIRED_METADATA from atom_spec — single source of truth
+            for k in REQUIRED_METADATA:
+                if not fm.get(k):
+                    entry["issues"].append(f"missing {k}")
+            # Tracking fields (not in REQUIRED but expected for active atoms)
             if not fm.get("Confirmations"):
                 entry["issues"].append("missing Confirmations")
             if not fm.get("ReadHits"):
                 entry["issues"].append("missing ReadHits")
-            if not fm.get("Trigger"):
-                entry["issues"].append("missing Trigger")
         elif fm.get("_format") == "claude-native":
             entry["issues"].append("claude-native format (no Last-used/Confirmations/Related)")
 

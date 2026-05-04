@@ -86,6 +86,13 @@ def get_project_memory_dir(cwd: str) -> Optional[Path]:
     # V2.21: 新路徑優先
     root = find_project_root(cwd)
     if root:
+        # P1 防護：cwd 為 ~/.claude 自身時，root 也是 ~/.claude（有 .git/_AIDocs），
+        # 避免拼出 ~/.claude/.claude/memory/ 雙層污染 → 直接走 global MEMORY_DIR。
+        try:
+            if root.resolve() == CLAUDE_DIR.resolve():
+                return MEMORY_DIR
+        except OSError:
+            pass
         new_mem = root / ".claude" / "memory"
         if new_mem.is_dir():
             if (new_mem / MEMORY_INDEX).exists():

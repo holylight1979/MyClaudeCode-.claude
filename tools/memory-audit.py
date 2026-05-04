@@ -34,7 +34,16 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-# ─── Constants ───────────────────────────────────────────────────────────────
+# ─── Single source of truth: lib/atom_spec.py（S1.2 規則收束） ────────────────
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from lib.atom_spec import (
+    SKIP_DIRS, SKIP_PREFIXES, REQUIRED_METADATA, OPTIONAL_METADATA,
+    REQUIRED_SECTIONS, KNOWLEDGE_SECTIONS, VALID_CONFIDENCE,
+    INDEX_MAX_LINES, ATOM_MAX_LINES, TRIGGER_MIN, TRIGGER_MAX,
+    MEMORY_INDEX,
+)
+
+# ─── Audit-specific constants（atom_spec 不需共享的） ────────────────────────
 
 STALENESS_THRESHOLDS: Dict[str, int] = {"[固]": 90, "[觀]": 60, "[臨]": 30}
 # v2.1 Sprint 3: Type-based decay multiplier (procedural ages slower, episodic faster)
@@ -44,27 +53,7 @@ PROMOTION_THRESHOLDS = {
     "[臨]": {"confirmations": 4, "readhits": 20},
     "[觀]": {"confirmations": 10, "readhits": 50},
 }
-INDEX_MAX_LINES = 40
-ATOM_MAX_LINES = 200
-TRIGGER_MIN = 3
-TRIGGER_MAX = 12
-MEMORY_INDEX = "MEMORY.md"
 DISTANT_DIR = "_distant"
-SKIP_PREFIXES = ("SPEC_", "_")  # Files to skip during atom scanning
-# 子目錄跳過清單（rglob 掃描時用）
-# - feedback/: 行為 atom，必掃
-# - personal/: V4 user role 宣告檔（role.md），非 atom
-# - wisdom/: Wisdom Engine 設計文件（DESIGN.md），非 atom（內容用設計文件章節）
-# - episodic/: auto-generated session 摘要，使用 ## 摘要 章節，與 atom 格式不同
-SKIP_DIRS = {"_meta", "_reference", "_staging", "_vectordb", "_distant", "episodic", "templates",
-             "personal", "wisdom"}
-REQUIRED_METADATA = {"Scope", "Confidence", "Trigger", "Last-used"}
-OPTIONAL_METADATA = {"Confirmations", "ReadHits", "Privacy", "Source", "Type", "Created", "TTL",
-                     "Expires-at", "Tags", "Related", "Supersedes", "Quality"}
-# 行動 always required; 知識 or 印象（指標型 atom 變體）二選一即可
-REQUIRED_SECTIONS = {"行動"}
-KNOWLEDGE_SECTIONS = {"知識", "印象"}
-VALID_CONFIDENCE = {"[固]", "[觀]", "[臨]"}
 VALID_TYPES = {"semantic", "episodic", "procedural"}
 VALID_PRIVACY = {"public", "internal", "sensitive"}
 
