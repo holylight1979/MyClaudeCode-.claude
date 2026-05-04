@@ -2367,36 +2367,5 @@
         "quality_gap_advises": 0
       }
     ]
-  },
-  "reg005_observation": {
-    "started_at": "2026-04-29T11:19:13",
-    "sessions": 21,
-    "sessions_seen": [
-      "070fc5b5-94c0-4b46-acd8-c3d839caaafb",
-      "21878def-a4f6-4ade-b713-f4057dd1b884",
-      "7a2c11d1-b478-4b0e-91f3-20760811fbfa",
-      "3dc53667-36a3-4a7b-bf7a-c4763c9786f2",
-      "fd8d7dc0-5031-4c42-9b6d-c52deb385e6a",
-      "a8d46f7b-7377-4fdb-bdb7-74e7917d6ba6",
-      "e22b1277-7470-474f-890d-d729778155a0",
-      "107f3923-9260-41b0-a2bb-18c472fe5b57",
-      "1e717f84-5e47-4993-998e-d6f8d54b23a7",
-      "0bced2c3-5365-471d-9f30-b4d3855cb1ec",
-      "d6a377ef-427e-4d9e-83c1-401b9a1550b9",
-      "515aa9d2-5ce5-4b19-88b9-161b3e6024dd",
-      "ef3fd5c6-f017-4446-964e-58db67528606",
-      "bb194732-5c74-421a-801a-878f8826a5eb",
-      "4a80f55d-9c1c-415c-b40f-6823405a67e3",
-      "6a37a2dc-f200-405c-aa60-30e185670466",
-      "11cb921c-3bcd-4a03-ad14-0cc4c7389adc",
-      "5b29eb1f-d770-40cc-8a85-6b1987141d30",
-      "5129434d-0195-4587-aa8f-062df54bbc35",
-      "b5165988-135f-410d-b131-a21b0bee79b9",
-      "6296a76d-2cf8-4a09-9bf0-352efc309a08"
-    ],
-    "injections": 0,
-    "reads_in_memory": 40,
-    "cold_active_reads": 0,
-    "last_event_ts": "2026-05-04T19:09:41"
   }
 }

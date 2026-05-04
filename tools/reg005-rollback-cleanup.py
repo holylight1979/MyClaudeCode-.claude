@@ -102,10 +102,9 @@ def cleanup(home: Path, apply: bool) -> Dict[str, Any]:
     if apply:
         if total_removed > 0:
             settings["hooks"] = new_hooks_section
-            settings_path.write_text(
-                json.dumps(settings, ensure_ascii=False, indent=2) + "\n",
-                encoding="utf-8",
-            )
+            # Preserve LF line endings (settings.json is checked in as LF)
+            with open(settings_path, "wb") as f:
+                f.write((json.dumps(settings, ensure_ascii=False, indent=2) + "\n").encode("utf-8"))
         if flag_path.exists():
             flag_path.unlink()
     return report
