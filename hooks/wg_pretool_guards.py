@@ -24,9 +24,14 @@ from typing import Any, Dict, Optional
 
 
 # (a) projects/<slug>/memory/  含正反斜線兩種寫法（Windows 路徑大小寫不敏感）
-# P6: [^/\\]+ → .+?  允許 slug 內含 . 等字元（雙層 .claude 巢狀殘骸）
+# P6: 擋 active project memory 單層（slug 不能以 _ 開頭，排除 _archived/_archive 冷儲）
+#     另用 _NESTED_PROJECTS_RE 擋雙層 projects/x/projects/y/memory 巢狀殘骸
 _PROJECT_MEMORY_PATH_RE = re.compile(
-    r"[/\\]\.claude[/\\]projects[/\\].+?[/\\]memory[/\\]",
+    r"[/\\]\.claude[/\\]projects[/\\](?!_)[^/\\]+[/\\]memory[/\\]",
+    re.IGNORECASE,
+)
+_NESTED_PROJECTS_RE = re.compile(
+    r"[/\\]\.claude[/\\]projects[/\\][^/\\]+[/\\]projects[/\\][^/\\]+[/\\]memory[/\\]",
     re.IGNORECASE,
 )
 
@@ -108,8 +113,8 @@ def check_memory_path_block(
     if not fp_str:
         return None
 
-    # (a) P1: projects/{slug}/memory/ 殘骸
-    if _PROJECT_MEMORY_PATH_RE.search(fp_str):
+    # (a) P1: projects/{slug}/memory/ 殘骸（含真巢狀；排除 _archive 冷儲）
+    if _PROJECT_MEMORY_PATH_RE.search(fp_str) or _NESTED_PROJECTS_RE.search(fp_str):
         return (
             "[Guardian:MemoryPathBlock] 禁止寫入 `~/.claude/projects/{slug}/memory/`。"
             "原子記憶專案自治層已覆寫此路徑。\n"
