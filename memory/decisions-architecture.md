@@ -1,11 +1,11 @@
 # 架構決策
 
 - Scope: global
-- Confidence: [臨]
+- Confidence: [觀]
 - Trigger: 架構, hooks, pipeline, guardian, SessionStart, hot cache, extract-worker, vector service
-- Last-used: 2026-04-28
+- Last-used: 2026-05-04
 - Confirmations: 0
-- ReadHits: 4
+- ReadHits: 21
 - Related: decisions, toolchain-ollama, feedback-pointer-atom
 
 ## 印象
