@@ -3,9 +3,9 @@
 - Scope: global
 - Confidence: [臨]
 - Trigger: 上線, 部署, 整合測試, smoke test, 系統驗證, hook 系統, 子程序整合, codex 整合, ollama 整合, mcp 整合, daemon 啟動
-- Last-used: 2026-04-26
+- Last-used: 2026-05-04
 - Confirmations: 0
-- ReadHits: 0
+- ReadHits: 6
 - Related: feedback-codex-collaboration, feedback-research-first, feedback-fix-on-discovery, decisions, feedback-codex-companion-model, feedback-pre-completion-test-discipline, feedback-silent-failure-instrumentation
 
 ## 知識

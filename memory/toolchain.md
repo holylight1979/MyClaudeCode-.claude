@@ -3,9 +3,9 @@
 - Scope: global
 - Confidence: [固]
 - Trigger: 工具鏈, 環境設定, MCPControl, MCP新增, npm全域, 螢幕截圖, Excel MCP, LanceDB, MSYS2, cp950, PowerShell截圖, 向量服務
-- Last-used: 2026-04-28
+- Last-used: 2026-05-04
 - Confirmations: 0
-- ReadHits: 196
+- ReadHits: 210
 - Type: procedural
 - Tags: toolchain, environment, commands
 - Related: toolchain-ollama, decisions, feedback-global-install

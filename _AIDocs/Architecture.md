@@ -31,7 +31,7 @@
 | `wg_intent.py` | ~430 | intent 分類 / session context / MCP / vector（2026-04-28 Wave 3a：vector 進入點加觀察 log → `~/.claude/Logs/vector-observation.log`，schema `{ts, session_id, fn, flag_state, result_count, fallback_used}`，4 天採樣後由 `tools/vector-observation-summary.py` 自動判定 REVIVE/RETIRE/GRAY） |
 | `wg_extraction.py` | ~295 | per-turn 萃取 / worker 管理 / failure 偵測 |
 | `wg_hot_cache.py` | ~160 | Hot Cache 讀寫 / 注入（含 AUTO-DRAFT tag 硬規則） |
-| `wg_docdrift.py` | ~260 | src → _AIDocs 映射 drift 偵測；`prune_committed_entries` 於 advisory 前以 `git status --porcelain` 自動清掉源檔已 commit/revert 的 stale 條目（避免跨 session 持久誤報；可由 `docdrift.auto_prune_committed=False` 關閉） |
+| `wg_docdrift.py` | ~260 | src → _AIDocs 映射 drift 偵測；`prune_committed_entries` 於 advisory 前以 `git status --porcelain` 自動清掉源檔已 commit/revert 的 stale 條目（避免跨 session 持久誤報；可由 `docdrift.auto_prune_committed=False` 關閉）；**2026-05-04 cca5883**：advisory 從 PostToolUse 移到 SessionEnd 一次性觸發（避免 mid-session nag 每 Edit/Bash 重複印同一份 doc-list 吃 ~150 tokens × N 次） |
 | `wg_episodic.py` | ~860 | episodic 生成 / 衝突偵測 / 品質回饋 |
 | `wg_iteration.py` | ~450 | 自我迭代 / 震盪 / 衰減 / 晉升 / 覆轍 |
 | `wg_evasion.py` | ~177 | Evasion Guard + Test-Fail Gate + ScanReport Gate（2026-04-17/2026-04-23） |
@@ -124,7 +124,7 @@ PostToolUse hook 偵測 `_CHANGELOG.md` 寫入 → 行數 >`config.changelog_aut
 
 資料層：`MEMORY.md` 索引（always-loaded）+ atom 檔（按需）+ LanceDB vector + episodic + wisdom + 專案自治層。
 
-### Atom 寫入單點收束（funnel，S1–S3，2026-05-04）
+### Atom 寫入單點收束（funnel，S1–S4，2026-05-04）
 
 > 全系統所有 atom 寫入經過 `lib/atom_io.py` 唯一入口；違者由 PreToolUse 強制門禁攔截。
 
@@ -166,12 +166,20 @@ PostToolUse hook 偵測 `_CHANGELOG.md` 寫入 → 行數 >`config.changelog_aut
 **反向證明工具：**
 
 - `tools/check-bypass.py` — 靜態掃 hooks/tools/lib/plugins 內所有 `write_text`/`open(..., w)`/`fs.writeFileSync` 出現在 memory 路徑附近的點，white-list 之外 → 印警告（CI exit 1）
-- `tools/audit-reconcile.py` — 動態對拍：列近期 mtime atom × audit log entries，mtime 沒對應 audit ts → 列為 suspect bypass（`--since 30s/2h/1d`）
+- `tools/audit-reconcile.py` — 動態對拍：列近期 mtime atom × audit log entries（`--since 30s/2h/1d`，也接 `2h ago`）。S4 強化分類：每筆 unmatched 走 `git diff` 判定 `counter_only`（diff 只動 Last-used / Confirmations / ReadHits / Related 欄位 + [臨]/[觀]/[固] 信心 tag promotion，hook:read-counter 設計直寫）/ `knowledge`（動到知識內容 → 真實 bypass）/ `unknown`（無 git / 未追蹤）。預設只在 knowledge 有 unmatched 時 exit 1；`--strict` 則 unknown 也視為 bypass
 
 **測試：**
 
 - `tests/test_atom_io_equivalence.py` — 11 cases 對拍 server.js byte-identical
 - `tests/test_guardian_atom_write_gate.py` — 9 cases 含 S3.3 強制門禁攔截場景
+- `tests/test_audit_reconcile.py` — 7 cases 驗 `--since` parser（含 `2h ago`）+ classifier（counter-only / knowledge / unknown）
+- `tests/test_check_bypass.py` — 5 cases 驗 white-list 比對 + violation 偵測
+
+**S4 收尾（2026-05-04）：**
+
+- 知識 atom 入庫（走 funnel source=`mcp`）：`feedback-clean-before-build` / `feedback-checker-rule-consolidation` / `decisions-architecture` 加印象 bullet
+- 殘骸清理：移除 `~/.claude/projects/c--users-holylight--claude/memory/` 空目錄（Layers 2→1）
+- audit-reconcile classifier：counter_only/knowledge/unknown 三分類，53 unmatched → 0 knowledge bypass
 
 ## MCP Servers
 

@@ -3,9 +3,9 @@
 - Scope: global
 - Confidence: [臨]
 - Trigger: codex, codex exec, gpt-5, codex companion, second opinion, 第二觀點, 雙 LLM, 大師會議, 異議審查
-- Last-used: 2026-04-26
+- Last-used: 2026-05-04
 - Confirmations: 0
-- ReadHits: 0
+- ReadHits: 2
 - Related: feedback-codex-companion-model, decisions, feedback-research-first, feedback-end-to-end-smoke
 
 ## 知識

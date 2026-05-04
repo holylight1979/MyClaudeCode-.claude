@@ -3,9 +3,9 @@
 - Scope: global
 - Confidence: [臨]
 - Trigger: codex, codex companion, codex_binary, codex CLI, codex model, gpt-5, gpt-5-codex, gpt-5.4, gpt-5.5, model 升級, codex 升級, npm i codex
-- Last-used: 2026-04-28
+- Last-used: 2026-05-04
 - Confirmations: 0
-- ReadHits: 0
+- ReadHits: 2
 - Related: feedback-codex-collaboration, feedback-end-to-end-smoke, feedback-pointer-atom
 
 ## 印象

@@ -2,11 +2,11 @@
   "projects": {
     "c--users-holylight--claude": {
       "root": "c:\\Users\\holylight\\.claude",
-      "last_seen": "2026-04-28"
+      "last_seen": "2026-05-04"
     },
     "c--projects": {
       "root": "c:\\Projects",
-      "last_seen": "2026-04-23",
+      "last_seen": "2026-05-04",
       "aliases": [
         "sgi",
         "sgi_server",
@@ -58,7 +58,7 @@
     },
     "c--users-holylight": {
       "root": "C:\\Users\\holylight",
-      "last_seen": "2026-04-23"
+      "last_seen": "2026-04-30"
     },
     "c--users-holylight--claude--claude-worktrees-nice-visvesvaraya": {
       "root": "C:\\Users\\holylight\\.claude\\.claude\\worktrees\\nice-visvesvaraya",
@@ -71,6 +71,10 @@
     "c--users-holylight--claude--claude-worktrees-youthful-bose": {
       "root": "C:\\Users\\holylight\\.claude\\.claude\\worktrees\\youthful-bose",
       "last_seen": "2026-04-23"
+    },
+    "c--tmp": {
+      "root": "c:\\tmp",
+      "last_seen": "2026-04-29"
     }
   }
 }

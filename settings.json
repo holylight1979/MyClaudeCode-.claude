@@ -74,7 +74,15 @@
       "Bash(taskkill //PID 34660 //F)",
       "Bash(cp ~/.claude/plans/memory-cleanup-2026-04-27/synthesis_and_plan_v2.md ~/.claude/_AIDocs/DevHistory/memory-cleanup-2026-04/synthesis.md)",
       "Bash(cp ~/.claude/plans/memory-cleanup-2026-04-27/follow_up_issues.md ~/.claude/_AIDocs/DevHistory/memory-cleanup-2026-04/follow-up-issues.md)",
-      "Bash(cp ~/.claude/plans/memory-cleanup-2026-04-27/multi_agent_protocol.md ~/.claude/_AIDocs/DevHistory/multi-agent-cleanup-protocol.md)"
+      "Bash(cp ~/.claude/plans/memory-cleanup-2026-04-27/multi_agent_protocol.md ~/.claude/_AIDocs/DevHistory/multi-agent-cleanup-protocol.md)",
+      "Bash(mv \"c:/Users/holylight/tools/vscode-yes-clicker\" \"D:/AI-PLAY/AI-gen-projs/vscode-yes-clicker\")",
+      "Read(//d/AI-PLAY/AI-gen-projs/**)",
+      "Bash(rm -rf \"D:/AI-PLAY/AI-gen-projs/vscode-yes-clicker/.git\")",
+      "Bash(rmdir \"c:/Users/holylight/tools/vscode-yes-clicker\")",
+      "Bash(rmdir \"c:/Users/holylight/tools\")",
+      "PowerShell($p = \"c:\\\\Projects\\\\sgi_client\\\\client\\\\Assets\\\\MainScripts\\\\Framework\\\\ClientSystem\\\\HotFixSystem\\\\HotFixSystem.cs\"; \\(Get-Content $p | Select-String -Pattern \"Timing\\\\.RunCoroutine|EventNote\\\\.Add|EventNote\\\\.Remove|Application\\\\.\\(lowMemory|focusChanged|quitting\\)|new GameObject|appdomain|MemoryStream|partial class\"\\).Line -join \"`n\")",
+      "PowerShell($p = \"c:\\\\Projects\\\\sgi_client\\\\client\\\\Assets\\\\MainScripts\\\\Framework\\\\ClientSystem\\\\UISystem\\\\UISystem.cs\"; \\(Get-Content $p | Select-String -Pattern \"Timing\\\\.RunCoroutine|EventNote\\\\.Add|EventNote\\\\.Remove|Application\\\\.\\(lowMemory|focusChanged|quitting\\)|Addressables\\\\.|UILoaderAdapt|SettingLoaderAdapt|new GameObject\" -CaseSensitive:$false\\).Line -join \"`n\")",
+      "PowerShell($p = \"c:\\\\Projects\\\\sgi_client\\\\client\\\\Assets\\\\MainScripts\\\\Game\\\\Map\\\\WorldHUDManager.cs\"; \\(Get-Content $p | Select-String -Pattern \"Timing\\\\.RunCoroutine|EventNote\\\\.Add|EventNote\\\\.Remove|Application\\\\.\\(lowMemory|focusChanged|quitting\\)|Addressables\\\\.|LoaderAdapt|new GameObject|_instance|partial class|Dictionary<|Pool|HashSet\" -CaseSensitive:$false\\).Line | Select-Object -First 50 -Unique | ForEach-Object { $_ })"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [
@@ -96,7 +104,11 @@
       "C:\\Users\\holylight\\.claude\\plans\\memory-cleanup-2026-04-27",
       "C:\\Users\\holylight\\.claude\\_AIDocs\\DevHistory",
       "C:\\Users\\holylight\\.claude\\plans\\memory-cleanup-2026-04-27\\outputs",
-      "C:\\Users\\holylight\\.claude\\hooks"
+      "C:\\Users\\holylight\\.claude\\hooks",
+      "c:\\Users\\holylight\\.claude\\hooks",
+      "D:\\AI-PLAY\\AI-gen-projs\\vscode-yes-clicker",
+      "c:\\Projects\\.claude\\memory\\_staging",
+      "C:\\Projects\\.claude\\memory\\_staging"
     ]
   },
   "hooks": {
@@ -286,11 +298,20 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import subprocess,pathlib,sys;log=pathlib.Path.home()/'.claude/Logs/audit-reconcile.log';log.parent.mkdir(parents=True,exist_ok=True);out=open(log,'a',encoding='utf-8');subprocess.run([sys.executable,str(pathlib.Path.home()/'.claude/tools/audit-reconcile.py'),'--since','1d','--json'],stdout=out,stderr=subprocess.STDOUT,timeout=20)\"",
+            "timeout": 30,
+            "async": true
+          }
+        ]
       }
     ]
   },
-  "effortLevel": "high",
+  "effortLevel": "xhigh",
   "autoUpdatesChannel": "latest",
-  "skipDangerousModePermissionPrompt": true,
-  "skipAutoPermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true
 }

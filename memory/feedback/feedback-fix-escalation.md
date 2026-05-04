@@ -3,9 +3,9 @@
 - Scope: global
 - Confidence: [固]
 - Trigger: 重試, retry, escalation, 精確修正, fix-escalation, 修不好, 又壞了, 再次失敗
-- Last-used: 2026-04-28
+- Last-used: 2026-05-04
 - Confirmations: 0
-- ReadHits: 28
+- ReadHits: 29
 
 ## 知識
 

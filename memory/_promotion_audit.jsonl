@@ -20,3 +20,7 @@
 {"ts": "2026-04-28T20:06:26", "action": "hint", "atom": "feedback-git-log-chinese", "from": "[臨]", "to": "[觀]", "readhits": 20, "session_id": "7a2c11d1-b478-4b0e-91f3-20760811fbfa"}
 {"ts": "2026-04-28T20:09:51", "action": "hint", "atom": "feedback-git-log-chinese", "from": "[臨]", "to": "[觀]", "readhits": 21, "session_id": "28c36610-282c-4ce9-9021-3a1c13b1a555"}
 {"ts": "2026-04-28T20:09:56", "action": "auto_observe", "atom": "feedback-git-log-chinese", "items": 3, "confirmations": 0, "header_promoted": true}
+{"ts": "2026-04-29T12:37:32", "action": "hint", "atom": "decisions-architecture", "from": "[臨]", "to": "[觀]", "readhits": 20, "session_id": "a8d46f7b-7377-4fdb-bdb7-74e7917d6ba6"}
+{"ts": "2026-04-30T19:17:12", "action": "hint", "atom": "feedback-humanist-decision-framing", "from": "[臨]", "to": "[觀]", "readhits": 20, "session_id": "ef3fd5c6-f017-4446-964e-58db67528606"}
+{"ts": "2026-04-30T19:17:17", "action": "auto_observe", "atom": "feedback-humanist-decision-framing", "items": 4, "confirmations": 0, "header_promoted": true}
+{"ts": "2026-05-04T15:27:49", "action": "hint", "atom": "decisions-architecture", "from": "[臨]", "to": "[觀]", "readhits": 21, "session_id": "5b29eb1f-d770-40cc-8a85-6b1987141d30"}

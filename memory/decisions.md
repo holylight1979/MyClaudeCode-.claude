@@ -3,9 +3,9 @@
 - Scope: global
 - Confidence: [固]
 - Trigger: 決策, 記憶系統, 原子記憶, guardian, hooks, MCP, 架構細節, vector service, context budget
-- Last-used: 2026-04-28
+- Last-used: 2026-05-04
 - Confirmations: 0
-- ReadHits: 197
+- ReadHits: 225
 - Related: decisions-architecture, toolchain, toolchain-ollama
 
 ## 知識

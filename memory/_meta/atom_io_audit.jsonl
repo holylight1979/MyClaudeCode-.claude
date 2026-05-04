@@ -1,2 +1,15 @@
 {"audit_id": "1777887078068-77b8b44d11", "ts": "2026-05-04T09:31:18+00:00", "op": "index_full", "source": "tool:sync-memory-index", "path": "C:\\Users\\holylight\\.claude\\memory\\MEMORY.md"}
 {"audit_id": "1777887113620-a5b044f922", "ts": "2026-05-04T09:31:53+00:00", "op": "index_full", "source": "tool:sync-atom-index", "path": "C:\\Users\\HOLYLI~1\\AppData\\Local\\Temp\\tmp34g7ama9\\tmp_index.md"}
+{"audit_id": "1777888482867-98054dcd5d", "ts": "2026-05-04T09:54:42+00:00", "op": "update_field", "source": "hook:episodic-confirm", "path": "C:\\Users\\HOLYLI~1\\AppData\\Local\\Temp\\tmpdf8vpoii\\test.md", "field": "Confirmations"}
+{"audit_id": "1777888482869-7d596213c5", "ts": "2026-05-04T09:54:42+00:00", "op": "failure_create", "source": "hook:extract-worker", "path": "C:\\Users\\HOLYLI~1\\AppData\\Local\\Temp\\tmpdf8vpoii\\failures\\env-traps.md"}
+{"audit_id": "1777889009654-cc969f142f", "ts": "2026-05-04T10:03:29+00:00", "op": "atom_create", "source": "mcp", "path": "C:\\Users\\HOLYLI~1\\AppData\\Local\\Temp\\tmp7ti0f3aa\\cli-test.md"}
+{"audit_id": "1777891924606-8ed40e95a5", "ts": "2026-05-04T10:52:04+00:00", "op": "episodic_create", "source": "hook:episodic", "path": "C:\\Users\\holylight\\.claude\\memory\\episodic\\episodic-20260504-memory-tools-2.md"}
+{"audit_id": "1777892700633-a36d360cfa", "ts": "2026-05-04T11:05:00+00:00", "op": "atom_create", "source": "mcp", "path": "C:\\Users\\holylight\\.claude\\memory\\feedback-clean-before-build.md"}
+{"audit_id": "1777892700899-2875a9cd33", "ts": "2026-05-04T11:05:00+00:00", "op": "index_full", "source": "mcp", "path": "C:\\Users\\holylight\\.claude\\memory\\_ATOM_INDEX.md"}
+{"audit_id": "1777892711708-7ca33cb0a5", "ts": "2026-05-04T11:05:11+00:00", "op": "atom_create", "source": "mcp", "path": "C:\\Users\\holylight\\.claude\\memory\\feedback-checker-rule-consolidation.md"}
+{"audit_id": "1777892711959-9ae471bdb2", "ts": "2026-05-04T11:05:11+00:00", "op": "index_full", "source": "mcp", "path": "C:\\Users\\holylight\\.claude\\memory\\_ATOM_INDEX.md"}
+{"audit_id": "1777892744780-e5308ba89d", "ts": "2026-05-04T11:05:44+00:00", "op": "update_section", "source": "mcp", "path": "C:\\Users\\holylight\\.claude\\memory\\decisions-architecture.md"}
+{"audit_id": "1777892998367-4cb9643777", "ts": "2026-05-04T11:09:58+00:00", "op": "update_field", "source": "mcp", "path": "C:\\Users\\holylight\\.claude\\memory\\electron-uia-automation.md", "field": "Trigger"}
+{"audit_id": "1777893279243-603e59da98", "ts": "2026-05-04T11:14:39+00:00", "op": "index_full", "source": "tool:sync-atom-index", "path": "C:\\Users\\holylight\\.claude\\memory\\_ATOM_INDEX.md"}
+{"audit_id": "1777893329612-a0332126fa", "ts": "2026-05-04T11:15:29+00:00", "op": "index_full", "source": "tool:sync-atom-index", "path": "C:\\Users\\holylight\\.claude\\memory\\_ATOM_INDEX.md"}
+{"audit_id": "1777893336010-2d25fef8e2", "ts": "2026-05-04T11:15:36+00:00", "op": "index_full", "source": "tool:sync-memory-index", "path": "C:\\Users\\holylight\\.claude\\memory\\MEMORY.md"}

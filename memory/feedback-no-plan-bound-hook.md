@@ -4,9 +4,9 @@
 - Author: holylight
 - Confidence: [臨]
 - Trigger: SessionStart hook, 硬編碼 plan, phase6, wg_codex_companion_phase6, 寫死綁定, hook 反模式, plan 路徑寫死
-- Last-used: 2026-04-28
+- Last-used: 2026-05-04
 - Confirmations: 0
-- ReadHits: 1
+- ReadHits: 6
 - Created-at: 2026-04-28
 - Related: decisions-architecture, feedback-fix-on-discovery, feedback-bg-subprocess-stderr, feedback-silent-failure-instrumentation
 

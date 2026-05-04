@@ -5,7 +5,7 @@
 - Trigger: 寫 atom, atom 設計, 縮影, atom 顆粒, 指標型, atom 重構, atom 規則
 - Last-used: 2026-04-28
 - Confirmations: 0
-- ReadHits: 5
+- ReadHits: 6
 - Related: feedback-memory-path, decisions, decisions-architecture, feedback-codex-companion-model
 
 ## 印象

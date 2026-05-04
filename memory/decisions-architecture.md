@@ -5,7 +5,7 @@
 - Trigger: 架構, hooks, pipeline, guardian, SessionStart, hot cache, extract-worker, vector service
 - Last-used: 2026-05-04
 - Confirmations: 0
-- ReadHits: 21
+- ReadHits: 28
 - Related: decisions, toolchain-ollama, feedback-pointer-atom
 
 ## 印象
@@ -15,6 +15,7 @@
 - SessionStart 風暴修復（去重 + 分層 TTL 孤兒清理 + vector 非阻塞）→ _AIDocs/DevHistory/session-mgmt.md
 - 專案自治層 + Project-Aliases 跨專案掃描 → _AIDocs/Architecture.md
 - 管線概覽（Intent→Trigger→Vector→Section→Budget→注入）→ memory/_reference/internal-pipeline.md（hook 寫死引用）
+- Atomic Memory Single Funnel（2026-05-04 Opus Melodic Comet 4-Session 重構）→ _AIDocs/Architecture.md「Atomic Memory Single Funnel」section
 
 ## 行動
 
