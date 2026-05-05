@@ -94,9 +94,10 @@ def test_blind_spot_clears_when_rate_recovers(_tmp_reflection):
 
 def test_arch_sensitivity_elevates_below_34pct(_tmp_reflection):
     # 4 architecture sessions, 1 success → 25% < 34% → elevated
+    # V2.12 commit-2: arch tolerates 1 retry, so use retry_count=2 for failure
     we.reflect(_state(approach="plan", retry_count=0, mod_files=[{"path": "a.py"}]))
     for _ in range(3):
-        we.reflect(_state(approach="plan", retry_count=1, mod_files=[{"path": "a.py"}]))
+        we.reflect(_state(approach="plan", retry_count=2, mod_files=[{"path": "a.py"}]))
 
     data = json.loads(_tmp_reflection.read_text(encoding="utf-8"))
     assert data["arch_sensitivity_elevated"] is True
@@ -105,7 +106,7 @@ def test_arch_sensitivity_elevates_below_34pct(_tmp_reflection):
 def test_arch_sensitivity_clears_at_50pct(_tmp_reflection):
     # First fail to elevate, then enough successes to push rate ≥ 50%
     for _ in range(3):
-        we.reflect(_state(approach="plan", retry_count=1, mod_files=[{"path": "a.py"}]))
+        we.reflect(_state(approach="plan", retry_count=2, mod_files=[{"path": "a.py"}]))
     data = json.loads(_tmp_reflection.read_text(encoding="utf-8"))
     assert data["arch_sensitivity_elevated"] is True
 
@@ -144,14 +145,14 @@ def test_over_engineering_recent_tracks_retry(_tmp_reflection):
 
 
 def test_get_reflection_summary_returns_max_two_lines(_tmp_reflection):
-    # Trigger blind spots in 3 task types
+    # Trigger blind spots in 3 task types (arch needs retry_count >= 2 to fail)
     for _ in range(3):
         we.reflect(_state(approach="direct", retry_count=1, mod_files=[{"path": "a.py"}]))
     for _ in range(3):
         we.reflect(_state(approach="direct", retry_count=1,
                           mod_files=[{"path": "a.py"}, {"path": "b.py"}]))
     for _ in range(3):
-        we.reflect(_state(approach="plan", retry_count=1, mod_files=[{"path": "a.py"}]))
+        we.reflect(_state(approach="plan", retry_count=2, mod_files=[{"path": "a.py"}]))
 
     lines = we.get_reflection_summary()
     assert len(lines) <= 2

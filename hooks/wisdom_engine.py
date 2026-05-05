@@ -208,7 +208,16 @@ def reflect(state: Dict[str, Any]) -> None:
         task_type = "multi_file"
 
     retry_count = int(state.get("wisdom_retry_count", 0))
-    correct = retry_count == 0  # V2.12 commit-1: rule unchanged from V2.11
+    fix_escalation = bool(state.get("fix_escalation_triggered", False))
+
+    # V2.12 commit-2 retry calibration:
+    #   - architecture tasks: tolerate 1 retry (plan-mode iteration is by design),
+    #     but fix_escalation_triggered overrides → real failure
+    #   - other tasks: strict, retry_count == 0 means correct
+    if task_type == "architecture":
+        correct = (retry_count <= 1) and (not fix_escalation)
+    else:
+        correct = retry_count == 0
 
     # ── first_approach_accuracy.recent ──
     faa = m.setdefault("first_approach_accuracy", {})
@@ -274,12 +283,21 @@ def track_retry(state: Dict[str, Any], file_path: str) -> None:
 
     Plan-type files are excluded — multiple edits to a plan are iteration,
     not error retry, and should not trigger Fix Escalation Protocol.
+
+    V2.12: plan-mode sessions raise the threshold (4 same-file edits before
+    counting as retry). Rationale: architecture-level work iterates on the
+    same file by design; the V2.11 threshold of 2 systematically penalised
+    arch tasks, dragging architecture first-approach accuracy to 13%.
     """
     norm = file_path.replace("\\", "/")
     if _is_plan_iteration_path(norm):
         return
     edits = state.get("modified_files", [])
     count = sum(1 for m in edits if m.get("path", "").replace("\\", "/") == norm)
-    if count >= 2:
+
+    approach = state.get("wisdom_approach", "direct")
+    threshold = 4 if approach == "plan" else 2
+
+    if count >= threshold:
         state["wisdom_retry_count"] = state.get("wisdom_retry_count", 0) + 1
         # V2.11: 只更新 state 計數，由 SessionEnd reflect() 統一寫入 reflection_metrics

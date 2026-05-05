@@ -1386,6 +1386,9 @@ def handle_user_prompt_submit(
     fix_esc_warned = state.get("fix_escalation_warned", False)
     if retry_count >= 2 and not fix_esc_warned:
         state["fix_escalation_warned"] = True
+        # Wave 4: also raise the "real failure" flag for SessionEnd reflect()
+        # to mark architecture tasks as incorrect even if retry_count <= 1.
+        state["fix_escalation_triggered"] = True
         lines.append(
             f"[Guardian:FixEscalation] 偵測到重複修正 "
             f"(retry={retry_count})。"
