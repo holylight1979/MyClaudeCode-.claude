@@ -4,9 +4,6 @@
 - Author: holylight
 - Confidence: [臨]
 - Trigger: bg subprocess, fire-and-forget, DEVNULL, ready flag, subprocess Popen, stderr log, silent failure, background 子進程
-- Last-used: 2026-04-29
-- Confirmations: 0
-- ReadHits: 1
 - Created-at: 2026-04-28
 - Related: feedback-no-plan-bound-hook, decisions-architecture, feedback-silent-failure-instrumentation
 

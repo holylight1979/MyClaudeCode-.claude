@@ -4,9 +4,6 @@
 - Author: holylight
 - Confidence: [觀]
 - Trigger: commit message, commit msg, 上GIT, git commit, git log, git push
-- Last-used: 2026-05-04
-- Confirmations: 0
-- ReadHits: 39
 - Created-at: 2026-04-16
 - Related: preferences, workflow-rules
 

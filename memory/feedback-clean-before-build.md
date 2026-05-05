@@ -4,9 +4,6 @@
 - Author: holylight
 - Confidence: [臨]
 - Trigger: 重構, 清理, 殘骸, 先清後建, 基線, 等價測試
-- Last-used: 2026-05-04
-- Confirmations: 0
-- ReadHits: 0
 - Created-at: 2026-05-04
 
 ## 知識

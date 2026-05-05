@@ -3,9 +3,6 @@
 - Scope: global
 - Confidence: [臨]
 - Trigger: 工具選型, 技術選單, 建議優選, 給使用者選, 技術選項
-- Last-used: 2026-04-29
-- Confirmations: 0
-- ReadHits: 10
 - Related: preferences, feedback-no-outsource-rigor, feedback-humanist-decision-framing
 
 ## 知識

@@ -4,9 +4,6 @@
 - Author: holylight
 - Confidence: [臨]
 - Trigger: 檢查器, 規則漂移, SKIP_DIRS, 唯一規則來源, 一致性, audit
-- Last-used: 2026-05-04
-- Confirmations: 0
-- ReadHits: 0
 - Created-at: 2026-05-04
 
 ## 知識

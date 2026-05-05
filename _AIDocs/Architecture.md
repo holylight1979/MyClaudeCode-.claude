@@ -131,23 +131,32 @@ PostToolUse hook 偵測 `_CHANGELOG.md` 寫入 → 行數 >`config.changelog_aut
 **架構：**
 
 - `lib/atom_spec.py` — atom 格式規則純函式（slugify / build_atom_content / validate / SKIP_DIRS / VALID_SCOPES），audit/health/atom_io 共用 import 避免規則漂移
-- `lib/atom_io.py` — funnel 入口：`write_atom()` (build+validate+atomic write+index+audit log) / `write_raw()` (escape hatch for failures/episodic 子族) / `update_atom_field()` (Confirmations 計數類 in-place 更新) / `write_index_full()` (整檔重組 sync 用)
+- `lib/atom_io.py` — knowledge funnel 入口：`write_atom()` (build+validate+atomic write+index+audit log) / `write_raw()` (escape hatch for failures/episodic 子族) / `write_index_full()` (整檔重組 sync 用)。Wave 2（2026-05-05）：`update_atom_field()` 已移除，計數類欄位（read_hits / last_used / confirmations）改走 `lib/atom_access.py`
+- `lib/atom_access.py` — telemetry funnel 入口（Wave 2）：`<atom>.access.json` 旁路檔讀寫單一通道；`init_access` / `increment_read_hits` / `increment_confirmation` / `record_promotion` / `read_access` / `bulk_read`；CLI 入口 `python -m lib.atom_access` 給 MCP server.js spawn 用
 - `lib/atom_io_cli.py` — stdin JSON → write_* → stdout JSON，供 MCP server.js spawn
 
 **Caller 接線（contract: source 必填，記入 `_meta/atom_io_audit.jsonl`）：**
 
 | Caller | source 名稱 | 切入點 |
 |---|---|---|
-| MCP server.js (toolAtomWrite/Promote) | `mcp` | `funnelWriteRaw()` + `funnelWriteIndexFull()` spawn CLI |
+| MCP server.js (toolAtomWrite/Promote) | `mcp` | `funnelWriteRaw()` + `funnelWriteIndexFull()` + `spawnAtomAccess()` |
+| hooks/workflow-guardian.py (atom 注入計數) | `hook:atom-inject` | `atom_access.increment_read_hits` |
 | hooks/extract-worker.py (failure atom) | `hook:extract-worker` | `_failure_writeback` + `_create_failure_atom` |
-| hooks/wg_episodic.py (cross-session confirm) | `hook:episodic-confirm` | L367 Confirmations +1 `update_atom_field` |
-| hooks/wg_episodic.py (episodic atom) | `hook:episodic` | `write_raw` |
+| hooks/wg_episodic.py (cross-session confirm) | `hook:episodic-confirm` | `atom_access.increment_confirmation` |
+| hooks/wg_episodic.py (episodic atom) | `hook:episodic` | `write_raw` + `atom_access.init_access` |
 | hooks/quick-extract / user-extract | `hook:user-extract` | (S2 接) |
 | tools/migrate-v3-to-v4.py | `tool:migrate` | `write_raw` migration patch |
 | tools/memory-undo.py | `tool:undo` | `write_raw` reject footer |
 | tools/atom-move.py | `tool:atom-move` | `write_raw` (atom) + `write_index_full` (index) |
-| tools/memory-audit.py | `tool:memory-audit` | demote / compact / log_evolution `write_raw` |
+| tools/memory-audit.py | `tool:memory-audit` | demote / compact / log_evolution `write_raw` + `atom_access.write_access_field` |
 | tools/sync-atom-index / sync-memory-index | `tool:sync-*` | `write_index_full` |
+
+**Atom 知識／遙測切分（Wave 2 落地）：**
+
+- atom `.md` 檔頭只放知識性 metadata：`Scope` / `Confidence` / `Trigger` / `Type` / `Author` / `Tags` / `Related` / `Created` / `description` / `name`
+- `<atom>.access.json` 旁路檔（schema `atom-access-v2`）放運行期遙測：`read_hits` / `last_used` / `confirmations` / `last_promoted_at` / `first_seen` / `timestamps`（最多 50 筆）/ `confirmation_events`
+- 1:1 對應 atom；刪 atom 自然連帶刪遙測；無集中檔競態風險
+- 任何 atom .md 出現在 `git status` modified 都必然是知識內容變更（語意改動），便於 review
 
 **強制門禁（PreToolUse）：**
 

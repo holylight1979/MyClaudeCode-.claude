@@ -4,9 +4,6 @@
 - Author: holylight
 - Confidence: [臨]
 - Trigger: 不在範圍, 範圍外, 未來處理, 另開 session, out of scope, 順手發現, 不在本次範圍
-- Last-used: 2026-05-04
-- Confirmations: 0
-- ReadHits: 8
 - Created-at: 2026-04-16
 - Related: feedback-handoff-self-sufficient, workflow-rules, preferences, feedback-end-to-end-smoke, feedback-pre-completion-test-discipline, feedback-no-plan-bound-hook
 

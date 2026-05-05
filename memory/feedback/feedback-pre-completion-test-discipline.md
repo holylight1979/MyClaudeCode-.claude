@@ -4,9 +4,6 @@
 - Author: holylight
 - Confidence: [臨]
 - Trigger: 宣告完成, 收尾, 測試失敗, TestFailGate, ScanReport, known regression, pre-existing, xfail, REG-001
-- Last-used: 2026-04-28
-- Confirmations: 0
-- ReadHits: 3
 - Created-at: 2026-04-27
 - Related: feedback-fix-on-discovery, feedback-no-test-to-svn, feedback-end-to-end-smoke, decisions
 

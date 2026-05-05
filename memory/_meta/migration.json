@@ -192,5 +192,15 @@
       "new_readhits": 152,
       "new_confirmations": 0
     }
-  ]
+  ],
+  "access-stats-v2": {
+    "version": "access-stats-v2",
+    "timestamp": 1777948709.215587,
+    "iso": "2026-05-05T02:38:29+00:00",
+    "atoms_scanned": 37,
+    "atoms_migrated": 37,
+    "atoms_skipped_already_v2": 0,
+    "confidence_added": 0,
+    "errors": []
+  }
 }

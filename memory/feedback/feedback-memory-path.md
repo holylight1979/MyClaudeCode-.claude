@@ -3,9 +3,6 @@
 - Scope: global
 - Confidence: [固]
 - Trigger: 寫入記憶, _staging, memory path, 寫atom, Write memory, 記憶路徑
-- Last-used: 2026-05-04
-- Confirmations: 0
-- ReadHits: 61
 - Related: decisions, feedback-pointer-atom
 
 ## 知識

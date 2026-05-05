@@ -3,9 +3,6 @@
 - Scope: global
 - Confidence: [臨]
 - Trigger: 縝密, 漏掉, 沒看到, max thinking, high thinking, 外包思考, 角色縝密, 我有沒有漏, rigor
-- Last-used: 2026-05-04
-- Confirmations: 0
-- ReadHits: 11
 - Related: feedback-decision-no-tech-menu, preferences
 
 ## 知識
