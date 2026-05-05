@@ -44,7 +44,29 @@ CLAUDE_DIR = Path.home() / ".claude"
 FLAG_PATH = CLAUDE_DIR / "memory" / "_staging" / "reg-005-observation-start.flag"
 LOG_DIR = CLAUDE_DIR / "Logs"
 METRIC_PATH = CLAUDE_DIR / "memory" / "wisdom" / "reflection_metrics.json"
-MEMORY_ROOT = (CLAUDE_DIR / "memory").resolve()
+GLOBAL_MEMORY_ROOT = (CLAUDE_DIR / "memory").resolve()
+
+
+def _all_memory_roots() -> list:
+    """Enumerate all valid memory roots: global + every project memory dir.
+
+    Used by _is_within_memory() to decide if a Read path is an atom file.
+    Defensive: any failure falls back to just the global root.
+    """
+    roots = [GLOBAL_MEMORY_ROOT]
+    try:
+        # Lazy import: wg_paths imports json/Path which we already have, but
+        # keeping import local avoids circular-import risk if observation gets
+        # imported during wg_paths bootstrap.
+        from wg_paths import discover_all_project_memory_dirs
+        for _slug, mem_dir in discover_all_project_memory_dirs():
+            try:
+                roots.append(mem_dir.resolve())
+            except OSError:
+                pass
+    except Exception:
+        pass
+    return roots
 
 
 def _flag_active() -> bool:
@@ -105,23 +127,33 @@ def _ensure_obs_section(metric: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _is_within_memory(path_str: str) -> bool:
-    """Match memory/*.md robustly across Windows / MSYS2 / mixed path formats."""
+    """Match memory/*.md across global + all project memory roots.
+
+    Robust to Windows / MSYS2 / mixed path formats. Counts both global and
+    project-layer atom reads (REG-005 observation tracks all atom injection).
+    """
     if not path_str:
         return False
     if not path_str.endswith(".md"):
         return False
-    # Substring check tolerates both backslash, forward slash, and MSYS2 /c/ prefix.
+    # Substring pre-filter: must mention `.claude/memory/` somewhere.
     norm = path_str.replace("\\", "/").lower()
     if "/.claude/memory/" not in norm:
         return False
-    # Best-effort resolve check (defensive against /memory/ false positives elsewhere)
+    # Strict check: path must resolve under a known memory root.
     try:
         p = Path(path_str).resolve()
-        p.relative_to(MEMORY_ROOT)
+    except OSError:
+        # Resolve failed (e.g. MSYS2 /c/ path on Windows Python) — accept on
+        # substring match alone, since pre-filter已要求 `.claude/memory/`.
         return True
-    except (OSError, ValueError):
-        # Resolve failed (MSYS2 path on Windows Python) — substring already validated
-        return True
+    for root in _all_memory_roots():
+        try:
+            p.relative_to(root)
+            return True
+        except ValueError:
+            continue
+    return False
 
 
 def _handle_user_prompt_submit(payload: Dict[str, Any]) -> None:

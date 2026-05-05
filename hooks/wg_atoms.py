@@ -599,15 +599,33 @@ def _truncate_context_by_activation(
         lines.append(f"[Context budget: {used}/{limit} tokens (over)]")
         return lines
 
+    # Fallback search roots used when caller did not register source_dir for
+    # an atom (e.g. atom appeared in `lines` via a path not in matched_with_dir).
+    # 修正：不再單押 global MEMORY_DIR — project atom 在 global 找不到 access.json
+    # 會回 -10.0，導致 project atom 在 budget 緊張時被錯誤地優先截斷為摘要。
+    fallback_roots: List[Path] = [MEMORY_DIR, EPISODIC_DIR]
+    try:
+        from wg_paths import discover_all_project_memory_dirs
+        for _slug, mem_dir in discover_all_project_memory_dirs():
+            fallback_roots.append(mem_dir)
+            ep = mem_dir / "episodic"
+            if ep.is_dir():
+                fallback_roots.append(ep)
+    except Exception:
+        pass
+
     for ab in atom_blocks:
         atom_name = ab["name"]
         src_dir = source_dirs.get(atom_name) if source_dirs else None
         if src_dir:
             ab["activation"] = compute_activation(atom_name, src_dir)
         else:
-            ab["activation"] = compute_activation(atom_name, MEMORY_DIR)
-            if ab["activation"] <= -10.0:
-                ab["activation"] = compute_activation(atom_name, EPISODIC_DIR)
+            best = -10.0
+            for cand in fallback_roots:
+                score = compute_activation(atom_name, cand)
+                if score > best:
+                    best = score
+            ab["activation"] = best
 
     atom_blocks.sort(key=lambda x: x["activation"])
 
