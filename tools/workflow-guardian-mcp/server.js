@@ -1450,6 +1450,32 @@ async function toolAtomWrite(id, args) {
 
 // ─── Atom Promote Handler ──────────────────────────────────────────────────
 
+// Locate <atom_name>.md anywhere under memDir; needed because feedback/ etc.
+// are valid atom subdirs (mirrors lib/atom_spec.SKIP_DIRS exclusions).
+function findAtomFileRecursive(memDir, atomName) {
+  const target = atomName + ".md";
+  const SKIP = new Set([
+    "_reference", "_archived", "_pending_review", "_staging",
+    "templates", "wisdom", "_drafts", "episodic", "_meta",
+  ]);
+  const queue = [memDir];
+  while (queue.length) {
+    const cur = queue.shift();
+    let entries;
+    try { entries = fs.readdirSync(cur, { withFileTypes: true }); } catch { continue; }
+    for (const e of entries) {
+      const full = path.join(cur, e.name);
+      if (e.isDirectory()) {
+        if (SKIP.has(e.name) || e.name.startsWith("_archive")) continue;
+        queue.push(full);
+      } else if (e.isFile() && e.name === target) {
+        return full;
+      }
+    }
+  }
+  return null;
+}
+
 async function toolAtomPromote(id, args) {
   const { atom_name, scope, project_cwd, execute, role, user, merge_to_preferences } = args;
 
@@ -1458,10 +1484,15 @@ async function toolAtomPromote(id, args) {
     return sendToolResult(id, `atom_promote: ${resolved.error}`, true);
   }
   const memDir = resolved.dir;
-  const filePath = path.join(memDir, atom_name + ".md");
+  let filePath = path.join(memDir, atom_name + ".md");
 
   if (!fs.existsSync(filePath)) {
-    return sendToolResult(id, `Atom not found: ${atom_name}.md in ${scope} scope`, true);
+    // Fallback: recursive lookup (atom may live in feedback/ or other subdir)
+    const found = findAtomFileRecursive(memDir, atom_name);
+    if (!found) {
+      return sendToolResult(id, `Atom not found: ${atom_name}.md in ${scope} scope`, true);
+    }
+    filePath = found;
   }
 
   let content = fs.readFileSync(filePath, "utf-8");

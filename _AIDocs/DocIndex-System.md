@@ -213,7 +213,7 @@ Session Ready
 ### 其他
 - read-excel.py（openpyxl+xlrd）| unity-yaml-tool.py | rag-engine.py（CLI wrapper）
 - gdoc-harvester/（Playwright 網頁收割 + dashboard）
-- workflow-guardian-mcp/server.js（MCP stdio + dashboard port 3848，含「已知專案」分頁）
+- workflow-guardian-mcp/server.js（MCP stdio + dashboard port 3848，含「已知專案」分頁）。**2026-05-05**：`toolAtomPromote` 加 `findAtomFileRecursive` fallback — `path.join(memDir, atom_name + ".md")` 不存在時掃子目錄（mirrors `lib/atom_spec.SKIP_DIRS` 排除），讓 `feedback/` 等子目錄 atom 能被 atom_promote 找到（先前 ALL feedback/ atom 找不到，pre-existing bug）
 
 ## 7. 記憶層
 
