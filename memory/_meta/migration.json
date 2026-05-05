@@ -202,5 +202,16 @@
     "atoms_skipped_already_v2": 0,
     "confidence_added": 0,
     "errors": []
+  },
+  "merge-orphan-access": {
+    "version": "merge-orphan-access",
+    "timestamp": 1777951859.2958088,
+    "iso": "2026-05-05T03:30:59+00:00",
+    "merged": 9,
+    "deleted": 1,
+    "skipped": 0,
+    "misplaced": 5,
+    "rename": 4,
+    "errors": []
   }
 }
