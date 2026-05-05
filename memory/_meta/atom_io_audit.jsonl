@@ -35,3 +35,8 @@
 {"audit_id": "1777951773885-b1804ea442", "op": "access_merge", "source": "tool:memory-cleanup", "src": "C:\\Users\\holylight\\.claude\\memory\\fix-escalation.access.json", "dst": "C:\\Users\\holylight\\.claude\\memory\\feedback\\feedback-fix-escalation.access.json", "kind": "rename", "mode": "merge"}
 {"audit_id": "1777951773886-97dfd1e050", "op": "access_delete_orphan", "source": "tool:memory-cleanup", "path": "C:\\Users\\holylight\\.claude\\memory\\mail-sorting.access.json", "kind": "delete"}
 {"audit_id": "1777952217835-a8496bc9ec", "ts": "2026-05-05T03:36:57+00:00", "op": "access_increment", "source": "hook:atom-inject", "path": "C:\\Users\\holylight\\.claude\\memory\\workflow-svn.md", "field": "read_hits", "new_count": 181}
+{"audit_id": "1777952475137-360ce20fe7", "ts": "2026-05-05T03:41:15+00:00", "op": "atom_create", "source": "mcp", "path": "C:\\Users\\holylight\\.claude\\memory\\feedback-gitignored-no-git-rm.md"}
+{"audit_id": "1777952475385-e84dc5117c", "ts": "2026-05-05T03:41:15+00:00", "op": "access_init", "source": "mcp", "path": "C:\\Users\\holylight\\.claude\\memory\\feedback-gitignored-no-git-rm.md", "first_seen": "2026-05-05"}
+{"audit_id": "1777952475650-c321f2227a", "ts": "2026-05-05T03:41:15+00:00", "op": "access_field", "source": "mcp", "path": "C:\\Users\\holylight\\.claude\\memory\\feedback-gitignored-no-git-rm.md", "field": "last_used", "value": "2026-05-05"}
+{"audit_id": "1777952475882-fec25bee17", "ts": "2026-05-05T03:41:15+00:00", "op": "index_full", "source": "mcp", "path": "C:\\Users\\holylight\\.claude\\memory\\_ATOM_INDEX.md"}
+{"audit_id": "1777952569278-af40bd47e7", "ts": "2026-05-05T03:42:49+00:00", "op": "index_full", "source": "tool:sync-memory-index", "path": "C:\\Users\\holylight\\.claude\\memory\\MEMORY.md"}

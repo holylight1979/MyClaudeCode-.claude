@@ -36,3 +36,4 @@
 | workflow-icld | memory/workflow-icld.md | ICLD, 閉環, Sprint, 功能拆解, 開發計畫, 大型新功能, 新系統規劃, 規格書 | global |
 | workflow-rules | memory/workflow-rules.md | 工作流程, 大型任務, 分階段, SOP, 任務拆分, 上版, GIT, Phase | global |
 | workflow-svn | memory/workflow-svn.md | svn, svn-update, TortoiseSVN, 衝突, conflict | global |
+| feedback-gitignored-no-git-rm | memory/feedback/feedback-gitignored-no-git-rm.md | git rm failed, gitignored 檔, access.json 清理, 一次性清理, memory cleanup, untracked telemetry, Path.unlink, fs unlink | global |
