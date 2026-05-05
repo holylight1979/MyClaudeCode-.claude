@@ -51,9 +51,14 @@ def _make_atom(mem_dir: Path, name: str, body: str = "# test atom\n") -> Path:
 # ─── 基本 read / init ─────────────────────────────────────────────────────────
 
 
-def test_read_nonexistent_returns_empty(isolated_claude):
+def test_read_nonexistent_returns_defaults(isolated_claude):
+    """檔不存在 → 仍回正規化 defaults（避免 caller KeyError）；first_seen=None 是訊號。"""
     p = isolated_claude["memory"] / "nope.md"
-    assert atom_access.read_access(p) == {}
+    data = atom_access.read_access(p)
+    assert data["schema"] == "atom-access-v2"
+    assert data["read_hits"] == 0
+    assert data["confirmations"] == 0
+    assert data["first_seen"] is None  # 區分「檔不存在」用此訊號
 
 
 def test_init_creates_access_file(isolated_claude):

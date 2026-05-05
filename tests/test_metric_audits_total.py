@@ -26,7 +26,10 @@ import state as companion_state  # noqa: E402
 
 
 @pytest.fixture
-def cleanup_session():
+def cleanup_session(tmp_path, monkeypatch):
+    """Isolate test metrics file to tmp_path（避免與系統 hook 子程序對 ~/.claude/workflow/
+    並發 fs I/O，導致偶發 metric 計數錯亂）。"""
+    monkeypatch.setattr(companion_state, "WORKFLOW_DIR", tmp_path)
     sid = f"test-sprint5_5-{uuid.uuid4().hex[:8]}"
     yield sid
     p = companion_state._metrics_path(sid)

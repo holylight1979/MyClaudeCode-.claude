@@ -155,13 +155,29 @@ def _write_raw(access_path: Path, data: Dict[str, Any]) -> bool:
     """寫 access JSON；Win 平台 cross-process 競態時重試 3 次（每次 50ms backoff）。
 
     回傳 True=成功；False=三次都失敗（呼叫端決定要不要 audit 為 dropped）。
+
+    使用唯一 tmp 後綴（PID + thread id）避免多執行緒共用同一 tmp file 時
+    `Path.write_text("w")` truncate 競態（會導致 access.json 落入半空檔）。
     """
+    import os as _os
+    import threading as _threading
     payload = json.dumps(data, ensure_ascii=False)
+    access_path.parent.mkdir(parents=True, exist_ok=True)
     for attempt in range(3):
+        # 每次重試也用新的 tmp，避免上次失敗的 tmp 殘留干擾
+        tmp = access_path.with_suffix(
+            f"{access_path.suffix}.tmp.{_os.getpid()}.{_threading.get_ident()}.{attempt}"
+        )
         try:
-            _atomic_write(access_path, payload)
+            tmp.write_text(payload, encoding="utf-8")
+            _os.replace(str(tmp), str(access_path))
             return True
         except OSError:
+            try:
+                if tmp.exists():
+                    tmp.unlink()
+            except OSError:
+                pass
             if attempt == 2:
                 return False
             time.sleep(0.05)
@@ -174,14 +190,17 @@ def _write_raw(access_path: Path, data: Dict[str, Any]) -> bool:
 def read_access(atom_path: Path) -> Dict[str, Any]:
     """讀 atom 的 access 資料。
 
-    若檔不存在 → 回 {}（呼叫端決定要不要 init）。
-    若是舊 schema → 回正規化後的 dict 但**不寫回**（避免讀操作產生寫副作用）；
+    一律回傳正規化後的 dict（含所有 v2 欄位 default），即使檔不存在或損毀。
+    呼叫端如要區分「檔不存在 vs 檔存在但未累積」→ 看 first_seen 是 None。
+    若是舊 schema → 正規化後**不寫回**（避免讀操作產生寫副作用）；
     寫回交給 increment / set / migration 觸發。
     """
     access_path = _access_path(atom_path)
     raw = _read_raw(access_path)
     if raw is None:
-        return {}
+        # 檔不存在或 JSON 損毀 → 仍回 v2 defaults（callers 不需 KeyError 處理）
+        normalized, _ = _normalize({})
+        return normalized
     normalized, _upgraded = _normalize(raw)
     return normalized
 
