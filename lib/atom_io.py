@@ -52,6 +52,7 @@ VALID_SOURCES = frozenset({
     "tool:atom-health-audit",  # Wave 3: atom 體質審視工具
     "tool:changelog-roll",
     "tool:memory-audit",  # memory-audit demote/compact/log_evolution 修補
+    "tool:memory-cleanup",  # 一次性根目錄整理（merge-orphan-access）
     "tool:migrate",
     "tool:sync-atom-index",
     "tool:sync-memory-index",

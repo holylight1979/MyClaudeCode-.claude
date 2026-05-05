@@ -1849,10 +1849,20 @@ def handle_post_tool_use(input_data: Dict[str, Any], config: Dict[str, Any]) -> 
                 })
                 write_state(session_id, state)
             elif state.get("failing_tests"):
-                # 同 cmd 重跑成功 → 清掉舊紀錄（前綴比對，容忍尾參數變動）
+                # 重跑成功 → 清舊紀錄。
+                # (a) 同 cmd 前綴匹配（容忍尾參數變動）
+                # (b) 若新 cmd 含 "pytest" 且全綠 → 清所有 pytest 相關 stale 紀錄
+                #     （修補 turn 內失敗 cmd 用 for-loop 包覆、後續成功 cmd 直跑
+                #      前綴不同導致永不清除的時序盲點）
                 cmd_prefix = command[:80].strip()
+                cmd_lower = command.lower()
+                is_pytest_success = "pytest" in cmd_lower
                 before = state["failing_tests"]
-                after = [f for f in before if not f.get("cmd", "").startswith(cmd_prefix[:40])]
+                after = [
+                    f for f in before
+                    if not f.get("cmd", "").startswith(cmd_prefix[:40])
+                    and not (is_pytest_success and "pytest" in f.get("cmd", "").lower())
+                ]
                 if len(after) != len(before):
                     state["failing_tests"] = after
                     write_state(session_id, state)
