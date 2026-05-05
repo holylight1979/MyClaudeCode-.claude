@@ -40,7 +40,7 @@
 | `extract-worker.py` | ~690 | SessionEnd 萃取子程序（共用 `lib/ollama_extract_core.py`） |
 | `lib/ollama_extract_core.py` | ~190 | 萃取共用核心（budget tracker / ack_then_clear） |
 | `quick-extract.py` | ~155 | Stop async 快篩 |
-| `wisdom_engine.py` | ~190 | 反思引擎 + Fix Escalation（2026-04-27：`track_retry` 對 `/plans/`、`/_staging/`、檔名命中 `is_plan_filename` 規劃詞的路徑豁免，計畫迭代不誤計入 retry_count） |
+| `wisdom_engine.py` | ~306 | 反思引擎 + Fix Escalation（V2.12, 2026-05-05：metrics.* sliding window of 10 + schema_version + legacy_cumulative migration；track_retry plan-mode threshold 從 2→4，reflect arch 容忍 1 retry 但 fix_escalation_triggered 覆蓋為真失敗信號。2026-04-27：路徑豁免 `/plans/`、`/_staging/`、`is_plan_filename` 規劃詞檔） |
 
 ### 輔助 Hook 腳本
 

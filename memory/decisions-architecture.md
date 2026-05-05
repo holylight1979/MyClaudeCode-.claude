@@ -13,6 +13,7 @@
 - 專案自治層 + Project-Aliases 跨專案掃描 → _AIDocs/Architecture.md
 - 管線概覽（Intent→Trigger→Vector→Section→Budget→注入）→ memory/_reference/internal-pipeline.md（hook 寫死引用）
 - Atomic Memory Single Funnel（2026-05-04 Opus Melodic Comet 4-Session 重構）→ _AIDocs/Architecture.md「Atomic Memory Single Funnel」section
+- Wisdom Engine V2.12 校準（2026-05-05 Wave 4：metrics.* sliding window + retry 校準 plan-mode threshold + fix_escalation_triggered 真失敗信號）→ _AIDocs/DevHistory/wisdom-engine.md「V2.12」章節 + memory/wisdom/DESIGN.md V2.12
 
 ## 行動
 
