@@ -16,3 +16,4 @@
 {"audit_id": "1777893903404-3bbd4abed5", "ts": "2026-05-04T11:25:03+00:00", "op": "episodic_create", "source": "hook:episodic", "path": "C:\\Users\\holylight\\.claude\\memory\\episodic\\episodic-20260504-appdata-local.md"}
 {"audit_id": "1777895623915-897fb97793", "ts": "2026-05-04T11:53:43+00:00", "op": "episodic_create", "source": "hook:episodic", "path": "C:\\Users\\holylight\\.claude\\memory\\episodic\\episodic-20260504-planning.md"}
 {"audit_id": "1777948729036-f65dd9af92", "ts": "2026-05-05T02:38:49+00:00", "op": "access_increment", "source": "hook:atom-inject", "path": "C:\\Users\\holylight\\.claude\\memory\\preferences.md", "field": "read_hits", "new_count": 170}
+{"audit_id": "1777949169521-0a36f91fa6", "ts": "2026-05-05T02:46:09+00:00", "op": "index_full", "source": "tool:sync-memory-index", "path": "C:\\Users\\holylight\\.claude\\memory\\MEMORY.md"}
