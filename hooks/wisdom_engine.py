@@ -89,6 +89,9 @@ def _migrate_v211_to_v212(metrics: Dict[str, Any]) -> Dict[str, Any]:
     if legacy:
         legacy["frozen_at"] = datetime.now(timezone.utc).isoformat()
         metrics["legacy_cumulative"] = legacy
+        # Clear stale V2.11 blind_spots (derived from now-archived cumulative);
+        # next reflect() will recompute from sliding window.
+        metrics["blind_spots"] = []
 
     metrics["schema_version"] = SCHEMA_VERSION
     metrics.setdefault("window_size", DEFAULT_WINDOW_SIZE)

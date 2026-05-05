@@ -165,6 +165,40 @@ def test_v212_passthrough_no_legacy_added(_tmp_reflection):
     assert metrics["metrics"]["first_approach_accuracy"]["single_file"]["recent"] == [True, False]
 
 
+def test_migration_clears_stale_blind_spots(_tmp_reflection):
+    """V2.11 blind_spots 是 cumulative 推導的；migration 後應重置（next reflect 重算）。"""
+    fixture = dict(V211_FIXTURE)
+    fixture["blind_spots"] = ["multi_file 首次正確率 32%", "architecture 首次正確率 12%"]
+    _tmp_reflection.write_text(json.dumps(fixture), encoding="utf-8")
+    metrics = we._load_metrics()
+
+    assert metrics["blind_spots"] == []
+    # legacy_cumulative 仍保留原值作歷史快照
+    assert "first_approach_accuracy" in metrics["legacy_cumulative"]
+
+
+def test_v212_passthrough_preserves_blind_spots(_tmp_reflection):
+    """已是 V2.12 的檔案 migration 不該清 blind_spots（避免破壞當前狀態）。"""
+    v212_with_blind = {
+        "schema_version": "2.12",
+        "window_size": 10,
+        "metrics": {
+            "first_approach_accuracy": {
+                "single_file":  {"recent": [False, False, False]},
+                "multi_file":   {"recent": []},
+                "architecture": {"recent": []},
+            },
+            "over_engineering_rate": {"recent": []},
+            "silence_accuracy": {"recent": []},
+        },
+        "blind_spots": ["single_file 首次正確率 0%"],
+        "arch_sensitivity_elevated": False,
+    }
+    _tmp_reflection.write_text(json.dumps(v212_with_blind), encoding="utf-8")
+    metrics = we._load_metrics()
+    assert metrics["blind_spots"] == ["single_file 首次正確率 0%"]
+
+
 def test_post_migration_reflect_appends_to_recent(_tmp_reflection):
     _tmp_reflection.write_text(json.dumps(V211_FIXTURE), encoding="utf-8")
     # Trigger migration via reflect

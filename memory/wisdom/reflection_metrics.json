@@ -19,10 +19,7 @@
       "recent": []
     }
   },
-  "blind_spots": [
-    "multi_file 首次正確率 32%",
-    "architecture 首次正確率 12%"
-  ],
+  "blind_spots": [],
   "arch_sensitivity_elevated": true,
   "last_reflection": "2026-05-05T03:46:47.639931+00:00",
   "v41_extraction": {
