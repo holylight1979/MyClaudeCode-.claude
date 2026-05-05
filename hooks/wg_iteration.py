@@ -245,16 +245,22 @@ def _self_iterate_atoms(
 
             results["scanned"] += 1
 
-            # Parse metadata
-            lu_match = re.search(r"Last-used:\s*(\d{4}-\d{2}-\d{2})", text)
-            conf_match = re.search(r"Confirmations:\s*(\d+)", text)
-            rh_match = re.search(r"ReadHits:\s*(\d+)", text)
-            if not lu_match or (not conf_match and not rh_match):
-                continue
+            # Wave 2: 計數從 <atom>.access.json 讀（取代從 .md frontmatter parse）
+            try:
+                from lib.atom_access import read_access
+                acc = read_access(md_file)
+            except (ImportError, OSError):
+                acc = {}
+            last_used_raw = acc.get("last_used")
+            confirmations = int(acc.get("confirmations") or 0)
+            readhits = int(acc.get("read_hits") or 0)
 
-            last_used = datetime.strptime(lu_match.group(1), "%Y-%m-%d")
-            confirmations = int(conf_match.group(1)) if conf_match else 0
-            readhits = int(rh_match.group(1)) if rh_match else 0
+            if not last_used_raw or (confirmations == 0 and readhits == 0):
+                continue
+            try:
+                last_used = datetime.strptime(last_used_raw, "%Y-%m-%d")
+            except ValueError:
+                continue
 
             # Composite decay score (v3: use max of dual fields)
             days_since = (today - last_used).days
@@ -267,7 +273,7 @@ def _self_iterate_atoms(
                 results["archive_candidates"].append({
                     "atom": md_file.stem,
                     "score": round(score, 3),
-                    "last_used": lu_match.group(1),
+                    "last_used": last_used_raw,
                     "confirmations": confirmations,
                 })
 

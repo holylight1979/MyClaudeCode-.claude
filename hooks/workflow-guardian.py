@@ -1322,10 +1322,13 @@ def handle_user_prompt_submit(
             lines.extend(atom_lines)
             state["injected_atoms"] = already_injected + newly_injected
 
-            # Auto-update Last-used timestamp + ReadHits++ in injected atom files (v2.1→v3 dual-field)
-            today_str = datetime.now().strftime("%Y-%m-%d")
-            last_used_re = re.compile(r"^(- Last-used:\s*)\d{4}-\d{2}-\d{2}", re.MULTILINE)
-            readhits_re = re.compile(r"^(- ReadHits:\s*)(\d+)", re.MULTILINE)
+            # Wave 2: 注入後 read_hits++、last_used=today 走 atom_access 旁路檔（取代直接 .write_text）
+            # 修補 Wave 1 遺留的 funnel 違規（直接寫 atom .md 繞過稽核）
+            try:
+                from lib.atom_access import increment_read_hits, read_access
+            except ImportError:
+                increment_read_hits = None
+                read_access = None
             confidence_re = re.compile(r"^- Confidence:\s*(\[(?:臨|觀|固)\])", re.MULTILINE)
             # SYNC: memory/decisions.md — ReadHits auxiliary thresholds (hint only, not gate)
             READHIT_THRESHOLDS = {"[臨]": 20, "[觀]": 50}
@@ -1337,75 +1340,35 @@ def handle_user_prompt_submit(
                     apath = (base_dir / rel_path) if rel_path else (base_dir / "memory" / f"{name}.md")
                     if not apath.exists():
                         break
-                    try:
-                        text = apath.read_text(encoding="utf-8-sig")
-                        changed = False
-                        new_count = None
-                        # Update Last-used
-                        if last_used_re.search(text):
-                            new_text = last_used_re.sub(rf"\g<1>{today_str}", text)
-                            if new_text != text:
-                                text = new_text
-                                changed = True
-                        # ReadHits++ (v3 dual-field: Path A injection hit)
-                        rm = readhits_re.search(text)
-                        if rm:
-                            new_count = int(rm.group(2)) + 1
-                            text = readhits_re.sub(rf"\g<1>{new_count}", text)
-                            changed = True
-                        elif "- Confirmations:" in text:
-                            # No ReadHits field yet — add it after Confirmations
-                            text = re.sub(
-                                r"^(- Confirmations:\s*.+)$",
-                                r"\1\n- ReadHits: 1",
-                                text, count=1, flags=re.MULTILINE,
-                            )
-                            new_count = 1
-                            changed = True
-                        elif "- Last-used:" in text:
-                            # No Confirmations nor ReadHits — add after Last-used
-                            text = re.sub(
-                                r"^(- Last-used:\s*.+)$",
-                                r"\1\n- ReadHits: 1",
-                                text, count=1, flags=re.MULTILINE,
-                            )
-                            new_count = 1
-                            changed = True
-                        if changed:
-                            apath.write_text(text, encoding="utf-8")
-                        # ACT-R access log (v2.9)
+                    new_count = None
+                    if increment_read_hits is not None:
                         try:
-                            access_file = apath.parent / f"{name}.access.json"
-                            if access_file.exists():
-                                adata = json.loads(access_file.read_text(encoding="utf-8"))
-                            else:
-                                adata = {"timestamps": []}
-                            adata["timestamps"].append(time.time())
-                            adata["timestamps"] = adata["timestamps"][-50:]
-                            access_file.write_text(json.dumps(adata), encoding="utf-8")
-                        except (OSError, json.JSONDecodeError):
-                            pass
-                        # Promotion hint (v3 dual-field) — ReadHits auxiliary hint only
-                        if new_count is not None:
-                            conf_m = confidence_re.search(text)
-                            if conf_m:
-                                cur = conf_m.group(1)
-                                rh_threshold = READHIT_THRESHOLDS.get(cur)
-                                if rh_threshold and new_count >= rh_threshold:
-                                    target = PROMOTION_TARGETS[cur]
-                                    lines.append(
-                                        f"⚡ [{inj_name}] ReadHits={new_count}, "
-                                        f"目前{cur}, ReadHits 已達{target}輔助門檻，"
-                                        f"觸及相關行為時請主動確認是否晉升"
-                                    )
-                                    log_promotion_audit(
-                                        "hint", inj_name,
-                                        **{"from": cur, "to": target,
-                                           "readhits": new_count,
-                                           "session_id": session_id}
-                                    )
-                    except (OSError, UnicodeDecodeError):
-                        pass
+                            new_count = increment_read_hits(apath, source="hook:atom-inject")
+                        except (OSError, ValueError):
+                            new_count = None
+                    # Promotion hint：晉升輔助門檻達標時推訊息（不改 .md，純訊息）
+                    if new_count is not None:
+                        try:
+                            text = apath.read_text(encoding="utf-8-sig")
+                        except (OSError, UnicodeDecodeError):
+                            text = ""
+                        conf_m = confidence_re.search(text)
+                        if conf_m:
+                            cur = conf_m.group(1)
+                            rh_threshold = READHIT_THRESHOLDS.get(cur)
+                            if rh_threshold and new_count >= rh_threshold:
+                                target = PROMOTION_TARGETS[cur]
+                                lines.append(
+                                    f"⚡ [{inj_name}] ReadHits={new_count}, "
+                                    f"目前{cur}, ReadHits 已達{target}輔助門檻，"
+                                    f"觸及相關行為時請主動確認是否晉升"
+                                )
+                                log_promotion_audit(
+                                    "hint", inj_name,
+                                    **{"from": cur, "to": target,
+                                       "readhits": new_count,
+                                       "session_id": session_id}
+                                )
                     break
 
     # ── Blind-Spot Reporter (v2.9) — debug log only, not injected ──

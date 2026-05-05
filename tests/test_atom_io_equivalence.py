@@ -185,9 +185,14 @@ def test_07_append_mode(isolated_claude):
         mode="create", source="test", skip_gate=True, today="2026-05-01",
     )
     file_path = isolated_claude["memory"] / "appendable.md"
+    access_path = file_path.with_suffix(".access.json")
     before = file_path.read_text(encoding="utf-8")
     assert "- original-fact" in before
-    assert "- Last-used: 2026-05-01" in before
+    # Wave 2: Last-used 不在 .md，在 access.json
+    assert "- Last-used:" not in before
+    import json as _json
+    acc_before = _json.loads(access_path.read_text(encoding="utf-8"))
+    assert acc_before["last_used"] == "2026-05-01"
 
     result = write_atom(
         title="Appendable", scope="global", confidence="[臨]",
@@ -199,7 +204,9 @@ def test_07_append_mode(isolated_claude):
     assert "- original-fact" in after  # preserved
     assert "- new-fact-1" in after
     assert "- new-fact-2" in after
-    assert f"- Last-used: {FIXED_TODAY}" in after  # updated
+    # Wave 2: append 後 last_used 在 access.json 被刷新
+    acc_after = _json.loads(access_path.read_text(encoding="utf-8"))
+    assert acc_after["last_used"] == FIXED_TODAY
     # appended knowledge must be before ## 行動
     assert after.index("- new-fact-2") < after.index("## 行動")
 
@@ -214,12 +221,11 @@ def test_08_replace_preserves_counters(isolated_claude):
         author="orig-author",
         mode="create", source="test", skip_gate=True, today="2026-05-01",
     )
-    # Manually bump counters in file (simulate post-write evolution)
+    # Wave 2: 計數在 access.json，模擬 post-write 演進
     fp = initial.path
-    text = fp.read_text(encoding="utf-8")
-    text = text.replace("- Confirmations: 0", "- Confirmations: 7")
-    text = text.replace("- ReadHits: 0", "- ReadHits: 42")
-    fp.write_text(text, encoding="utf-8")
+    from lib.atom_access import write_access_field
+    write_access_field(fp, field="confirmations", value=7, source="test")
+    write_access_field(fp, field="read_hits", value=42, source="test")
 
     result = write_atom(
         title="Counter Atom", scope="global", confidence="[臨]",
@@ -229,8 +235,12 @@ def test_08_replace_preserves_counters(isolated_claude):
     )
     assert result.ok, result.error
     after = fp.read_text(encoding="utf-8")
-    assert "- Confirmations: 7" in after  # preserved
-    assert "- ReadHits: 42" in after  # preserved
+    # Wave 2: 計數在 access.json，replace 不重建（檔本就分離）
+    import json as _json
+    acc = _json.loads(fp.with_suffix(".access.json").read_text(encoding="utf-8"))
+    assert acc["confirmations"] == 7  # preserved
+    assert acc["read_hits"] == 42  # preserved
+    assert acc["last_used"] == FIXED_TODAY  # replace 後刷新
     assert "- Author: orig-author" in after  # preserved (initial author wins)
     assert "- Created-at: 2026-05-01" in after  # preserved
     assert "- v2-replaced" in after  # new content

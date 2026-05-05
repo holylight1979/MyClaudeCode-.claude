@@ -35,9 +35,12 @@ SKIP_PREFIXES = ("SPEC_", "_")
 MEMORY_INDEX = "MEMORY.md"
 ATOM_INDEX = "_ATOM_INDEX.md"
 
-REQUIRED_METADATA = frozenset({"Scope", "Confidence", "Trigger", "Last-used"})
+# Wave 2: Last-used / Confirmations / ReadHits 移到 <atom>.access.json，
+# 故 atom .md 不再 require 這些欄位（OPTIONAL_METADATA 仍接受 legacy 欄位過渡）。
+REQUIRED_METADATA = frozenset({"Scope", "Confidence", "Trigger"})
 OPTIONAL_METADATA = frozenset({
-    "Confirmations", "ReadHits", "Privacy", "Source", "Type", "Created", "TTL",
+    "Last-used", "Confirmations", "ReadHits",  # legacy 過渡欄；migration 後清空
+    "Privacy", "Source", "Type", "Created", "TTL",
     "Expires-at", "Tags", "Related", "Supersedes", "Quality",
     "Audience", "Author", "Pending-review-by", "Merge-strategy", "Created-at",
 })
@@ -180,9 +183,7 @@ def build_atom_content(
         lines.append(f"- Author: {author}")
     lines.append(f"- Confidence: {confidence}")
     lines.append(f"- Trigger: {', '.join(triggers_list)}")
-    lines.append(f"- Last-used: {today}")
-    lines.append("- Confirmations: 0")
-    lines.append("- ReadHits: 0")
+    # Wave 2: Last-used / Confirmations / ReadHits 移到 <atom>.access.json，不再寫入 .md 檔頭
     if pending_review_by:
         lines.append(f"- Pending-review-by: {pending_review_by}")
     if merge_strategy and merge_strategy != "ai-assist":

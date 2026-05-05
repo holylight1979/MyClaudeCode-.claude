@@ -232,23 +232,35 @@ def parse_atom_file(path: Path, layer_name: str) -> AtomMetadata:
     raw_trigger = atom.raw_metadata.get("Trigger", "")
     atom.trigger = [t.strip() for t in re.split(r"[,，]", raw_trigger) if t.strip()]
 
-    raw_date = atom.raw_metadata.get("Last-used", "").strip()
-    if DATE_PATTERN.match(raw_date):
+    # Wave 2: Last-used / Confirmations / ReadHits 從 <atom>.access.json 讀
+    # （legacy 過渡：若 .md 仍有 frontmatter 欄則作為 fallback，access 優先）
+    try:
+        from lib.atom_access import read_access
+        acc = read_access(path)
+    except (ImportError, OSError):
+        acc = {}
+
+    raw_date = acc.get("last_used") or atom.raw_metadata.get("Last-used", "").strip()
+    if raw_date and DATE_PATTERN.match(raw_date):
         try:
             atom.last_used = datetime.strptime(raw_date, "%Y-%m-%d").date()
         except ValueError:
             pass
 
-    raw_conf_count = atom.raw_metadata.get("Confirmations", "0")
-    try:
-        atom.confirmations = int(raw_conf_count)
-    except ValueError:
-        atom.confirmations = 0
-    raw_rh_count = atom.raw_metadata.get("ReadHits", "0")
-    try:
-        atom.readhits = int(raw_rh_count)
-    except ValueError:
-        atom.readhits = 0
+    if "confirmations" in acc:
+        atom.confirmations = int(acc.get("confirmations") or 0)
+    else:
+        try:
+            atom.confirmations = int(atom.raw_metadata.get("Confirmations", "0"))
+        except ValueError:
+            atom.confirmations = 0
+    if "read_hits" in acc:
+        atom.readhits = int(acc.get("read_hits") or 0)
+    else:
+        try:
+            atom.readhits = int(atom.raw_metadata.get("ReadHits", "0"))
+        except ValueError:
+            atom.readhits = 0
 
     atom.privacy = atom.raw_metadata.get("Privacy", "public")
     atom.source = atom.raw_metadata.get("Source", "")
@@ -634,37 +646,26 @@ def restore_from_distant(atom_path: Path) -> Tuple[bool, str]:
         flags=re.MULTILINE,
     )
 
-    # Update Last-used to today
+    # Wave 2: Last-used / Confirmations / ReadHits 從 .md 移到 access.json，
+    # restore 後在 dest path 改寫 access 旁路檔（重置為 0、last_used 設今天）
     today_str = date.today().isoformat()
-    text = re.sub(
-        r"^(-\s+Last-used:\s*).*$",
-        rf"\g<1>{today_str}",
-        text,
-        count=1,
-        flags=re.MULTILINE,
-    )
-
-    # Reset confirmations + readhits
-    text = re.sub(
-        r"^(-\s+Confirmations:\s*).*$",
-        r"\g<1>0",
-        text,
-        count=1,
-        flags=re.MULTILINE,
-    )
-    text = re.sub(
-        r"^(-\s+ReadHits:\s*).*$",
-        r"\g<1>0",
-        text,
-        count=1,
-        flags=re.MULTILINE,
-    )
 
     try:
         # S3.3: 走 funnel
         _r = write_raw(dest, text, source=_AUDIT_SOURCE, op="audit_demote")
         if not _r.ok:
             raise OSError(_r.error)
+        # 同步 access 旁路檔重置（Wave 2）
+        try:
+            from lib.atom_access import write_access_field
+            write_access_field(dest, field="confirmations", value=0,
+                               source="tool:memory-audit")
+            write_access_field(dest, field="read_hits", value=0,
+                               source="tool:memory-audit")
+            write_access_field(dest, field="last_used", value=today_str,
+                               source="tool:memory-audit")
+        except (ImportError, OSError, ValueError):
+            pass
         atom_path.unlink()
         # Clean up empty year_month dir
         parent = atom_path.parent

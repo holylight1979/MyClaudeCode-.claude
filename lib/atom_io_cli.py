@@ -4,12 +4,14 @@
 改 spawn `python -m lib.atom_io_cli`，stdin 餵 JSON 參數，stdout 讀 WriteResult。
 
 Schema:
-  stdin:  {"action": "write_atom"|"write_index"|"write_index_full"|"write_raw"|"update_atom_field", ...kwargs}
+  stdin:  {"action": "write_atom"|"write_index"|"write_index_full"|"write_raw", ...kwargs}
   stdout: WriteResult.to_dict()  (single-line JSON)
   exit code: 0=ok, 1=error
 
 write_raw / write_index_full 額外參數：caller 端傳 file_path (str)、content (str)。
-update_atom_field 額外參數：file_path (str)、field (str)、value (str)。
+
+Wave 2 移除：update_atom_field action（計數類欄位改走 lib/atom_access.py CLI
+入口 `python -m lib.atom_access ...`，不再透過此 bridge）。
 """
 
 from __future__ import annotations
@@ -20,7 +22,7 @@ from pathlib import Path
 
 from .atom_io import (
     write_atom, write_index, write_index_full, write_raw,
-    update_atom_field, WriteResult,
+    WriteResult,
 )
 
 
@@ -44,9 +46,6 @@ def main() -> int:
         elif action == "write_raw":
             payload["file_path"] = Path(payload["file_path"])
             result = write_raw(**payload)
-        elif action == "update_atom_field":
-            payload["file_path"] = Path(payload["file_path"])
-            result = update_atom_field(**payload)
         else:
             result = WriteResult(ok=False, error=f"unknown action: {action}")
     except TypeError as e:

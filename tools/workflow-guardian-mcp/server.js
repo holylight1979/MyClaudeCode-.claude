@@ -692,9 +692,7 @@ function buildAtomContent({
   }
   lines.push(`- Confidence: ${confidence}`);
   lines.push(`- Trigger: ${triggers.join(", ")}`);
-  lines.push(`- Last-used: ${today}`);
-  lines.push("- Confirmations: 0");
-  lines.push("- ReadHits: 0");
+  // Wave 2: Last-used / Confirmations / ReadHits 移到 <atom>.access.json，不再寫 .md
   if (pendingReviewBy) {
     lines.push(`- Pending-review-by: ${pendingReviewBy}`);
   }
@@ -1088,17 +1086,61 @@ function parseAtomMeta(content) {
     const val = m[2].trim();
     switch (key) {
       case "confidence": meta.confidence = val; break;
-      case "confirmations": meta.confirmations = parseInt(val, 10) || 0; break;
-      case "readhits": meta.readhits = parseInt(val, 10) || 0; break;
       case "scope": meta.scope = val; break;
       case "trigger": meta.triggers = val; break;
-      case "last-used": meta.lastUsed = val; break;
       case "related": meta.related = val; break;
+      // Wave 2: confirmations / readhits / last-used 從 <atom>.access.json 讀（見 readAtomAccess）
     }
   }
   const titleMatch = content.match(/^# (.+)$/m);
   if (titleMatch) meta.title = titleMatch[1];
   return meta;
+}
+
+/** Wave 2: 讀 <atom>.access.json 旁路檔（同步 fs，不 spawn 子程序）。 */
+function readAtomAccess(atomPath) {
+  try {
+    const accessPath = atomPath.replace(/\.md$/, ".access.json");
+    if (!fs.existsSync(accessPath)) return {};
+    const raw = JSON.parse(fs.readFileSync(accessPath, "utf-8"));
+    let confirmations = raw.confirmations;
+    if (Array.isArray(confirmations)) confirmations = confirmations.length;
+    return {
+      confirmations: parseInt(confirmations, 10) || 0,
+      readhits: parseInt(raw.read_hits, 10) || 0,
+      lastUsed: raw.last_used || null,
+      lastPromotedAt: raw.last_promoted_at || null,
+    };
+  } catch {
+    return {};
+  }
+}
+
+/** Wave 2: spawn `python -m lib.atom_access <subcommand>` 對 access 旁路檔做寫入。 */
+function spawnAtomAccess(subcommand, args) {
+  return new Promise((resolve) => {
+    let cp;
+    try {
+      cp = require("child_process").spawn(
+        "python", ["-m", "lib.atom_access", subcommand, ...args],
+        { cwd: CLAUDE_DIR, windowsHide: true,
+          env: { ...process.env, PYTHONIOENCODING: "utf-8" } },
+      );
+    } catch (e) {
+      return resolve({ ok: false, error: `spawn failed: ${e.message}` });
+    }
+    let out = "", err = "";
+    cp.stdout.on("data", (d) => { out += d.toString("utf-8"); });
+    cp.stderr.on("data", (d) => { err += d.toString("utf-8"); });
+    cp.on("close", (code) => {
+      try {
+        resolve(out ? JSON.parse(out) : { ok: code === 0 });
+      } catch (e) {
+        resolve({ ok: false, error: `cli parse fail: ${e.message} stderr=${err.slice(0, 200)}` });
+      }
+    });
+    cp.on("error", (e) => resolve({ ok: false, error: `spawn error: ${e.message}` }));
+  });
 }
 
 // ─── S3.2: Atom Funnel Bridge (spawn lib/atom_io_cli) ─────────────────────
@@ -1293,6 +1335,11 @@ async function toolAtomWrite(id, args) {
       return sendToolResult(id, `funnel write_raw failed: ${wr.error}`, true);
     }
 
+    // Wave 2: 同步建立 <atom>.access.json 旁路檔（first_seen=today）
+    await spawnAtomAccess("init", [filePath, "--first-seen", today, "--source", "mcp"]);
+    await spawnAtomAccess("set", [filePath, "--field", "last_used",
+                                  "--value", today, "--source", "mcp"]);
+
     await appendToIndex(baseDir, slug, relPath, triggers);
     triggerVectorReindex();
     if (scopeLabel === "global") syncMemoryIndex();
@@ -1324,13 +1371,8 @@ async function toolAtomWrite(id, args) {
     const newLines = knowledge.map(k => k.startsWith("- ") ? k : `- ${k}`).join("\n");
     const before = existing.slice(0, actionIdx).trimEnd();
     const after = existing.slice(actionIdx);
-    const updated = before + "\n" + newLines + "\n\n" + after;
-
-    // Append only updates Last-used; Author/Created-at preserved (initial writer's identity)
-    const finalContent = updated.replace(
-      /^- Last-used:\s*.+$/m,
-      `- Last-used: ${today}`
-    );
+    // Wave 2: Last-used 不在 .md，append 後改寫 access.json
+    const finalContent = before + "\n" + newLines + "\n\n" + after;
 
     const err = validateAtomContent(finalContent);
     if (err) {
@@ -1343,6 +1385,10 @@ async function toolAtomWrite(id, args) {
       return sendToolResult(id, `funnel write_raw failed: ${wr.error}`, true);
     }
 
+    // Wave 2: 同步刷 access.json last_used
+    await spawnAtomAccess("set", [filePath, "--field", "last_used",
+                                  "--value", today, "--source", "mcp"]);
+
     triggerVectorReindex();
 
     return sendToolResult(id,
@@ -1353,17 +1399,13 @@ async function toolAtomWrite(id, args) {
 
   // ── Mode: replace ──
   if (mode === "replace") {
-    // Preserve Confirmations + ReadHits + initial Author/Created-at if file exists
-    let confirmations = 0;
-    let readhits = 0;
+    // Wave 2: Confirmations / ReadHits 在 access.json，replace 不需保留（檔本就分離）
+    // 仍保留 Author / Created-at（屬知識性 metadata）
     let prevAuthor = author;
     let prevCreatedAt = today;
     if (fs.existsSync(filePath)) {
       try {
         const old = fs.readFileSync(filePath, "utf-8");
-        const meta = parseAtomMeta(old);
-        confirmations = meta.confirmations || 0;
-        readhits = meta.readhits || 0;
         const am = old.match(/^- Author:\s*(.+)$/m);
         if (am) prevAuthor = am[1].trim();
         const cm = old.match(/^- Created-at:\s*(.+)$/m);
@@ -1380,23 +1422,25 @@ async function toolAtomWrite(id, args) {
       return sendToolResult(id, `Validation failed: ${err}`, true);
     }
 
-    const finalContent = content
-      .replace(/^- Confirmations:\s*\d+$/m, `- Confirmations: ${confirmations}`)
-      .replace(/^- ReadHits:\s*\d+$/m, `- ReadHits: ${readhits}`);
-
     fs.mkdirSync(memDir, { recursive: true });
     // S3.2: 走 lib.atom_io.write_raw funnel
-    const wr = await funnelWriteRaw(filePath, finalContent, "mcp", "atom_replace");
+    const wr = await funnelWriteRaw(filePath, content, "mcp", "atom_replace");
     if (!wr.ok) {
       return sendToolResult(id, `funnel write_raw failed: ${wr.error}`, true);
     }
+
+    // Wave 2: 刷 access.json last_used（access 計數自動保留）
+    await spawnAtomAccess("set", [filePath, "--field", "last_used",
+                                  "--value", today, "--source", "mcp"]);
 
     await appendToIndex(baseDir, slug, relPath, triggers);
     triggerVectorReindex();
     if (scopeLabel === "global") syncMemoryIndex();
 
+    // 讀 access 給訊息顯示保留的計數
+    const accAfter = readAtomAccess(filePath);
     return sendToolResult(id,
-      `Replaced atom: ${slug}.md (${confidence}, preserved conf=${confirmations} rh=${readhits}, author=${prevAuthor})\n` +
+      `Replaced atom: ${slug}.md (${confidence}, preserved conf=${accAfter.confirmations || 0} rh=${accAfter.readhits || 0}, author=${prevAuthor})\n` +
       `MEMORY.md index updated.`
     );
   }
@@ -1444,8 +1488,10 @@ async function toolAtomPromote(id, args) {
   }
 
   const { next, confirmations: reqConf, readhits: reqRH } = path_info;
-  const confirmations = meta.confirmations || 0;
-  const readhits = meta.readhits || 0;
+  // Wave 2: 計數從 <atom>.access.json 讀，不再 parseAtomMeta（meta.confidence 仍從 .md 抽）
+  const access = readAtomAccess(filePath);
+  const confirmations = access.confirmations || 0;
+  const readhits = access.readhits || 0;
 
   // Primary gate: Confirmations (cross-session behavior hits)
   let eligible = confirmations >= reqConf;
@@ -1457,20 +1503,8 @@ async function toolAtomPromote(id, args) {
     method = "readhits_auxiliary";
   }
 
-  // 7-day exemption: migration fallback (ReadHits/5 ≥ reqConf)
-  if (!eligible) {
-    try {
-      const migrationPath = path.join(MEMORY_DIR, "_meta", "migration.json");
-      if (fs.existsSync(migrationPath)) {
-        const migData = JSON.parse(fs.readFileSync(migrationPath, "utf-8"));
-        const daysSinceMigration = (Date.now() - (migData.timestamp || 0) * 1000) / 86400000;
-        if (daysSinceMigration <= 7 && Math.floor(readhits / 5) >= reqConf) {
-          eligible = true;
-          method = "readhits_7day_fallback";
-        }
-      }
-    } catch {}
-  }
+  // Wave 2: 移除 7-day migration.json fallback
+  // （dual-field-v1 遷移於 2026-04-24 完成、超過 7 天；access-stats-v2 不需此條款）
 
   if (!eligible) {
     return sendToolResult(id,
@@ -1496,9 +1530,9 @@ async function toolAtomPromote(id, args) {
   }
 
   // Execute promotion
+  // Wave 2: Last-used 不在 .md，只改 Confidence + 知識條目層級的 [臨]/[觀]
   const updated = content
-    .replace(/^- Confidence:\s*.+$/m, `- Confidence: ${next}`)
-    .replace(/^- Last-used:\s*.+$/m, `- Last-used: ${new Date().toISOString().slice(0, 10)}`);
+    .replace(/^- Confidence:\s*.+$/m, `- Confidence: ${next}`);
 
   // Also update individual knowledge lines: [臨] → [觀] etc.
   const finalContent = updated.replace(
@@ -1511,6 +1545,10 @@ async function toolAtomPromote(id, args) {
   if (!wrPromote.ok) {
     return sendToolResult(id, `funnel write_raw failed: ${wrPromote.error}`, true);
   }
+
+  // Wave 2: 同步寫 access.json 的 last_promoted_at + last_used
+  await spawnAtomAccess("record-promotion",
+    [filePath, "--target", next, "--source", "mcp"]);
 
   triggerVectorReindex();
 

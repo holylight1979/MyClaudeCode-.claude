@@ -44,7 +44,7 @@ from .atom_io import (
     GLOBAL_MEMORY_DIR,
 )
 
-# 本模組合法 source 名單 — 與 atom_io.VALID_SOURCES 並列；新增 hook:atom-inject
+# 本模組合法 source 名單 — atom_io.VALID_SOURCES 的超集（保證任何 atom_io 寫入端皆可呼叫）
 ACCESS_VALID_SOURCES = frozenset({
     "mcp",
     "hook:atom-inject",          # workflow-guardian.py atom 注入時 increment_read_hits
@@ -52,11 +52,14 @@ ACCESS_VALID_SOURCES = frozenset({
     "hook:episodic-confirm",     # cross-session confirmation
     "hook:user-extract",
     "hook:extract-worker",
+    "tool:atom-move",
+    "tool:changelog-roll",
     "tool:memory-audit",         # restore_atom 計數歸零
     "tool:migrate",              # 一次性遷移
     "tool:atom-health-audit",    # Phase B 健康診斷
     "tool:sync-atom-index",
     "tool:sync-memory-index",
+    "tool:undo",
     "test",
 })
 

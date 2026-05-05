@@ -148,8 +148,8 @@ def check_memory_path_block(
         f"路徑：{fp_str}\n"
         "正確做法：\n"
         "  (1) 用 MCP `atom_write` / `atom_promote` / `atom_move` 工具\n"
-        "  (2) 程式碼端用 lib.atom_io.write_atom() / write_raw() / "
-        "update_atom_field()\n"
+        "  (2) 程式碼端：知識內容寫 lib.atom_io.write_atom() / write_raw()；\n"
+        "      計數欄位（read_hits / last_used / confirmations）寫 lib.atom_access\n"
         "緊急 bypass：set 環境變數 `WG_DISABLE_ATOM_GUARD=1` 後重試。\n"
         "詳見 memory/decisions-architecture.md（funnel 收束章節）。"
     )

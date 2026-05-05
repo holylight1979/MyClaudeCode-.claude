@@ -43,11 +43,13 @@ AUDIT_LOG = GLOBAL_MEMORY_DIR / "_meta" / "atom_io_audit.jsonl"
 # 接受的 source（供 audit 反查；未列舉值會 raise ValueError）
 VALID_SOURCES = frozenset({
     "mcp",
+    "hook:atom-inject",  # Wave 2: workflow-guardian.py 注入 atom 時走 atom_access
     "hook:episodic",
-    "hook:episodic-confirm",  # wg_episodic L367 cross-session Confirmations +1
+    "hook:episodic-confirm",  # wg_episodic L367 cross-session 加計
     "hook:user-extract",
     "hook:extract-worker",
     "tool:atom-move",
+    "tool:atom-health-audit",  # Wave 3: atom 體質審視工具
     "tool:changelog-roll",
     "tool:memory-audit",  # memory-audit demote/compact/log_evolution 修補
     "tool:migrate",
@@ -320,53 +322,13 @@ def write_raw(
     return WriteResult(ok=True, audit_id=audit_id, path=file_path)
 
 
-# ─── Field-level update (Confirmations / ReadHits / Last-used 等 metadata) ───
-
-
-def update_atom_field(
-    file_path: Path,
-    field: str,
-    value: str,
-    *,
-    source: str,
-) -> WriteResult:
-    """單欄位 metadata in-place 更新（read-modify-write 一個 `- Field: X` 行）。
-
-    用於：cross-session Confirmations +1、ReadHits 計數、Last-used 戳記等
-    無法用 build_atom_content 整檔重建的場景（會丟掉自由格式 ## 章節）。
-
-    對拍 wg_episodic.py L367 / wg_episodic.py L384 行為等價。
-    """
-    audit_id = _gen_audit_id()
-    if source not in VALID_SOURCES:
-        return WriteResult(ok=False, audit_id=audit_id,
-                           error=f"invalid source: {source}")
-    if not file_path.exists():
-        return WriteResult(ok=False, audit_id=audit_id,
-                           error=f"atom not found: {file_path}")
-    try:
-        text = file_path.read_text(encoding="utf-8-sig")
-    except OSError as e:
-        return WriteResult(ok=False, audit_id=audit_id, error=f"read failed: {e}")
-
-    pat = re.compile(rf"^- {re.escape(field)}:\s*.+$", re.MULTILINE)
-    new_line = f"- {field}: {value}"
-    if pat.search(text):
-        text = pat.sub(new_line, text, count=1)
-    else:
-        return WriteResult(ok=False, audit_id=audit_id,
-                           error=f"field not found in atom: {field}")
-
-    try:
-        _atomic_write(file_path, text)
-    except OSError as e:
-        return WriteResult(ok=False, audit_id=audit_id, error=f"write failed: {e}")
-    _audit_log({
-        "audit_id": audit_id, "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "op": "update_field", "source": source, "path": str(file_path),
-        "field": field,
-    })
-    return WriteResult(ok=True, audit_id=audit_id, path=file_path)
+# Wave 2 移除：update_atom_field
+# ----------------------------
+# 計數類欄位（ReadHits / Confirmations / Last-used）已移到 <atom>.access.json
+# 旁路檔，由 lib/atom_access.py 統一管理。任何過去呼叫 update_atom_field 的位置：
+#   - hooks/wg_episodic.py:370 cross-session confirm → atom_access.increment_confirmation
+#   - 其餘無實際 caller（grep 確認）
+# 詳見 _AIDocs/Architecture.md「Atomic Memory Single Funnel」章節。
 
 
 # ─── Main entry ───────────────────────────────────────────────────────────────
@@ -462,24 +424,15 @@ def write_atom(
         new_lines = "\n".join(k if k.startswith("- ") else f"- {k}" for k in knowledge)
         before = existing[:action_idx].rstrip()
         after = existing[action_idx:]
-        updated = before + "\n" + new_lines + "\n\n" + after
-        today_str = today or datetime.now(timezone.utc).date().isoformat()
-        content = re.sub(r"^- Last-used:\s*.+$", f"- Last-used: {today_str}",
-                         updated, count=1, flags=re.MULTILINE)
+        # Wave 2: Last-used 不再寫 .md；append 後由下方 atom_access.write_access_field 刷
+        content = before + "\n" + new_lines + "\n\n" + after
     elif mode == "replace":
-        # preserve Confirmations/ReadHits/Author/Created-at when file exists
-        confirmations = 0
-        readhits = 0
+        # Wave 2: Confirmations/ReadHits 在 access.json，replace 不需保留（檔本就分離）
+        # Author/Created-at 仍從舊 atom .md 抽（屬知識性 metadata）
         prev_author = author
         prev_created = today or datetime.now(timezone.utc).date().isoformat()
         if file_path.exists():
             old = file_path.read_text(encoding="utf-8-sig")
-            cm = re.search(r"^- Confirmations:\s*(\d+)$", old, re.MULTILINE)
-            if cm:
-                confirmations = int(cm.group(1))
-            rm = re.search(r"^- ReadHits:\s*(\d+)$", old, re.MULTILINE)
-            if rm:
-                readhits = int(rm.group(1))
             am = re.search(r"^- Author:\s*(.+)$", old, re.MULTILINE)
             if am:
                 prev_author = am.group(1).strip()
@@ -492,12 +445,6 @@ def write_atom(
             author=prev_author, pending_review_by=pending_by, merge_strategy=merge_strategy,
             created_at=prev_created, today=today,
         )
-        content = re.sub(r"^- Confirmations:\s*\d+$",
-                         f"- Confirmations: {confirmations}",
-                         content, count=1, flags=re.MULTILINE)
-        content = re.sub(r"^- ReadHits:\s*\d+$",
-                         f"- ReadHits: {readhits}",
-                         content, count=1, flags=re.MULTILINE)
     else:
         return WriteResult(ok=False, audit_id=audit_id,
                            error=f"Unknown mode: {mode}")
@@ -516,6 +463,27 @@ def write_atom(
 
     # ── Write file ──
     _atomic_write(file_path, content)
+
+    # ── Wave 2: 同步維護 <atom>.access.json 旁路檔 ──
+    # 延遲 import 避免 atom_io ↔ atom_access 環依（atom_access import atom_io 的 audit infra）
+    today_str = today or datetime.now(timezone.utc).date().isoformat()
+    try:
+        from . import atom_access
+        if mode == "create":
+            atom_access.init_access(
+                file_path, first_seen=today_str, source=source,
+            )
+            # 同步把 last_used 設為 today（init 只設 first_seen，未設 last_used）
+            atom_access.write_access_field(
+                file_path, field="last_used", value=today_str, source=source,
+            )
+        else:  # append / replace
+            atom_access.write_access_field(
+                file_path, field="last_used", value=today_str, source=source,
+            )
+    except (ImportError, ValueError, OSError):
+        # access 旁路檔失敗不致命；atom .md 已落檔
+        pass
 
     # ── Update index ──
     if mode in ("create", "replace"):
