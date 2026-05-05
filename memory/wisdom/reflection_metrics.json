@@ -3,33 +3,28 @@
   "metrics": {
     "first_approach_accuracy": {
       "single_file": {
-        "correct": 401,
-        "total": 419
+        "recent": []
       },
       "multi_file": {
-        "correct": 6,
-        "total": 19
+        "recent": []
       },
       "architecture": {
-        "correct": 4,
-        "total": 30
+        "recent": []
       }
     },
     "over_engineering_rate": {
-      "user_reverted_or_simplified": 0,
-      "total_suggestions": 497
+      "recent": []
     },
     "silence_accuracy": {
-      "held_back_ok": 407,
-      "held_back_missed": 31
+      "recent": []
     }
   },
   "blind_spots": [
     "multi_file 首次正確率 32%",
-    "architecture 首次正確率 13%"
+    "architecture 首次正確率 12%"
   ],
   "arch_sensitivity_elevated": true,
-  "last_reflection": "2026-05-04T10:52:02.559738+00:00",
+  "last_reflection": "2026-05-05T03:46:47.639931+00:00",
   "v41_extraction": {
     "total_written": 0,
     "total_rejected": 0,
@@ -42,63 +37,6 @@
     },
     "precision_observed": 1.0,
     "session_scores": [
-      {
-        "session_id": "e14657e7-8a3e-40d4-9780-842c58d1873e",
-        "ts": "2026-04-21T06:33:12.686155+00:00",
-        "prompt_count": 0,
-        "extract_triggered": 0,
-        "extract_written": 0,
-        "dedup_hit": 0,
-        "rejected_24h": 0,
-        "avg_l2_conf": 0.0,
-        "token_used": 0,
-        "scores": {
-          "density": 0.0,
-          "precision_proxy": 1.0,
-          "novelty": 1.0,
-          "cost_efficiency": 1.0,
-          "trust": 1.0,
-          "weighted_total": 0.85
-        }
-      },
-      {
-        "session_id": "6c3e4578-435c-4a71-877a-6ec1cb94c7f9",
-        "ts": "2026-04-21T08:26:36.679515+00:00",
-        "prompt_count": 0,
-        "extract_triggered": 0,
-        "extract_written": 0,
-        "dedup_hit": 0,
-        "rejected_24h": 0,
-        "avg_l2_conf": 0.0,
-        "token_used": 0,
-        "scores": {
-          "density": 0.0,
-          "precision_proxy": 1.0,
-          "novelty": 1.0,
-          "cost_efficiency": 1.0,
-          "trust": 1.0,
-          "weighted_total": 0.85
-        }
-      },
-      {
-        "session_id": "eed4c0f7-3d27-4671-ab65-a730f3499150",
-        "ts": "2026-04-21T10:04:50.236496+00:00",
-        "prompt_count": 0,
-        "extract_triggered": 0,
-        "extract_written": 0,
-        "dedup_hit": 0,
-        "rejected_24h": 0,
-        "avg_l2_conf": 0.0,
-        "token_used": 0,
-        "scores": {
-          "density": 0.0,
-          "precision_proxy": 1.0,
-          "novelty": 1.0,
-          "cost_efficiency": 1.0,
-          "trust": 1.0,
-          "weighted_total": 0.85
-        }
-      },
       {
         "session_id": "2f6ee625-9eae-4ba2-8cca-0bdc1c00e5c8",
         "ts": "2026-04-23T02:05:08.741020+00:00",
@@ -1941,6 +1879,63 @@
           "trust": 1.0,
           "weighted_total": 0.85
         }
+      },
+      {
+        "session_id": "f587f7f3-6061-4b9d-ae82-fa4e7bcdd126",
+        "ts": "2026-05-05T03:45:34.811420+00:00",
+        "prompt_count": 2,
+        "extract_triggered": 0,
+        "extract_written": 0,
+        "dedup_hit": 0,
+        "rejected_24h": 0,
+        "avg_l2_conf": 0.0,
+        "token_used": 0,
+        "scores": {
+          "density": 0.0,
+          "precision_proxy": 1.0,
+          "novelty": 1.0,
+          "cost_efficiency": 1.0,
+          "trust": 1.0,
+          "weighted_total": 0.85
+        }
+      },
+      {
+        "session_id": "681b77eb-bc12-445f-8b3e-d550addf52ea",
+        "ts": "2026-05-05T03:45:36.981864+00:00",
+        "prompt_count": 4,
+        "extract_triggered": 0,
+        "extract_written": 0,
+        "dedup_hit": 0,
+        "rejected_24h": 0,
+        "avg_l2_conf": 0.0,
+        "token_used": 0,
+        "scores": {
+          "density": 0.0,
+          "precision_proxy": 1.0,
+          "novelty": 1.0,
+          "cost_efficiency": 1.0,
+          "trust": 1.0,
+          "weighted_total": 0.85
+        }
+      },
+      {
+        "session_id": "f56e7c9e-b20b-4f66-ae7b-94da8495c2f9",
+        "ts": "2026-05-05T03:46:47.616382+00:00",
+        "prompt_count": 0,
+        "extract_triggered": 0,
+        "extract_written": 0,
+        "dedup_hit": 0,
+        "rejected_24h": 0,
+        "avg_l2_conf": 0.0,
+        "token_used": 0,
+        "scores": {
+          "density": 0.0,
+          "precision_proxy": 1.0,
+          "novelty": 1.0,
+          "cost_efficiency": 1.0,
+          "trust": 1.0,
+          "weighted_total": 0.85
+        }
       }
     ]
   },
@@ -2365,7 +2360,63 @@
         "sandbox_failures": 0,
         "behavior_gap_blocks": 0,
         "quality_gap_advises": 0
+      },
+      {
+        "session_id": "f587f7f3-6061-4b9d-ae82-fa4e7bcdd126",
+        "ts": "2026-05-05T03:45:34+00:00",
+        "audits_skipped_by_score": 3,
+        "audits_total_attempted": 0,
+        "empty_returns": 0,
+        "sandbox_failures": 0,
+        "behavior_gap_blocks": 0,
+        "quality_gap_advises": 0
+      },
+      {
+        "session_id": "681b77eb-bc12-445f-8b3e-d550addf52ea",
+        "ts": "2026-05-05T03:45:36+00:00",
+        "audits_skipped_by_score": 8,
+        "audits_total_attempted": 0,
+        "empty_returns": 0,
+        "sandbox_failures": 0,
+        "behavior_gap_blocks": 0,
+        "quality_gap_advises": 1
+      },
+      {
+        "session_id": "f56e7c9e-b20b-4f66-ae7b-94da8495c2f9",
+        "ts": "2026-05-05T03:46:47+00:00",
+        "audits_skipped_by_score": 2,
+        "audits_total_attempted": 0,
+        "empty_returns": 0,
+        "sandbox_failures": 0,
+        "behavior_gap_blocks": 0,
+        "quality_gap_advises": 0
       }
     ]
-  }
+  },
+  "legacy_cumulative": {
+    "first_approach_accuracy": {
+      "single_file": {
+        "correct": 402,
+        "total": 420
+      },
+      "multi_file": {
+        "correct": 6,
+        "total": 19
+      },
+      "architecture": {
+        "correct": 4,
+        "total": 32
+      }
+    },
+    "over_engineering_rate": {
+      "user_reverted_or_simplified": 0,
+      "total_suggestions": 500
+    },
+    "silence_accuracy": {
+      "held_back_ok": 408,
+      "held_back_missed": 31
+    },
+    "frozen_at": "2026-05-05T03:52:10.482386+00:00"
+  },
+  "schema_version": "2.12"
 }
