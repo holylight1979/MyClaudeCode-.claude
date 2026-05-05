@@ -111,6 +111,7 @@
       "C:\\Projects\\.claude\\memory\\_staging"
     ]
   },
+  "model": "opus[1m]",
   "hooks": {
     "SessionStart": [
       {
@@ -292,7 +293,18 @@
       }
     ]
   },
-  "effortLevel": "xhigh",
+  "extraKnownMarketplaces": {
+    "claude-code-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "anthropics/claude-code"
+      }
+    }
+  },
+  "effortLevel": "medium",
   "autoUpdatesChannel": "latest",
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true
+  }
 }

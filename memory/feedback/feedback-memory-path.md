@@ -3,7 +3,7 @@
 - Scope: global
 - Confidence: [固]
 - Trigger: 寫入記憶, _staging, memory path, 寫atom, Write memory, 記憶路徑
-- Related: decisions, feedback-pointer-atom
+- Related: decisions, feedback-pointer-atom, feedback-gitignored-no-git-rm
 
 ## 知識
 
